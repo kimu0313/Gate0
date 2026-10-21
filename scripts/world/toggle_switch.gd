@@ -73,4 +73,4 @@ func _refresh(instant: bool) -> void:
 	if _led:
 		_led.material_override = _led_on if is_on else _led_off
 	if interactable:
-		interactable.prompt = "%s %s" % [caption, off_prompt if is_on else on_prompt]
+		interactable.prompt = "%s %s" % [tr(caption), tr(off_prompt if is_on else on_prompt)]

@@ -408,14 +408,14 @@ func _draw_camera() -> void:
 		c.draw_line(s * 0.5 - Vector2(0, 14), s * 0.5 + Vector2(0, 14), Color(1, 1, 1, 0.55), 1.5)
 		var disp := UiKit.font("display", 700)
 		if f > 0.5 and _cam_target != "":
-			var txt := "FOCUS LOCK  ·  " + _cam_target
+			var txt := "FOCUS LOCK  ·  " + UiKit.t(_cam_target)
 			var tw := disp.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 			var p := Vector2(s.x * 0.5 - tw * 0.5, r.end.y + 34)
 			c.draw_rect(Rect2(p - Vector2(12, 22), Vector2(tw + 24, 32)), Color(0, 0, 0, 0.55 * f))
 			c.draw_string(disp, p, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UiKit.SIGNAL, f))
 		# stills camera readout: mode + date stamp (it takes photos, so no REC timecode)
 		c.draw_circle(Vector2(m + 34, m + 42), 9, Color(UiKit.CLEAR, 0.9 if f > 0.5 else 0.35))
-		c.draw_string(disp, Vector2(m + 54, m + 50), "STILL  ·  점검 촬영", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, white)
+		c.draw_string(disp, Vector2(m + 54, m + 50), UiKit.t("STILL  ·  점검 촬영"), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, white)
 		var stamp := "DAY %d  ·  %s" % [Game.cycle, Game.clock_text()]
 		c.draw_string(disp, Vector2(s.x - m - 330, m + 49), stamp, HORIZONTAL_ALIGNMENT_RIGHT, 260, 22, white)
 		var bp := Vector2(s.x - m - 58, m + 30)
@@ -494,7 +494,7 @@ func _shoot() -> void:
 	_fly_thumbnail(tex)
 	Events.photo_taken.emit(Game.photos.size() - 1)
 	Events.player_action.emit("photo", fac.id if fac else "")
-	Events.notify.emit("사진 저장: " + label, "good")
+	Events.notify.emit(UiKit.t("사진 저장: ") + Tablet.photo_label(label), "good")
 
 
 ## The captured frame shrinks into the corner like a print dropping into the album.
@@ -554,7 +554,8 @@ func _build_pause() -> void:
 	# Korean first, like every other sign in the game; the English line is the sign's sub-label
 	left.add_child(UiKit.caption("SEOHAE OPS  ·  SHIFT ON HOLD", UiKit.SIGNAL, 18))
 	left.add_child(UiKit.label("일시정지", 96, UiKit.TEXT, "sans", 900))
-	left.add_child(UiKit.label("PAUSED  ·  근무가 잠시 멈췄습니다", 26, UiKit.TEXT_DIM, "display", 700))
+	if not UiKit.same("일시정지", "PAUSED  ·  근무가 잠시 멈췄습니다"):
+		left.add_child(UiKit.label("PAUSED  ·  근무가 잠시 멈췄습니다", 26, UiKit.TEXT_DIM, "display", 700))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 40)
 	left.add_child(gap)
@@ -581,6 +582,8 @@ func _build_pause() -> void:
 	UiKit.center(_settings, Vector2(980, 820))
 	_pause_layer.add_child(_settings)
 	_settings.back.connect(_close_settings)
+	_settings.language_changed.connect(func():
+		Events.notify.emit("언어 변경은 다음 근무부터 모든 화면에 적용됩니다.", "info"))
 
 
 func _close_settings() -> void:
@@ -708,6 +711,7 @@ func title_card(title: String, sub := "", hold := 2.5) -> void:
 
 ## Black screen with lines typed one after another (prologue). Earlier lines dim; a caret blinks.
 func typewriter(lines: Array, per_char := 0.045) -> void:
+	lines = lines.map(func(l): return UiKit.t(str(l)))
 	_fade.color.a = 1.0
 	await _settle_frames()
 	_card.visible = false
@@ -780,7 +784,7 @@ func show_death(reason: String) -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
 	v.add_child(row)
-	var again := UiKit.primary("이 %s 다시 시작" % ("밤" if Game.phase == "night" else "근무"), 22, func(): Game.restart_phase(), UiKit.ALERT)
+	var again := UiKit.primary(UiKit.t("이 %s 다시 시작") % UiKit.t("밤" if Game.phase == "night" else "근무"), 22, func(): Game.restart_phase(), UiKit.ALERT)
 	again.custom_minimum_size = Vector2(300, 62)
 	row.add_child(again)
 	var menu := UiKit.button("메인 메뉴", 22, func(): Game.go_menu())

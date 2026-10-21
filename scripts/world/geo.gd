@@ -196,6 +196,8 @@ static func label(parent: Node, text: String, pos: Vector3, rot_y := 0.0, font_s
 	if style == "":
 		style = "led" if mono else "sign"
 	var l := Label3D.new()
+	# world signage is physical Korean airport signage and stays as built in every language
+	l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	l.text = text
 	l.font_size = font_size
 	l.pixel_size = pixel_size

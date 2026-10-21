@@ -54,8 +54,8 @@ func run() -> void:
 	var gate_no: String = ["01", "02", "03", "04"][randi() % 4]
 	var other: String = OTHER.keys()[randi() % OTHER.size()]
 	var plan := d.plan_anomalies(["gate", "fids", other], 2 + (1 if randf() < 0.5 else 0))
-	var t1 := d.inspect("gate" + gate_no, "탑승구 GATE %s 점검" % gate_no,
-		"GATE %s 포디움의 [b][상태 확인][/b]을 누르고 출입문·표시·대기석을 관찰하십시오. (수칙 p.8)" % gate_no, plan.gate)
+	var t1 := d.inspect("gate" + gate_no, tr("탑승구 GATE %s 점검") % gate_no,
+		tr("GATE %s 포디움의 [b][상태 확인][/b]을 누르고 출입문·표시·대기석을 관찰하십시오. (수칙 p.8)") % gate_no, plan.gate)
 	await d.until_done(t1)
 	await d.wait(3.0)
 	await d.ev_slow_broadcast(false)

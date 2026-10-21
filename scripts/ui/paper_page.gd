@@ -67,11 +67,29 @@ func show_page(p: Dictionary, document := false) -> void:
 		_title.add_theme_font_size_override("font_size", 38)
 	if font_kind == "mono":
 		body_size = 18
-	_body = UiKit.rich(_format_body(str(p.get("body", ""))), body_size, ink, font_kind)
+	_body = UiKit.rich(_format_body(UiKit.t(str(p.get("body", "")))), body_size, ink, font_kind)
 	_body.add_theme_constant_override("line_separation", 7)
 	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(_body)
 	queue_redraw()
+	_fit_body()
+
+
+## Longer translations can run into the footer and stamp: shrink the body a point at a time until
+## the text fits above them.
+func _fit_body() -> void:
+	if not is_inside_tree():
+		return
+	var body := _body
+	await get_tree().process_frame
+	while is_instance_valid(body) and body == _body:
+		var limit := size.y - float(_margin.get_theme_constant("margin_top")) - float(_margin.get_theme_constant("margin_bottom"))
+		var fs := body.get_theme_font_size("normal_font_size")
+		if fs <= 15 or (_margin.get_child(0) as Control).get_combined_minimum_size().y <= limit:
+			return
+		body.add_theme_font_size_override("normal_font_size", fs - 1)
+		body.add_theme_font_size_override("bold_font_size", fs - 1)
+		await get_tree().process_frame
 
 
 ## Rule items ("① …", "→ …") become two-column rows so a wrapped line hangs under its text instead
@@ -185,7 +203,7 @@ func _draw() -> void:
 		var ff := UiKit.font(str(page.get("font", "sans")))
 		var x0 := float(left_margin)
 		draw_line(Vector2(x0, h - 100), Vector2(w - 64, h - 100), Color(0.23, 0.22, 0.2, 0.55), 1.5)
-		draw_string(ff, Vector2(x0, h - 66), str(page.get("rev", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.24, 0.23, 0.21))
+		draw_string(ff, Vector2(x0, h - 66), UiKit.t(str(page.get("rev", ""))), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.24, 0.23, 0.21))
 		draw_string(UiKit.font("display", 600), Vector2(x0, h - 38), "SEOHAE INT'L AIRPORT · FACILITY OPS", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.42, 0.4, 0.36))
 		_draw_stamp(str(page.get("stamp", "none")), Vector2(w - 160, h - 160), rng.randf_range(-0.35, 0.2))
 
@@ -227,6 +245,9 @@ func _draw_stamp(kind: String, c: Vector2, angle: float) -> void:
 			lines = ["서해국제공항", "시설운영팀", "긴  급"]
 		"team":
 			lines = ["서해국제공항", "승객운송팀", "승  인"]
+	# the department name stays the clue in every language (official vs. other team)
+	for i in lines.size():
+		lines[i] = UiKit.t(lines[i], "stamp")
 	var f := UiKit.font("serif", 700)
 	var r := 80.0
 	draw_set_transform(c, angle)
@@ -236,9 +257,17 @@ func _draw_stamp(kind: String, c: Vector2, angle: float) -> void:
 	else:
 		draw_arc(Vector2.ZERO, r * 0.86, 0, TAU, 64, col, 6.0, true)
 		draw_arc(Vector2.ZERO, r * 0.72, 0, TAU, 64, col, 2.0, true)
-	draw_string(f, Vector2(-r, -12), lines[0], HORIZONTAL_ALIGNMENT_CENTER, r * 2, 16, col)
-	draw_string(f, Vector2(-r, 14), lines[1], HORIZONTAL_ALIGNMENT_CENTER, r * 2, 19, col)
-	draw_string(f, Vector2(-r, 40), lines[2], HORIZONTAL_ALIGNMENT_CENTER, r * 2, 16, col)
+	# each line shrinks to stay inside the inner ring (English department names run long);
+	# drawn without a width limit, which would silently drop glyphs that do not fit
+	for i in 3:
+		var fs: int = [16, 19, 16][i]
+		var y: float = [-12, 14, 40][i]
+		var room := StampMark._ring_room(r, y - fs * 0.35)
+		var w := f.get_string_size(lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		if w > room:
+			fs = maxi(9, int(fs * room / w))
+			w = f.get_string_size(lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(f, Vector2(-w * 0.5, y), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 	# ink voids: paper-colored specks over the impression
 	var grunge := UiArt.tex("stamp_grunge")
 	if grunge:

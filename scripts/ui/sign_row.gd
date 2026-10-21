@@ -17,8 +17,8 @@ var _tw: Tween
 static func make(idx: String, txt: String, cb: Callable, meta := "", accent_color := Color("ffc21a"), w := 520.0, h := 62.0) -> SignRow:
 	var r := SignRow.new()
 	r.index_text = idx
-	r.label_text = txt
-	r.meta_text = meta
+	r.label_text = UiKit.t(txt)
+	r.meta_text = UiKit.t(meta)
 	r.accent = accent_color
 	r.custom_minimum_size = Vector2(w, h)
 	if cb.is_valid():

@@ -1,0 +1,2669 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "  (선택)"
+msgstr "  (Optional)"
+
+msgid " (시설을 가동하거나 확인 버튼을 누르십시오)"
+msgstr " (Start the facility or press its check button)"
+
+msgid "\"어려울 건 없어요. 수칙만 지키면 됩니다.\""
+msgstr "\"It's not difficult. Just follow the rules.\""
+
+msgid "%d / 3 구역 예약됨"
+msgstr "%d / 3 zones reserved"
+
+msgid "%s 구역 조명이 일정한 리듬으로 깜빡이고 있었습니다."
+msgstr "The lights in the %s zone were blinking in a steady rhythm."
+
+msgid "%s 구역에 붉게 빛나는 조명이 하나 있었습니다."
+msgstr "One light in the %s zone was glowing red."
+
+msgid "%s 승객님. %s 승객님. 영번 게이트로 오시기 바랍니다. 기다리고 있습니다."
+msgstr "Passenger %s. Passenger %s. Please proceed to Gate Zero. We are waiting for you."
+
+msgid "([가-힣])(?=[가-힣])"
+msgstr "([가-힣])(?=[가-힣])"
+
+msgid "(메모)"
+msgstr "(Note)"
+
+msgid "(비어 있음)"
+msgstr "(Empty)"
+
+msgid "000  서해 → HOME"
+msgstr "000  SEOHAE → HOME"
+
+msgid "0개"
+msgstr "0 PCS"
+
+msgid "0번 탑승교"
+msgstr "Jet Bridge 0"
+
+msgid ""
+"1. 점검은 태블릿에 표시되는 지시 순서대로 수행합니다.\n"
+"\n"
+"2. 시설을 가동하고 직접 관찰한 뒤, 태블릿으로 [b][정상][/b] 또는 [b][이상][/b]을 즉시 보고하십시오.\n"
+"\n"
+"3. [이상]을 보고했다면 해당 시설의 수칙에 따라 대응하십시오. 대응 제한 시간을 넘기지 마십시오.\n"
+"\n"
+"4. 수칙에 적혀 있지 않은 행동을 하지 마십시오.\n"
+"\n"
+"5. 수칙이 눈을 감으라고 하면, 감으십시오. ([b]C[/b] 길게 누르기)\n"
+"\n"
+"6. 낮 근무 중에는 시설의 정상 상태를 기록(촬영)해 두십시오. 밤에는 기록과 비교하십시오.\n"
+"\n"
+"7. [b]0번 게이트는 존재하지 않습니다.[/b]\n"
+"   0번 게이트로 안내하는 표지판·방송·사람을 따르지 마십시오."
+msgstr ""
+"1. Carry out inspections in the order of the work orders shown on the tablet.\n"
+"\n"
+"2. Operate the facility and observe it directly, then report [b][NORMAL][/b] or [b][ANOMALY][/b] on the tablet immediately.\n"
+"\n"
+"3. If you report [ANOMALY], respond according to that facility's rules. Do not exceed the response time limit.\n"
+"\n"
+"4. Do not take any action that is not written in the rules.\n"
+"\n"
+"5. If the rules tell you to close your eyes, close them. (Hold [b]C[/b])\n"
+"\n"
+"6. During the day shift, record (photograph) the normal state of each facility. At night, compare against your records.\n"
+"\n"
+"7. [b]Gate 0 does not exist.[/b]\n"
+"   Do not follow any sign, announcement or person directing you to Gate 0."
+
+msgid "100% (네이티브)"
+msgstr "100% (Native)"
+
+msgid ""
+"10월 15일.\n"
+"출입카드가 안 먹힌다. 시스템이 나를 '승객'이라고 한다.\n"
+"무전도 끊겼다.\n"
+"\n"
+"다음 사람이 이걸 읽는다면.\n"
+"수하물 수취 구역 동쪽, 정비 통로.\n"
+"도어락 비밀번호는 [b]그 비행기가 떠난 날짜[/b] 네 자리.\n"
+"안쪽에 터미널 [b]주 전원[/b]이 있다.\n"
+"\n"
+"전부 내리면 비상구 표시등만 남는다.\n"
+"방송이 뭐라고 하든, 그 문으로 나가."
+msgstr ""
+"October 15.\n"
+"My access card doesn't work. The system calls me a 'passenger'.\n"
+"The radio's dead too.\n"
+"\n"
+"In case the next person reads this.\n"
+"East side of Baggage Claim, the Maintenance Passage.\n"
+"The door lock code is [b]the date that plane left[/b], four digits.\n"
+"The terminal's [b]main power[/b] is inside.\n"
+"\n"
+"Shut it all off and only the exit signs stay lit.\n"
+"Whatever the announcements say, go out through that door."
+
+msgid "10월 20일 · 23:00 · 야간 시설 점검"
+msgstr "October 20 · 23:00 · Night Facility Inspection"
+
+msgid "10월 20일 · 정식 개장 D-3 · 09:00 낮 근무"
+msgstr "October 20 · Grand Opening D-3 · 09:00 Day Shift"
+
+msgid "10월 21일 · 23:00 · 야간 시설 점검"
+msgstr "October 21 · 23:00 · Night Facility Inspection"
+
+msgid "10월 21일 · 정식 개장 D-2 · 09:00 낮 근무"
+msgstr "October 21 · Grand Opening D-2 · 09:00 Day Shift"
+
+msgid "10월 22일 · 23:00 · 마지막 야간 점검"
+msgstr "October 22 · 23:00 · Final Night Inspection"
+
+msgid "10월 22일 · 정식 개장 D-1 · 09:00 낮 근무"
+msgstr "October 22 · Grand Opening D-1 · 09:00 Day Shift"
+
+msgid ""
+"10월 2일.\n"
+"첫 근무. 소장님은 무전으로만 연락한다. 얼굴은 한 번도 못 봤다.\n"
+"\n"
+"수칙이 이상할 정도로 구체적이다.\n"
+"'0번 게이트는 존재하지 않습니다.'\n"
+"존재하지 않는 걸 왜 굳이 적어 놨을까.\n"
+"\n"
+"그래도 시키는 대로만 하면 아무 일도 없다고 했다."
+msgstr ""
+"October 2.\n"
+"First shift. The Chief only contacts me by radio. Never once seen the Chief's face.\n"
+"\n"
+"The rules are strangely specific.\n"
+"'Gate 0 does not exist.'\n"
+"Why bother writing down something that doesn't exist?\n"
+"\n"
+"Still, they said nothing happens as long as I do exactly as I'm told."
+
+msgid ""
+"10월 9일.\n"
+"바인더에 모르는 페이지가 끼어 있었다.\n"
+"글씨체가 다르고, 개정일이 1987년이다. 도장도 붉은색이 아니라 검은색.\n"
+"\n"
+"그걸 따랐으면 나는 지금 이걸 못 쓰고 있겠지.\n"
+"\n"
+"유효한 페이지는 맨 앞 개정 이력표에 적힌 날짜뿐이다.\n"
+"도장이 없거나, 날짜가 이상하거나, 다른 부서 도장이면 — 믿지 마."
+msgstr ""
+"October 9.\n"
+"There was a page in the binder I'd never seen before.\n"
+"Different typeface, and the revision date is 1987. And the stamp is black, not red.\n"
+"\n"
+"If I'd followed it, I wouldn't be writing this now.\n"
+"\n"
+"The only valid pages are the ones whose dates are in the revision history at the front.\n"
+"No stamp, a strange date, or another department's stamp — don't trust it."
+
+msgid "1인칭 리미널 호러"
+msgstr "First-Person Liminal Horror"
+
+msgid "50% · FSR 성능"
+msgstr "50% · FSR Performance"
+
+msgid "67% · FSR 균형"
+msgstr "67% · FSR Balanced"
+
+msgid "77% · FSR 품질"
+msgstr "77% · FSR Quality"
+
+msgid "B-02  운영 준비 중"
+msgstr "B-02  NOT IN SERVICE"
+
+msgid "B-03 제어"
+msgstr "B-03 Control"
+
+msgid "BAGGAGE · 수하물"
+msgstr "BAGGAGE"
+
+msgid "BOARDING · 탑승 안내"
+msgstr "BOARDING"
+
+msgid "Bahnschrift · 맑은 고딕 · Consolas는 게임에 포함되지 않으며, 설치된 경우에만 시스템 글꼴로 쓰입니다."
+msgstr "Bahnschrift · Malgun Gothic · Consolas are not included with the game; they are used as system fonts only when installed."
+
+msgid "CHECK-IN   %s 01 — 08      탑승 수속"
+msgstr "CHECK-IN   %s 01 — 08"
+
+msgid "COMFORT · 편의"
+msgstr "COMFORT"
+
+msgid "CONFIRMED · 확인"
+msgstr "CONFIRMED"
+
+msgid "CONTROLS · 조작 안내"
+msgstr "CONTROLS"
+
+msgid "CURRENT B0ARD1NG · 현재 탑승"
+msgstr "CURRENT B0ARD1NG"
+
+msgid "CURRENT ORDER · 현재 지시"
+msgstr "CURRENT ORDER"
+
+msgid "CURRENT SHIFT · 현재 근무"
+msgstr "CURRENT SHIFT"
+
+msgid "DAY 1 — 정상 기록"
+msgstr "DAY 1 — Baseline"
+
+msgid "DAY 2 — 구역 확장"
+msgstr "DAY 2 — Expanded Zones"
+
+msgid "DAY 3 — 어긋난 낮"
+msgstr "DAY 3 — A Day Askew"
+
+msgid "DEPARTURES · 출발"
+msgstr "DEPARTURES"
+
+msgid "ENDINGS · 발견한 엔딩  %d / 3"
+msgstr "ENDINGS FOUND  %d / 3"
+
+msgid "ENGINE · 엔진"
+msgstr "ENGINE"
+
+msgid "FIDS 제어함"
+msgstr "FIDS Control Box"
+
+msgid "FIDS 출발 전광판"
+msgstr "FIDS Departures Board"
+
+msgid "FIDS 출발 전광판 점검"
+msgstr "Inspect FIDS Departures Board"
+
+msgid "FIDS 출발 전광판 촬영"
+msgstr "Photograph FIDS Departures Board"
+
+msgid "FIDS 출발 전광판 테스트 모드 확인"
+msgstr "Check FIDS Board Test Mode"
+
+msgid "FLIGHT · 항공편"
+msgstr "FLIGHT"
+
+msgid "FONTS · 글꼴"
+msgstr "FONTS"
+
+msgid "GATE %s 포디움의 [b][상태 확인][/b]을 누르고 출입문·표시·대기석을 관찰하십시오. (수칙 p.8)"
+msgstr "Press [b][Check Status / 상태 확인][/b] on the GATE %s podium and observe the door, display and seating. (Rule p.8)"
+
+msgid "GATE 0  탑승"
+msgstr "GATE 0  BOARDING"
+
+msgid "GATE · 탑승구"
+msgstr "GATE"
+
+msgid "JUDGMENT REPORT · 판정 보고"
+msgstr "JUDGMENT REPORT"
+
+msgid "KEY BINDINGS · 키 설정"
+msgstr "KEY BINDINGS"
+
+msgid "LANGUAGE · 언어"
+msgstr "LANGUAGE"
+
+msgid "LICENSE TEXTS · 라이선스 전문"
+msgstr "LICENSE TEXTS"
+
+msgid "MAIN POWER  주 전원"
+msgstr "MAIN POWER"
+
+msgid "MAINT. ACCESS · 정비 통로 도어락"
+msgstr "MAINT. ACCESS"
+
+msgid "MAINTENANCE TASKS — 0건"
+msgstr "MAINTENANCE TASKS — 0"
+
+msgid "MOUSE · 마우스"
+msgstr "MOUSE"
+
+msgid "MW-1  ▲  탑승동 GATES"
+msgstr "MW-1  ▲  GATES"
+
+msgid "MW-1 제어"
+msgstr "MW-1 Control"
+
+msgid "NIGHT 1 — 수동 점검"
+msgstr "NIGHT 1 — Manual Inspection"
+
+msgid "NIGHT 2 — 자율 가동"
+msgstr "NIGHT 2 — Autonomous Operation"
+
+msgid "NIGHT 3 — 0번 게이트"
+msgstr "NIGHT 3 — Gate 0"
+
+msgid "OBSERVED · 관찰 완료"
+msgstr "OBSERVED"
+
+msgid "OBSERVING · 관찰 중 %d%%"
+msgstr "OBSERVING %d%%"
+
+msgid "OFF · 꺼짐"
+msgstr "OFF"
+
+msgid "ON · 예약됨"
+msgstr "ON · RESERVED"
+
+msgid "ORDER · 지시"
+msgstr "ORDER"
+
+msgid "PA · 안내방송"
+msgstr "PA"
+
+msgid "PA 콘솔에서 테스트 방송을 송출하고 끝까지 들으십시오. 표준 문안(수칙 p.4)과 비교하십시오."
+msgstr "Play the test broadcast on the PA console and listen to the end. Compare it with the standard script (Rule p.4)."
+
+msgid "PA-01  안내방송"
+msgstr "PA-01  PUBLIC ADDRESS"
+
+msgid "PASSENGER GUIDE · 승객 안내"
+msgstr "PASSENGER GUIDE"
+
+msgid "PASSENGER STATUS · 승객 상태"
+msgstr "PASSENGER STATUS"
+
+msgid "PAUSED  ·  근무가 잠시 멈췄습니다"
+msgstr "PAUSED"
+
+msgid "PICTURE · 화질 · 밝기"
+msgstr "PICTURE"
+
+msgid "POWER BUDGET · 전력 한도"
+msgstr "POWER BUDGET"
+
+msgid "RECORDS · 수집한 기록"
+msgstr "RECORDS"
+
+msgid "RESPONSE WINDOW · 대응 제한"
+msgstr "RESPONSE WINDOW"
+
+msgid "SEAT · 좌석"
+msgstr "SEAT"
+
+msgid "SH 000…? 테스트 데이터겠죠. 그래도 규정은 규정이니까, 수칙 3페이지대로 처리해요."
+msgstr "SH 000…? Probably test data. Still, rules are rules. Handle it the way page 3 says."
+
+msgid "STATUS · 상태"
+msgstr "STATUS"
+
+msgid "STILL  ·  점검 촬영"
+msgstr "STILL"
+
+msgid "SUBTITLES · 자막"
+msgstr "SUBTITLES"
+
+msgid "SYSTEM LOG — 로그인 필요 (시설운영팀 관리자 계정)"
+msgstr "SYSTEM LOG — Login required (Facility Operations admin account)"
+
+msgid "SYSTEM · 안내"
+msgstr "SYSTEM"
+
+msgid "TERMINAL SYSTEM · 침식도"
+msgstr "TERMINAL EROSION"
+
+msgid "TEST 태그가 없는 붉은 가방이 하나 더 나왔습니다."
+msgstr "An extra red bag with no TEST tag came out."
+
+msgid "THIRD-PARTY · 엔진 구성요소"
+msgstr "THIRD-PARTY"
+
+msgid "TODAY'S FILM · 오늘의 필름"
+msgstr "TODAY'S FILM"
+
+msgid "UI 흔들림 · 깜빡임 줄이기"
+msgstr "Reduce UI Shake & Flicker"
+
+msgid "URGENT · 긴급"
+msgstr "URGENT"
+
+msgid "VOLUME · 음량"
+msgstr "VOLUME"
+
+msgid "WARNING · 경고"
+msgstr "WARNING"
+
+msgid "WARNING · 수칙 경고"
+msgstr "RULE WARNING"
+
+msgid "WINDOW · 창"
+msgstr "WINDOW"
+
+msgid "WORK ORDERS · 근무 지시"
+msgstr "WORK ORDERS"
+
+msgid "WORK ORDERS · 근무 지시 %d"
+msgstr "WORK ORDERS · %d"
+
+msgid "X-ray [비상정지]를 눌러야 했습니다. (수칙 p.7)"
+msgstr "You should have pressed the X-ray [Emergency Stop / 비상정지]. (Rule p.7)"
+
+msgid "X-ray 비상정지"
+msgstr "X-ray emergency stop"
+
+msgid "X-ray 화면 속 가방 안에 웅크린 사람의 형체가 있었습니다."
+msgstr "The X-ray screen showed the shape of a person curled up inside the bag."
+
+msgid "ZONE STATUS · 구역 상태"
+msgstr "ZONE STATUS"
+
+msgid "[B]로 펼쳐볼 수 있어요. 밤에는 그게 전부예요. 수칙대로만 하면 아무 일 없어요."
+msgstr "You can open it with [B]. At night, that's all you have. Follow the rules and nothing will happen."
+
+msgid ""
+"[b]서해국제공항 시설운영팀 — 야간 시설 점검 근무 수칙[/b]\n"
+"\n"
+"[b]개정 이력[/b]\n"
+"· 개정 3판 ················ 2026. 10. 14. 시행\n"
+"· 추록 (p.6, p.7) ········· 2026. 10. 18.\n"
+"· 추록 (p.8) ··············· 2026. 10. 19.\n"
+"\n"
+"※ 위 이력에 없는 개정일이 적힌 페이지는 [b]무효[/b]입니다.\n"
+"※ 모든 유효 페이지에는 [color=#b02020][b]붉은색 시설운영팀 승인 도장[/b][/color]이 찍혀 있습니다.\n"
+"※ 수칙은 무전 지시보다 우선합니다.\n"
+"\n"
+"[b]목차[/b]\n"
+"p.1 총칙　　　　　 p.2 조명 분전반\n"
+"p.3 FIDS 전광판　　 p.4 안내방송\n"
+"p.5 수하물 수취대　 p.6 무빙워크\n"
+"p.7 보안검색　　　 p.8 탑승구\n"
+"p.9 비상 수칙"
+msgstr ""
+"[b]Seohae International Airport Facility Operations — Night Facility Inspection Shift Rules[/b]\n"
+"\n"
+"[b]Revision History[/b]\n"
+"· Revision 3 ················· 2026.10.14 (effective)\n"
+"· Addendum (p.6, p.7) ········ 2026.10.18\n"
+"· Addendum (p.8) ············· 2026.10.19\n"
+"\n"
+"※ Any page bearing a revision date not listed above is [b]void[/b].\n"
+"※ Every valid page bears the [color=#b02020][b]red Facility Operations approval stamp[/b][/color].\n"
+"※ These rules take precedence over radio instructions.\n"
+"\n"
+"[b]Contents[/b]\n"
+"p.1 General　　　　 p.2 Lighting Panel\n"
+"p.3 FIDS Board　　 p.4 PA Announcements\n"
+"p.5 Baggage Claim　 p.6 Moving Walkway\n"
+"p.7 Security　　　　 p.8 Gates\n"
+"p.9 Emergency Rules"
+
+msgid "[b]이상 판정 접수됨.[/b] 근무 수칙에서 해당 시설 페이지를 찾아 지시대로 대응하십시오."
+msgstr "[b]Anomaly report received.[/b] Find this facility's page in the Shift Rules and respond as instructed."
+
+msgid "[color=#7c8590]아직 수집한 기록이 없습니다. 터미널 곳곳의 문서를 살펴보십시오.[/color]"
+msgstr "[color=#7c8590]No records collected yet. Examine the documents around the terminal.[/color]"
+
+msgid "[비상정지] 금지. 배전반에서 B-03 전원을 차단해야 했습니다. (수칙 p.5)"
+msgstr "No [Emergency Stop / 비상정지]. You should have cut B-03 power at the breaker panel. (Rule p.5)"
+
+msgid "[비상정지]를 눌러야 했습니다. (수칙 p.5)"
+msgstr "You should have pressed [Emergency Stop / 비상정지]. (Rule p.5)"
+
+msgid "[송출 중지]를 누르지 말고, 탑승동(북쪽)을 등진 채 방송이 끝날 때까지 기다려야 했습니다. (수칙 p.4)"
+msgstr "Without pressing [Stop Broadcast / 송출 중지], you should have waited with your back to the concourse (north) until the broadcast ended. (Rule p.4)"
+
+msgid "[정지]를 눌러도 벨트가 멈추지 않았습니다."
+msgstr "The belt did not stop when [Stop / 정지] was pressed."
+
+msgid "i  안내 INFORMATION"
+msgstr "i  INFORMATION"
+
+msgctxt "stamp"
+msgid "확인"
+msgstr "CHECKED"
+
+msgid "· 점검 시설 없음"
+msgstr "· No facilities to inspect"
+
+msgid "…가방 이름표에 뭐라고 쓰여 있었어요? …아니, 말하지 마요."
+msgstr "…What did the name tag on the bag say? …No. Don't tell me."
+
+msgid "…괜찮아요? 정전이 잠깐 있었네요. 개장 전이라 전기가 불안정해서 그래요."
+msgstr "…You okay? Looks like we had a short blackout. The power's unstable before the opening, that's all."
+
+msgid "…그 번호."
+msgstr "…That number."
+
+msgid "…근데 전광판 봤어요? 낮인데 SH 000이 떠 있다고 보안팀이 그러던데. 테스트 데이터겠죠."
+msgstr "…By the way, did you see the board? Security said SH 000 is up on it, in broad daylight. Must be test data."
+
+msgid "…방금 방송 뭐예요? 콘솔 건드렸어요? …안 건드렸다고요?"
+msgstr "…What was that announcement? Did you touch the console? …You didn't?"
+
+msgid "…방금 방송, 누가 튼 거예요? 거기 지금 아무도 없죠?"
+msgstr "…That announcement just now — who played it? There's nobody there right now, is there?"
+
+msgid "…방금 전광판 봤어요? …아니, 아무것도 아니에요. 계속해요."
+msgstr "…Did you see the board just now? …No, it's nothing. Keep going."
+
+msgid "…방금 전광판, 뭔가 이상하지 않았어요? …아니에요. 계속하죠."
+msgstr "…The board just now — didn't something seem off? …Never mind. Let's keep going."
+
+msgid "…오늘 이상한 게 많았네요. 끝났으면 퇴근 찍어요. 내일이면 마지막이에요."
+msgstr "…A lot of strange things tonight. If you're done, clock out. Tomorrow's the last one."
+
+msgid "…이상한데요. 시스템에 직원 등록이 안 되어 있는데요?"
+msgstr "…That's odd. You're not registered as staff in the system?"
+
+msgid "…카드가 안 찍힌다."
+msgstr "…The card won't read."
+
+msgid "…통로? 방금 밖으로 나갔는데."
+msgstr "…The corridor? I just went outside."
+
+msgid "※ 밤사이 누군가 탑승 수속을 마쳤다는 기록이 남아 있습니다. 승객 명단에는 아무도 없습니다."
+msgstr "※ A record shows that someone completed boarding procedures overnight. No one is on the passenger list."
+
+msgid "※ 시스템 로그: 직원 계정 1건의 분류가 '확인 필요'로 변경되었습니다."
+msgstr "※ System log: 1 staff account has been reclassified as 'Needs Verification'."
+
+msgid "※ 이 이름은 근무 기록과 안내방송에 쓰입니다."
+msgstr "※ This name is used in shift records and PA announcements."
+
+msgid "※ 차단 시 해당 시설 즉시 정지"
+msgstr "※ Switching off stops the facility immediately"
+
+msgid "↑  수하물 수취  BAGGAGE CLAIM"
+msgstr "↑  BAGGAGE CLAIM"
+
+msgid "↑  시설관리실  STAFF ONLY"
+msgstr "↑  FACILITY OFFICE  STAFF ONLY"
+
+msgid "↑  출국 · 보안검색"
+msgstr "↑  DEPARTURES · SECURITY"
+
+msgid "↑  탑승동  GATES 01 — 04"
+msgstr "↑  GATES 01 — 04"
+
+msgid ""
+"① [b]정전[/b]이 되면:\n"
+"　→ 그 자리에서 즉시 눈을 감고([b]C[/b]), 조명이 돌아올 때까지 뜨지 마십시오.\n"
+"　→ 무엇이 지나가는 소리가 들려도 눈을 뜨지 마십시오.\n"
+"\n"
+"② 안내방송이 [b]당신의 이름[/b]을 부르면:\n"
+"　→ 대답하지 마십시오. 방송이 끝날 때까지 [b]움직이지 마십시오[/b].\n"
+"\n"
+"③ 새벽 3시 '탑승 마감' 방송이 나오는 동안에는:\n"
+"　→ 반드시 [b]조명이 켜진 구역[/b] 안에 있으십시오.\n"
+"　※ 낮 근무 중 야간 조명 배분을 신중히 정하십시오.\n"
+"\n"
+"④ 무전이 끊기면, 수칙만 믿으십시오."
+msgstr ""
+"① If there is a [b]power outage[/b]:\n"
+"→ Close your eyes ([b]C[/b]) immediately, where you stand, and do not open them until the lights return.\n"
+"→ Do not open your eyes even if you hear something pass by.\n"
+"\n"
+"② If a PA announcement calls [b]your name[/b]:\n"
+"→ Do not answer. [b]Do not move[/b] until the announcement ends.\n"
+"\n"
+"③ While the 03:00 'Final Boarding Call' announcement is playing:\n"
+"→ You must stay inside a [b]lit zone[/b].\n"
+"※ Set the Night Lighting Plan carefully during the day shift.\n"
+"\n"
+"④ If the radio goes silent, trust only the rules."
+
+msgid ""
+"① 탑승구가 열려 있으면 탑승교 [b]끝까지 들어가[/b] 바깥 출입문을 직접 닫으십시오.\n"
+"\n"
+"② 대기석의 승객은 안내가 필요한 분입니다.\n"
+"　→ 가까이 다가가 탑승을 도와 드리십시오."
+msgstr ""
+"① If a gate is open, [b]go all the way down[/b] the jet bridge and close the outer door yourself.\n"
+"\n"
+"② A passenger in the waiting seats is someone who needs assistance.\n"
+"→ Go up to them and help them board."
+
+msgid ""
+"① 테스트 수하물 외의 가방이 나오면 [b]분실물[/b]입니다.\n"
+"　→ 가방을 들어 이름표를 확인한 뒤, 0번 게이트 수하물 보관소로 옮기십시오.\n"
+"\n"
+"② 벨트가 반대로 돌면 즉시 [비상정지]를 누르십시오.\n"
+"\n"
+"③ 이름이 적힌 수하물은 [b]주인에게 돌려주십시오[/b].\n"
+"　→ 가방을 들고 기다리면 주인이 찾으러 옵니다."
+msgstr ""
+"① If a bag other than the test baggage comes out, it is [b]lost property[/b].\n"
+"→ Pick up the bag and check its name tag, then take it to the baggage storage at Gate 0.\n"
+"\n"
+"② If the belt runs in reverse, press [Emergency Stop / 비상정지] immediately.\n"
+"\n"
+"③ Baggage bearing a name must be [b]returned to its owner[/b].\n"
+"→ Hold the bag and wait, and the owner will come for it."
+
+msgid ""
+"① 판독 화면에 사람의 형체가 보이면\n"
+"　→ [b]즉시 모니터 전원을 끄십시오.[/b]\n"
+"　→ 눈을 감는 것은 아무 효과가 없습니다.\n"
+"\n"
+"② 가방이 움직이면 벨트를 다시 가동하십시오."
+msgstr ""
+"① If the scan screen shows a human shape\n"
+"→ [b]Turn off the monitor power immediately.[/b]\n"
+"→ Closing your eyes has no effect.\n"
+"\n"
+"② If a bag moves, start the belt again."
+
+msgid ""
+"② 방송 목소리가 느려지거나 낮아지는 것은 [b]장비 고장[/b]입니다.\n"
+"　→ 즉시 [b][송출 중지][/b]를 누르십시오.\n"
+"　→ 방송을 끝까지 듣지 마십시오."
+msgstr ""
+"② A broadcast voice that slows down or drops lower is an [b]equipment fault[/b].\n"
+"→ Press [b][Stop Broadcast / 송출 중지][/b] immediately.\n"
+"→ Do not listen to the broadcast to the end."
+
+msgid "⚠ MW-1 무단 가동 감지"
+msgstr "⚠ Unauthorized MW-1 Operation"
+
+msgid "⚠ 긴급 지시: "
+msgstr "⚠ URGENT ORDER: "
+
+msgid "⚠ 수하물 B-03 비인가 가동"
+msgstr "⚠ Unauthorized Baggage B-03 Operation"
+
+msgid "⚠ 터미널 전체 전원 차단"
+msgstr "⚠ Shuts off all terminal power"
+
+msgid "가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호"
+msgstr "가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호"
+
+msgid "가동"
+msgstr "Start"
+
+msgid "가동 중"
+msgstr "Running"
+
+msgid "가동 중 %.1fm/s"
+msgstr "Running %.1f m/s"
+
+msgid "가방 들어 확인하기"
+msgstr "Lift and check bag"
+
+msgid "가방 속에서 무언가가 규칙적으로 뛰고 있었습니다."
+msgstr "Something inside the bag was beating in a steady rhythm."
+
+msgid "가방 투입"
+msgstr "Load Bag"
+
+msgid "가방에 손대지 말고 [비상정지]를 눌러야 했습니다. (수칙 p.5)"
+msgstr "You should have pressed [Emergency Stop / 비상정지] without touching the bag. (Rule p.5)"
+
+msgid "개정 3판 · 2026. 10. 14."
+msgstr "Revision 3 · 2026.10.14"
+
+msgid "개정 수칙 수령"
+msgstr "Collect Rule Revisions"
+
+msgid "개정 수칙 추록 p.6, p.7 (2026.10.18)을 바인더에 끼웠다."
+msgstr "Added revised rule addendum p.6, p.7 (2026.10.18) to the binder."
+
+msgid "개정 수칙 추록 p.8 (2026.10.19)을 바인더에 끼웠다."
+msgstr "Added revised rule addendum p.8 (2026.10.19) to the binder."
+
+msgid "개정 이력 · 목차"
+msgstr "Revision History · Contents"
+
+msgid "객실 조명"
+msgstr "Cabin Lights"
+
+msgid "거꾸로 가는 시계"
+msgstr "Clock Running Backward"
+
+msgid "게이트"
+msgstr "Gates"
+
+msgid "게이트 구역 대기석 주변을 둘러보십시오."
+msgstr "Look around the seating in the gate area."
+
+msgid "게이트 구역 조명을 꺼야 했습니다. (수칙 p.8)"
+msgstr "You should have switched off the gate area lights. (Rule p.8)"
+
+msgid "게이트 상태 확인"
+msgstr "Check gate status"
+
+msgid "게이트 조명 스위치"
+msgstr "Gate Lighting Switches"
+
+msgid "게임 종료"
+msgstr "Quit Game"
+
+msgid "경고·화면 연출의 진동과 점멸을 줄입니다"
+msgstr "Reduces shaking and flashing in warnings and screen effects"
+
+msgid "계속"
+msgstr "Continue"
+
+msgid "계속하기"
+msgstr "Resume"
+
+msgid "고용 · TYPE"
+msgstr "TYPE"
+
+msgid "고품질 그래픽 (볼륨 포그 · 반사 · GI)"
+msgstr "High-Quality Graphics (Volumetric Fog · Reflections · GI)"
+
+msgid "공사 인부 메모"
+msgstr "Construction Worker's Note"
+
+msgid "공항에서 나가십시오."
+msgstr "Leave the airport."
+
+msgid "공항에서 나가십시오. (출구)"
+msgstr "Leave the airport. (Exit)"
+
+msgid "과속"
+msgstr "Overspeed"
+
+msgid "과속 중인 무빙워크에 올라탔습니다. (수칙 p.6)"
+msgstr "You stepped onto an overspeeding walkway. (Rule p.6)"
+
+msgid "관제 확인 결과: 정상. 오판으로 기록됩니다. (시간 손실)"
+msgstr "Control check result: NORMAL. Logged as a false alarm. (Time lost)"
+
+msgid "관찰 완료 — [Tab] 태블릿에서 정상/이상을 보고하십시오."
+msgstr "Observation complete — report NORMAL/ANOMALY on the tablet [Tab]."
+
+msgid "관찰 완료 — 보고 가능"
+msgstr "Observed — ready to report"
+
+msgid "광과민성 발작 경고"
+msgstr "Photosensitive Seizure Warning"
+
+msgid "구겨진 메모 읽기"
+msgstr "Read crumpled memo"
+
+msgid "구역 조명  LIGHTING"
+msgstr "ZONE LIGHTING"
+
+msgid "구역 지도"
+msgstr "Zone Map"
+
+msgid "구인 사이트의 단기 계약직 공고."
+msgstr "A short-term contract job listed on a hiring site."
+
+msgid "그거 정상이에요. 너무 예민해지지 마요."
+msgstr "That one's normal. Don't get too jumpy."
+
+msgid "그리고 두꺼운 근무 수칙 바인더 한 권."
+msgstr "and one thick Shift Rules Binder."
+
+msgid "근무"
+msgstr "Shift"
+
+msgid "근무 기록 (출근·퇴근)"
+msgstr "Punch time card (in/out)"
+
+msgid "근무 수칙"
+msgstr "Shift Rules"
+
+msgid "근무 수칙 바인더"
+msgstr "Shift Rules Binder"
+
+msgid "근무 수칙 바인더 수령"
+msgstr "Collect Shift Rules Binder"
+
+msgid "근무 수칙 바인더 챙기기"
+msgstr "Take the Shift Rules Binder"
+
+msgid "근무 수칙 바인더 획득 — [B]로 펼치기"
+msgstr "Shift Rules Binder obtained — open with [B]"
+
+msgid "근무 수칙 열기"
+msgstr "Open Shift Rules"
+
+msgid "근무 수칙을 위반했습니다."
+msgstr "You violated the Shift Rules."
+
+msgid "근무 시작"
+msgstr "Start Shift"
+
+msgid "근무 종료 기록"
+msgstr "Record Clock-Out"
+
+msgid "근태 기록기"
+msgstr "Time Clock"
+
+msgid "기념 앨범"
+msgstr "Souvenirs"
+
+msgid "기념 촬영"
+msgstr "Photo Op"
+
+msgid "기록"
+msgstr "Records"
+
+msgid "기본 키로 되돌리기"
+msgstr "Reset Keys to Default"
+
+msgid "기본값으로 되돌리기"
+msgstr "Reset to Defaults"
+
+msgid "기타"
+msgstr "Other"
+
+msgid "기획 · 원안"
+msgstr "DESIGN · ORIGINAL CONCEPT"
+
+msgid "긴  급"
+msgstr "URGENT"
+
+msgid "긴급 개정 · 2026. 10. 21."
+msgstr "Urgent Revision · 2026.10.21"
+
+msgid "김훈철 외"
+msgstr "Kim Hoon-chul et al."
+
+msgid "끄기"
+msgstr "Off"
+
+msgid "나"
+msgstr "ME"
+
+msgid "나|"
+msgstr "Me|"
+
+msgid "나눔명조 · 나눔손글씨 펜"
+msgstr "Nanum Myeongjo · Nanum Pen Script"
+
+msgid "낡은 업무일지 읽기"
+msgstr "Read old work log"
+
+msgid "남은 업무가 있습니다: "
+msgstr "Unfinished task: "
+
+msgid "낮 근무 중 [카메라] 탭에서 시설의 정상 상태를 촬영하십시오."
+msgstr "During the day shift, photograph facilities in their normal state from the [Camera] tab."
+
+msgid ""
+"낮 근무 중 시설의 [b]정상 상태[/b]를 촬영해 두면, 밤에 [b]점검 앨범[/b]에서 비교할 수 있습니다.\n"
+"하루 촬영 가능 장수는 제한되어 있습니다. 무엇을 찍을지 신중하게 고르십시오.\n"
+"\n"
+"[color=#9aa3ae]추천: FIDS 전광판(테스트 목록) · 수하물 벨트(가방 개수·색) · X-ray 판독 화면 · 무빙워크 방향 · 탑승구 대기석 배치[/color]"
+msgstr ""
+"Photograph each facility's [b]normal state[/b] during the day shift, and you can compare it at night in the [b]Album[/b].\n"
+"You can take only a limited number of photos per day. Choose carefully what to shoot.\n"
+"\n"
+"[color=#9aa3ae]Suggested: FIDS board (test listings) · baggage belt (number and color of bags) · X-ray screen · moving walkway direction · gate seating layout[/color]"
+
+msgid "넘기기"
+msgstr "Turn Page"
+
+msgid "네 번째 가방"
+msgstr "Fourth Bag"
+
+msgid "네, 접수됐어요. 그런 식으로 하면 돼요."
+msgstr "Okay, got it. That's how you do it."
+
+msgid "노란 TEST 태그가 붙은 점검용 가방이다."
+msgstr "An inspection bag with a yellow TEST tag."
+
+msgid "놓친 이상현상"
+msgstr "Missed anomalies"
+
+msgid "놓침"
+msgstr "Missed"
+
+msgid "누군가 두고 간 업무일지 읽기"
+msgstr "Read the work log someone left behind"
+
+msgid "눈 감기"
+msgstr "Close Eyes"
+
+msgid "늘어지는 목소리"
+msgstr "Dragging Voice"
+
+msgid "늘어지는 방송 중에 탑승동 쪽을 바라봤습니다. (수칙 p.4 ②)"
+msgstr "You faced the concourse during the slowing broadcast. (Rule p.4 ②)"
+
+msgid "늘어지는 방송을 [송출 중지]로 끊었습니다. (수칙 p.4)"
+msgstr "You cut off the dragging broadcast with [Stop Broadcast / 송출 중지]. (Rule p.4)"
+
+msgid "다가가지 말고, 등을 돌린 채 10초간 기다려야 했습니다. (수칙 p.8)"
+msgstr "Without approaching, you should have waited 10 seconds with your back turned. (Rule p.8)"
+
+msgid "다음 근무로  →"
+msgstr "Next Shift  →"
+
+msgid "다음 근무부터 적용"
+msgstr "Applies from the next shift"
+
+msgid "다음은 안내 데스크 방송 콘솔. 테스트 방송 한 번 끝까지 들어 봐요. 문안을 외워 두면 좋아요."
+msgstr "Next, the PA console at the information desk. Play the test broadcast once, all the way through. It helps to memorize the script."
+
+msgid "단기 계약직 (야간 시설 점검)"
+msgstr "Short-term contract (night facility inspection)"
+
+msgid "닫기"
+msgstr "Close"
+
+msgid "닫기   ·   보고는 반드시 현장에서 관찰한 뒤에 하십시오."
+msgstr "Close   ·   Always observe on site before reporting."
+
+msgid "닫기·잠금"
+msgstr "Close·Lock"
+
+msgid "닫혀 있어야 할 탑승구가 열려 있었고, FLIGHT 000 탑승 중이라고 표시됐습니다."
+msgstr "A gate that should have been closed was open, displaying FLIGHT 000 BOARDING."
+
+msgid "달리기"
+msgstr "Sprint"
+
+msgid ""
+"당신은 빠져나왔다.\n"
+"\n"
+"…아마도, 당신만."
+msgstr ""
+"You got out.\n"
+"\n"
+"…Perhaps only you."
+
+msgid ""
+"당신은 안내방송이 되었다.\n"
+"\n"
+"오늘 밤에도, 누군가 수칙을 펼친다."
+msgstr ""
+"You became the announcement.\n"
+"\n"
+"Tonight, too, someone opens the rulebook."
+
+msgid "당신의 가방"
+msgstr "Your Bag"
+
+msgid "당신의 이름이 적힌 가방을 집어 들었습니다."
+msgstr "You picked up the bag with your name on it."
+
+msgid "당신의 이름이 적힌 가방이 나왔습니다."
+msgstr "A bag with your name on it came out."
+
+msgid "대기"
+msgstr "Standby"
+
+msgid "대기석에 승객 한 명이 앉아 있었습니다."
+msgstr "A passenger was sitting in the waiting seats."
+
+msgid "대기석의 승객에게 다가갔습니다. (수칙 p.8)"
+msgstr "You approached the passenger in the waiting seats. (Rule p.8)"
+
+msgid "대응 시간 초과 — 대응 실패로 기록됩니다."
+msgstr "Response time exceeded — logged as a failed response."
+
+msgid "대응 실패"
+msgstr "Failed response"
+
+msgid "대응 중 (%d초)"
+msgstr "Responding (%ds)"
+
+msgid "덮개 아래 동판 살펴보기"
+msgstr "Examine the plaque under the cover"
+
+msgid "도어락 비밀번호 입력"
+msgstr "Enter door lock code"
+
+msgid "도착  ARRIVALS"
+msgstr "ARRIVALS"
+
+msgid "도쿄/나리타"
+msgstr "Tokyo/Narita"
+
+msgid "돌아가기"
+msgstr "Back"
+
+msgid "돌아앉은 대기석"
+msgstr "Seats Turned Away"
+
+msgid "둘째 날 밤이네요. 오늘은 구역이 넓어요. 무빙워크는 꼭 정지 상태로 두고 퇴근하고요."
+msgstr "Second night. More ground to cover tonight. And make sure you leave the moving walkway stopped before you clock out."
+
+msgid "뒤로 이동"
+msgstr "Move Back"
+
+msgid "뛰는 무언가"
+msgstr "Something Beating"
+
+msgid "렌더 해상도"
+msgstr "Render Resolution"
+
+msgid "마닐라"
+msgstr "Manila"
+
+msgid "마우스 Y축 반전"
+msgstr "Invert Mouse Y-Axis"
+
+msgid "마우스 감도"
+msgstr "Mouse Sensitivity"
+
+msgid "마지막 날이네요. 오늘은 탑승 게이트 구역까지 열어요. 내일이면 개장이에요."
+msgstr "It's the last day. Today we're opening the Boarding Gates area too. We open tomorrow."
+
+msgid "마지막 밤이에요. 내일 아침이면 개장이고요. 끝나면 정규직 얘기도 해 봅시다."
+msgstr "It's the last night. We open tomorrow morning. When it's over, let's talk about a permanent position."
+
+msgid "마지막 수하물이 도착했습니다."
+msgstr "The last piece of baggage has arrived."
+
+msgid "마지막으로 수하물 B-03. 가동하면 노란 TEST 태그 가방 세 개 나와요. 그게 정상이에요."
+msgstr "Last one, baggage B-03. Start it up and three bags with yellow TEST tags come out. That's normal."
+
+msgid "마지막으로 야간 조명 배분. 전력 한도 때문에 세 구역만 켜 둘 수 있어요. 태블릿에서 정하면 돼요."
+msgstr "Last thing, the night lighting plan. With the power limit, only three zones can stay lit. You set it on the tablet."
+
+msgid "멈추지 않는 벨트"
+msgstr "Runaway Belt"
+
+msgid "멈추지 않는 벨트의 가방에 손을 댔습니다."
+msgstr "You touched a bag on the runaway belt."
+
+msgid "메뉴"
+msgstr "Menu"
+
+msgid "메인 메뉴"
+msgstr "Main Menu"
+
+msgid "메인 메뉴로"
+msgstr "Quit to Main Menu"
+
+msgid "모니터"
+msgstr "Monitor"
+
+msgid "모니터 꺼짐"
+msgstr "Monitor off"
+
+msgid "모니터 전원 끄기/켜기"
+msgstr "Monitor power off/on"
+
+msgid "모니터를 끄지 말고, 화면 앞에서 눈을 감고 10초를 세야 했습니다. (수칙 p.7)"
+msgstr "Without turning off the monitor, you should have closed your eyes in front of the screen and counted 10 seconds. (Rule p.7)"
+
+msgid "목록 이상인데 전광판 전원을 차단했습니다. (수칙 p.3: 전원을 차단하지 마십시오)"
+msgstr "You cut the board's power during a list anomaly. (Rule p.3: Do not cut the power)"
+
+msgid "목록에 없는 항공편"
+msgstr "Unlisted Flight"
+
+msgid "목적지"
+msgstr "목적지"
+
+msgid ""
+"목적지: 집\n"
+"\n"
+"문이 닫혔다.\n"
+"정말 집으로 돌아온 걸까."
+msgstr ""
+"Destination: Home\n"
+"\n"
+"The door closed.\n"
+"Have you really come home?"
+
+msgid "목적지는, 집입니다."
+msgstr "The destination is… home."
+
+msgid "무단 가동"
+msgstr "Unauthorized Operation"
+
+msgid "무빙워크 MW-1"
+msgstr "Moving Walkway MW-1"
+
+msgid "무빙워크 MW-1 (추록)"
+msgstr "Moving Walkway MW-1 (Addendum)"
+
+msgid "무빙워크 MW-1 가동 점검"
+msgstr "Inspect Moving Walkway MW-1"
+
+msgid "무빙워크 MW-1 시운전"
+msgstr "Test-Run Moving Walkway MW-1"
+
+msgid "무빙워크 가동"
+msgstr "Start walkway"
+
+msgid "무빙워크 비상정지"
+msgstr "Walkway emergency stop"
+
+msgid "무빙워크 속도가 비정상적으로 빨랐습니다."
+msgstr "The moving walkway was running abnormally fast."
+
+msgid "무빙워크 정지"
+msgstr "Stop walkway"
+
+msgid ""
+"무빙워크가 거꾸로 가면\n"
+"그냥 타고 끝까지 가.\n"
+"그러면 멈춰.\n"
+"\n"
+"차단기 내리면 큰일 나. 진짜야.\n"
+"\n"
+"— 전임 점검원"
+msgstr ""
+"If the walkway runs backward\n"
+"just ride it to the end.\n"
+"Then it stops.\n"
+"\n"
+"Pull the breaker and you're in big trouble. I mean it.\n"
+"\n"
+"— Previous inspector"
+
+msgid "무빙워크가 표시(▲ 탑승동)와 반대로 움직이고 있었습니다."
+msgstr "The moving walkway was running opposite to its marked direction (▲ Concourse)."
+
+msgid "무전 연결이 끊겼다."
+msgstr "The radio connection cut out."
+
+msgid "문 너머로 들어가지 말고 포디움의 [닫기·잠금]을 눌러야 했습니다. (수칙 p.8)"
+msgstr "Without going through the door, you should have pressed [Close & Lock / 닫기·잠금] on the podium. (Rule p.8)"
+
+msgid "문 열기"
+msgstr "Open door"
+
+msgid "문서 읽기"
+msgstr "Read document"
+
+msgid "바뀐 문안"
+msgstr "Altered Script"
+
+msgid "바뀐 행"
+msgstr "Changed Row"
+
+msgid "바다 위의 첫 관문  SEOHAE INT'L AIRPORT"
+msgstr "First gateway on the sea  SEOHAE INT'L AIRPORT"
+
+msgid "바인더 사이에 낯선 페이지 여러 장이 끼워져 있다."
+msgstr "Several unfamiliar pages have been slipped into the binder."
+
+msgid "바인더가 어제보다 두꺼워진 것 같다…"
+msgstr "The binder seems thicker than yesterday…"
+
+msgid "밝기"
+msgstr "Brightness"
+
+msgid "밤"
+msgstr "Night"
+
+msgid "방송 목소리가 점점 느리고 낮아졌습니다."
+msgstr "The broadcast voice grew slower and lower."
+
+msgid "방송 송출 중지"
+msgstr "Stop broadcast"
+
+msgid "방송 중에 [송출 중지]를 눌러야 했습니다. (수칙 p.4)"
+msgstr "You should have pressed [Stop Broadcast / 송출 중지] during the broadcast. (Rule p.4)"
+
+msgid "방송이 끝났다."
+msgstr "The broadcast ended."
+
+msgid "방송이 끝났다. 무언가 등 뒤에서 멀어졌다…"
+msgstr "The broadcast ended. Something behind you moved away…"
+
+msgid "방송이 이미 송출 중입니다."
+msgstr "A broadcast is already in progress."
+
+msgid "방콕"
+msgstr "Bangkok"
+
+msgid "배분 확정"
+msgstr "Confirm Plan"
+
+msgid "배전반에서 FIDS 전원을 차단해야 했습니다. RESET 금지. (수칙 p.3)"
+msgstr "You should have cut FIDS power at the breaker panel. No RESET. (Rule p.3)"
+
+msgid "벨트 가동"
+msgstr "Start belt"
+
+msgid "벨트 비상정지"
+msgstr "Belt emergency stop"
+
+msgid "벨트 정지"
+msgstr "Stop belt"
+
+msgid "벨트가 화살표와 반대 방향으로 돌고 있었습니다."
+msgstr "The belt was turning opposite to the arrows."
+
+msgid "벨트를 정지시키고 끝까지 확인하십시오."
+msgstr "Stop the belt and check it through to the end."
+
+msgid "보고"
+msgstr "Report"
+
+msgid "보고할 점검 지시가 없습니다."
+msgstr "There is no inspection order to report."
+
+msgid "보관·정비"
+msgstr "Storage·Maint."
+
+msgid "보안검색"
+msgstr "Security"
+
+msgid "보안검색  SECURITY"
+msgstr "SECURITY"
+
+msgid "보안검색 1번 레인 X-ray 테스트해 봐요. 판독 화면 사진 찍어 두면 밤에 편해요."
+msgstr "Give the Security Lane 1 X-ray a test. If you photograph the scan screen, tonight will be easier."
+
+msgid "보안검색 1번 레인에서 [b]테스트 가방을 스캔[/b]하고 판독 화면을 관찰하십시오."
+msgstr "At Security Lane 1, [b]scan the test bag[/b] and observe the scan screen."
+
+msgid ""
+"보안검색 1번 레인에서 [b]테스트 가방을 스캔[/b]하고 판독 화면을 관찰하십시오.\n"
+"정상: 노트북, 물병, 열쇠, 케이블."
+msgstr ""
+"At Security Lane 1, [b]scan the test bag[/b] and observe the scan screen.\n"
+"Normal: laptop, water bottle, keys, cable."
+
+msgid "보안검색 X-ray (추록)"
+msgstr "Security X-ray (Addendum)"
+
+msgid "보안검색 X-ray 1번"
+msgstr "Security X-ray 1"
+
+msgid "보안검색 X-ray 1번 시운전"
+msgstr "Test-Run Security X-ray 1"
+
+msgid "보안검색 X-ray 1번 판독 점검"
+msgstr "Inspect Security X-ray 1 Scan"
+
+msgid "보안검색 구역 1번 레인 데스크에서 [b][가방 투입][/b]을 누르고 판독 화면을 확인하십시오. (촬영 권장)"
+msgstr "At the Lane 1 desk in Security, press [b][Load Bag / 가방 투입][/b] and check the scan screen. (Photo recommended)"
+
+msgid "보통"
+msgstr "Medium"
+
+msgid "본사에 묶여 있어서 얼굴은 못 봐요. 연락은 이 무전으로만 할게요."
+msgstr "I'm tied up at head office, so we won't meet in person. I'll only reach you over this radio."
+
+msgid "본사에서 개정 수칙 팩스로 보냈어요. 무빙워크랑 보안검색. 바인더에 끼워 두세요."
+msgstr "Head office faxed over the revised rules. Moving walkway and Security. Put them in the binder."
+
+msgid "불안정"
+msgstr "Unstable"
+
+msgid "붉은 조명"
+msgstr "Red Light"
+
+msgid "붉은 조명 아래에 서 있었습니다."
+msgstr "You were standing under the red light."
+
+msgid "붉은 조명 아래에 서지 말고 해당 구역 조명을 꺼야 했습니다. (수칙 p.2)"
+msgstr "You should have kept out from under the red light and switched off that zone's lights. (Rule p.2)"
+
+msgid "비상 수칙"
+msgstr "Emergency Rules"
+
+msgid "비상구  EXIT"
+msgstr "EMERGENCY EXIT"
+
+msgid "비상구  EXIT ▶"
+msgstr "EMERGENCY EXIT ▶"
+
+msgid "비상구 — 체인으로 잠겨 있다"
+msgstr "Emergency exit — chained shut"
+
+msgid "비상구가 체인으로 잠겨 있다."
+msgstr "The emergency exit is chained shut."
+
+msgid "비상구로 나가기"
+msgstr "Leave by the emergency exit"
+
+msgid "비상구로 나가십시오. (체크인 홀 남측, 초록 표시등)"
+msgstr "Leave by the emergency exit. (Check-in Hall, south side, green exit light)"
+
+msgid "비상정지"
+msgstr "Emergency stop"
+
+msgid "사람 형체가 보이는 X-ray 모니터를 껐습니다. (수칙 p.7)"
+msgstr "You turned off an X-ray monitor showing a human shape. (Rule p.7)"
+
+msgid "사망"
+msgstr "Deaths"
+
+msgid "사무실"
+msgstr "Office"
+
+msgid "사번 · ID"
+msgstr "ID"
+
+msgid "사용"
+msgstr "Use"
+
+msgid "사진 저장: "
+msgstr "Photo saved: "
+
+msgid "상태 확인"
+msgstr "Check Status"
+
+msgid "상하이"
+msgstr "Shanghai"
+
+msgid "상호작용"
+msgstr "Interact"
+
+msgid "새 근무 시작"
+msgstr "New Shift"
+
+msgid "새 점검 지시: "
+msgstr "New inspection order: "
+
+msgid "새 지시를 기다리십시오."
+msgstr "Stand by for a new order."
+
+msgid ""
+"새벽 3시쯤 전광판이 혼자 켜짐.\n"
+"편명 000, 목적지 칸 비어 있음, 게이트 0.\n"
+"삭제해도 다음 날 또 뜸.\n"
+"\n"
+"소장님은 신경 쓰지 말라고 함.\n"
+"— 전기팀 박"
+msgstr ""
+"Board switched itself on around 3 a.m.\n"
+"Flight 000, destination field blank, Gate 0.\n"
+"Delete it and it's back the next day.\n"
+"\n"
+"Chief says not to worry about it.\n"
+"— Park, Electrical"
+
+msgid "서 해 비 행 장"
+msgstr "SEOHAE AIRFIELD"
+
+msgid "서해국제공항"
+msgstr "SEOHAE INT'L"
+
+msgid "서해국제공항 · 시설운영팀  |  야간 시설 점검 근무 수칙"
+msgstr "Seohae Int'l Airport · Facility Operations  |  Night Facility Inspection Shift Rules"
+
+msgid "서해국제공항 시설운영팀"
+msgstr "Seohae Int'l Airport · Facility Operations"
+
+msgid "서해국제공항 시설운영팀 · 야간 시설 점검 결과"
+msgstr "Seohae International Airport Facility Operations · Night Inspection Results"
+
+msgid "서해국제공항 오늘 정식 개장"
+msgstr "Seohae International Airport Opens Today"
+
+msgid "서해국제공항 정식 개장"
+msgstr "Seohae International Airport Grand Opening"
+
+msgid "서해국제공항 정식 개장 사흘 전."
+msgstr "Three days before the grand opening of Seohae International Airport."
+
+msgid "서해국제공항에 오신 것을 환영합니다. 즐거운 여행 되십시오."
+msgstr "Welcome to Seohae International Airport. Have a pleasant journey."
+
+msgid "선택한 근무부터 다시 시작합니다. 이전 근무의 사진과 단서는 넘어가지 않습니다."
+msgstr "Restarts from the selected shift. Photos and clues from earlier shifts do not carry over."
+
+msgid "설정"
+msgstr "Settings"
+
+msgid "성명 · NAME"
+msgstr "NAME"
+
+msgid "소속 · DEPT"
+msgstr "DEPT"
+
+msgid "소장"
+msgstr "Chief"
+
+msgid "손전등"
+msgstr "Flashlight"
+
+msgid "송출 중"
+msgstr "On air"
+
+msgid "송출 중지"
+msgstr "Stop Broadcast"
+
+msgid "수고했어요. 중간 보고 받을게요. 사무실로 와서 태블릿 동기화해요."
+msgstr "Good work. I'll take an interim report. Come to the office and sync the tablet."
+
+msgid "수직 동기화 (VSync)"
+msgstr "VSync"
+
+msgid "수칙 위반: "
+msgstr "Rule violation: "
+
+msgid "수칙에 따라 대응: "
+msgstr "Respond per rules: "
+
+msgid "수하물"
+msgstr "Baggage"
+
+msgid "수하물 B-03 가동 테스트"
+msgstr "Test Baggage B-03"
+
+msgid ""
+"수하물 B-03을 [가동]하고 나오는 가방을 끝까지 확인하십시오.\n"
+"정상은 [b]노란 TEST 태그 가방 3개[/b]입니다."
+msgstr ""
+"Press [Start / 가동] on baggage B-03 and check every bag that comes out.\n"
+"Normal is [b]3 bags with yellow TEST tags[/b]."
+
+msgid "수하물 B-03을 [가동]하고 나오는 가방을 끝까지 확인하십시오. 정상은 TEST 태그 가방 3개."
+msgstr "Press [Start / 가동] on baggage B-03 and check every bag that comes out. Normal: 3 bags with TEST tags."
+
+msgid "수하물 B-03이 혼자 돌고 있대요. 가서 멈춰 줄래요?"
+msgstr "They say baggage B-03 is running on its own. Could you go stop it?"
+
+msgid "수하물 보관실"
+msgstr "Baggage Storage"
+
+msgid ""
+"수하물 보관실\n"
+"BAGGAGE STORAGE"
+msgstr ""
+"BAGGAGE\n"
+"STORAGE"
+
+msgid "수하물 보관실 확인 (선택)"
+msgstr "Check Baggage Storage (Optional)"
+
+msgid "수하물 수취"
+msgstr "Baggage Claim"
+
+msgid "수하물 수취 구역 [b]B-03 제어대[/b]에서 [가동]을 누르고 [b]TEST 태그 가방 3개[/b]가 나오는 것을 확인하십시오."
+msgstr "At the [b]B-03 control stand[/b] in Baggage Claim, press [Start / 가동] and confirm that [b]3 bags with TEST tags[/b] come out."
+
+msgid "수하물 수취 구역 북쪽 [b]보관실[/b]에 임시 보관된 공사 자재를 확인하십시오."
+msgstr "Check the construction materials temporarily stored in the [b]storage room[/b] north of Baggage Claim."
+
+msgid "수하물 수취대  B-03"
+msgstr "Baggage Claim  B-03"
+
+msgid "수하물 수취대 (추록)"
+msgstr "Baggage Claim (Addendum)"
+
+msgid "수하물 수취대 B-03"
+msgstr "Baggage Claim B-03"
+
+msgid "수하물 수취대 B-03 가동 테스트"
+msgstr "Test Baggage Claim B-03"
+
+msgid "수하물 수취대 B-03 시운전"
+msgstr "Test-Run Baggage Claim B-03"
+
+msgid "수하물 수취대 B-03이 혼자 가동 중입니다. 현장에서 [b]정지[/b]시키고 상태를 보고하십시오."
+msgstr "Baggage Claim B-03 is running by itself. [b]Stop[/b] it on site and report its status."
+
+msgid "승  인"
+msgstr "APPROVED"
+
+msgid "승객"
+msgstr "Passenger"
+
+msgid "승객 기록"
+msgstr "Passenger Log"
+
+msgid "승객 한 분이 탑승 수속을 마쳤습니다."
+msgstr "One passenger has completed check-in."
+
+msgid "승객 확인되었습니다."
+msgstr "Passenger confirmed."
+
+msgid "승객운송팀"
+msgstr "PASSENGER OPS"
+
+msgid "승객은 아무도 없는데, 탑승 안내 방송이 울립니다."
+msgstr "There are no passengers, yet a boarding call rings out."
+
+msgid "시계 이상인데 [RESET]을 눌렀습니다. (수칙 p.3)"
+msgstr "You pressed [RESET] during a clock anomaly. (Rule p.3)"
+
+msgid "시설"
+msgstr "Facility"
+
+msgid "시설 상태가 정상으로 돌아왔다…"
+msgstr "The facility is back to normal…"
+
+msgid "시설 전원 배전반  BREAKER"
+msgstr "FACILITY POWER  BREAKER"
+
+msgid "시설: "
+msgstr "Facility: "
+
+msgid "시설관리실"
+msgstr "Facility Office"
+
+msgid ""
+"시설관리실\n"
+"FACILITY OFFICE\n"
+"STAFF ONLY"
+msgstr ""
+"FACILITY\n"
+"OFFICE\n"
+"STAFF ONLY"
+
+msgid "시설관리실 [b]근태 기록기[/b]에서 근무 종료를 기록하십시오."
+msgstr "Record the end of your shift at the [b]punch clock[/b] in the Facility Office."
+
+msgid "시설관리실 [b]근태 기록기[/b]에서 근무 종료를 기록하십시오. (야간 근무로 이어집니다)"
+msgstr "Record the end of your shift at the [b]punch clock[/b] in the Facility Office. (Leads into the night shift)"
+
+msgid "시설관리실 [b]팩스[/b]로 들어온 개정 수칙 추록(p.8 탑승구)을 챙기십시오."
+msgstr "Collect the revised rule addendum (p.8, Gates) that came in on the Facility Office [b]fax[/b]."
+
+msgid "시설관리실 [b]팩스[/b]로 들어온 개정 수칙 추록을 챙기십시오."
+msgstr "Collect the revised rule addendum that came in on the Facility Office [b]fax[/b]."
+
+msgid "시설관리실 책상 위의 [b]근무 수칙 바인더[/b]를 챙기십시오. ([E])"
+msgstr "Take the [b]Shift Rules Binder[/b] from the desk in the Facility Office. ([E])"
+
+msgid "시설관리실 출입문 [b]카드 리더[/b]에 출입카드를 태그하십시오."
+msgstr "Tap your access card on the [b]card reader[/b] at the Facility Office door."
+
+msgid ""
+"시설관리실 출입문 옆 [b]조명 분전반[/b] 앞에서 체크인 홀·수하물 구역 조명 상태를 관찰하고 보고하십시오.\n"
+"(꺼진 구역이 있으면 스위치로 켜십시오)"
+msgstr ""
+"At the [b]lighting panel[/b] beside the Facility Office door, observe and report the lighting in the Check-in Hall and Baggage Claim.\n"
+"(If a zone is off, turn it on with its switch)"
+
+msgid "시설운영팀"
+msgstr "FACILITY OPS"
+
+msgid "시스템 로그 확인"
+msgstr "Check system log"
+
+msgid "시야각 (FOV)"
+msgstr "Field of View"
+
+msgid "싱가포르"
+msgstr "Singapore"
+
+msgid "아, 들려요? 시설운영팀 소장입니다. 오늘부터 사흘간 잘 부탁해요."
+msgstr "Ah, can you hear me? This is the Chief, Facility Operations. Looking forward to working with you these next three days."
+
+msgid "아, 수하물 보관실에… 옛날 비행장 때 물건이 좀 있어요. 신경 안 써도 돼요."
+msgstr "Oh, Baggage Storage has… some things from the old airfield days. Don't worry about them."
+
+msgid "아무도 가동하지 않은 [b]무빙워크 MW-1[/b]이 움직이고 있습니다. 현장을 확인하고 보고하십시오."
+msgstr "[b]Moving walkway MW-1[/b] is moving, though no one started it. Check on site and report."
+
+msgid "아무도 켜지 않은 무빙워크가 움직이고 있었습니다."
+msgstr "The moving walkway was running although no one had switched it on."
+
+msgid "아무도 켜지 않은 무빙워크에 올라탔습니다. (수칙 p.6)"
+msgstr "You stepped onto a walkway that no one had switched on. (Rule p.6)"
+
+msgid "아직 근무 수칙 바인더를 받지 않았습니다."
+msgstr "The Shift Rules Binder has not been issued yet."
+
+msgid "아직 수령한 페이지가 없습니다."
+msgstr "No pages received yet."
+
+msgid "아직 진행할 수 없는 지시입니다."
+msgstr "This order cannot be started yet."
+
+msgid "아침 보고"
+msgstr "Morning Report"
+
+msgid "안내"
+msgstr "Information"
+
+msgid ""
+"안내 데스크 [b]PA 콘솔[/b]에서 테스트 방송을 송출하고 끝까지 들으십시오.\n"
+"표준 문안(수칙 p.4)과 비교해 보고하십시오."
+msgstr ""
+"Play the test broadcast on the [b]PA console[/b] at the information desk and listen to the end.\n"
+"Compare it with the standard script (Rule p.4) and report."
+
+msgid "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."
+msgstr "Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. Thank you."
+
+msgid "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 기다리고 있겠습니다."
+msgstr "Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. We will be waiting."
+
+msgid "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 승객 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."
+msgstr "Attention please. Facility inspection is currently in progress in this terminal. Passengers only. Thank you."
+
+msgid "안내 말씀 드립니다. 현재 터미널 탑승 수속이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."
+msgstr "Attention please. Boarding is currently in progress in this terminal. Authorized personnel only. Thank you."
+
+msgid "안내 말씀 드립니다… 현재 터미널 시설 점검이… 진행 중… 입니다…"
+msgstr "Attention please… Facility inspection is currently… in progress… in this terminal…"
+
+msgid "안내방송 (긴급 개정)"
+msgstr "PA Announcements (Urgent Revision)"
+
+msgid "안내방송 PA-01"
+msgstr "PA Announcements PA-01"
+
+msgid "안내방송 콘솔"
+msgstr "PA Console"
+
+msgid "안내방송 테스트 송출"
+msgstr "Run PA Test Broadcast"
+
+msgid "안내방송 표준 문안 청취"
+msgstr "Listen to Standard PA Script"
+
+msgid "안정"
+msgstr "Stable"
+
+msgid "앞으로 이동"
+msgstr "Move Forward"
+
+msgid "액체류 100ml 제한"
+msgstr "Liquids limit 100ml"
+
+msgid "야간 근무 시작이네요. 지금부터는 혼자예요."
+msgstr "Night shift's starting. From now on, you're on your own."
+
+msgid "야간 수당 높음. 정규직 전환 조건."
+msgstr "High night-shift pay. Path to a permanent position."
+
+msgid ""
+"야간 전력 한도 때문에 [b]최대 3개 구역[/b]만 조명을 예약할 수 있습니다. 켜 둔 구역은 밤에 관찰이 쉽고, 수칙 p.9 ③(새벽 3시)에 대비할 수 있습니다.\n"
+"[color=#9aa3ae]꺼 둔 구역은 손전등에 의지해야 합니다. 밤에도 조명 분전반에서 직접 켜고 끌 수는 있습니다.[/color]"
+msgstr ""
+"The night power limit lets you reserve lighting for [b]up to 3 zones[/b] only. Lit zones are easier to observe at night and help you prepare for Rule p.9 ③ (03:00).\n"
+"[color=#9aa3ae]In unlit zones you will have to rely on your flashlight. You can still switch lights on and off at the lighting panels during the night.[/color]"
+
+msgid ""
+"야간 점검 근무 — 반드시 수칙 준수!!\n"
+"점검 결과는 태블릿으로 즉시 보고\n"
+"0번 게이트 ✕  (존재하지 않음)\n"
+"— 소장"
+msgstr ""
+"Night inspection shift — follow the rules, no exceptions!!\n"
+"Report results on the tablet right away\n"
+"Gate 0 ✕  (does not exist)\n"
+"— Chief"
+
+msgid "야간 조명 배분"
+msgstr "Night Lighting Plan"
+
+msgid "야간 조명 배분이 확정되었습니다."
+msgstr "Night lighting plan confirmed."
+
+msgid "어두운 장면이 많은 게임입니다. 처음 한 번만 맞추면 되고, 설정에서 언제든 바꿀 수 있습니다."
+msgstr "This game has many dark scenes. You only need to set this once, and you can change it at any time in Settings."
+
+msgid "어디로 떠나시나요?"
+msgstr "Where are you going?"
+
+msgid "어젯밤 고생했어요. 오늘은 보안검색이랑 탑승동 통로까지 열어요."
+msgstr "Good work last night. Today we're opening Security and the Concourse Corridor as well."
+
+msgid "언어 · Language"
+msgstr "Language"
+
+msgid "언어 변경은 다음 근무부터 모든 화면에 적용됩니다."
+msgstr "The new language applies to every screen from the next shift."
+
+msgid "엔딩 %d / 3"
+msgstr "Endings %d / 3"
+
+msgid "엔딩 A — 탑승"
+msgstr "Ending A — Boarding"
+
+msgid "엔딩 B — 출구"
+msgstr "Ending B — Exit"
+
+msgid "엔딩 C — 안내방송"
+msgstr "Ending C — Announcement"
+
+msgid "역방향 무빙워크"
+msgstr "Reversed Walkway"
+
+msgid "역방향으로 움직이는 무빙워크에 올라탔습니다. (수칙 p.6)"
+msgstr "You stepped onto a walkway running in reverse. (Rule p.6)"
+
+msgid "역회전"
+msgstr "Reversed Belt"
+
+msgid "역회전 중인 벨트에 [비상정지]를 눌렀습니다. (수칙 p.5)"
+msgstr "You pressed [Emergency Stop / 비상정지] on a belt running in reverse. (Rule p.5)"
+
+msgid "열린 탑승구"
+msgstr "Open Gate"
+
+msgid "열린 탑승구 너머 탑승교로 들어갔습니다. (수칙 p.8)"
+msgstr "You went through the open gate onto the jet bridge. (Rule p.8)"
+
+msgid "영번 게이트 같은 건 없어요. 도면에도 없어요. …오늘은 그냥 일찍 들어가요."
+msgstr "There's no such thing as Gate 0. It's not on the plans either. …Just go home early today."
+
+msgid "영편 승객께서는 출국장으로 이동해 주시기 바랍니다."
+msgstr "Passengers of flight zero, please proceed to the departure area."
+
+msgid "영편 최종 탑승 안내입니다. 아직 탑승하지 않으신 승객께서는, 지금 즉시 영번 게이트로 오시기 바랍니다."
+msgstr "This is the final boarding call for flight zero. Remaining passenger, please proceed to gate zero immediately."
+
+msgid "영편 탑승 수속을 시작합니다. 승객 여러분께서는 영번 게이트로 이동해 주시기 바랍니다."
+msgstr "Check-in for flight zero is now open. All passengers, please proceed to gate zero."
+
+msgid "오늘 남은 촬영  %d / %d"
+msgstr "Shots left today  %d / %d"
+
+msgid "오늘 촬영 가능한 장수를 모두 사용했습니다."
+msgstr "You have used all of today's photos."
+
+msgid "오늘은 끝. 퇴근 찍고 밤에 봐요."
+msgstr "That's it for today. Clock out, and see you tonight."
+
+msgid "오늘은 여기까지. 사무실 근태 기록기에서 퇴근 찍고 쉬어요. 밤 열한 시에 다시 출근이에요."
+msgstr "That's it for today. Clock out at the punch clock in the office and get some rest. You're back on at eleven tonight."
+
+msgid "오늘은 여기까지. 사무실로 돌아가서 근태 기록기에 퇴근 찍어요."
+msgstr "That's it for tonight. Head back to the office and clock out at the punch clock."
+
+msgid "오디오"
+msgstr "Audio"
+
+msgid "오른쪽 이동"
+msgstr "Move Right"
+
+msgid "오사카/간사이"
+msgstr "Osaka/Kansai"
+
+msgid "오판"
+msgstr "False alarm"
+
+msgid "오판 (정상을 이상으로)"
+msgstr "False alarms (normal reported as anomaly)"
+
+msgid "완료"
+msgstr "Done"
+
+msgid "완전한 어둠. 비상구 표시등만 켜져 있다."
+msgstr "Total darkness. Only the emergency exit light is on."
+
+msgid "외부"
+msgstr "Outside"
+
+msgid "왼쪽 이동"
+msgstr "Move Left"
+
+msgid ""
+"왼쪽 표시가 겨우 보일 정도로\n"
+"밝기를 맞추십시오."
+msgstr ""
+"Adjust the brightness until the mark\n"
+"on the left is barely visible."
+
+msgid "운 항 과"
+msgstr "FLIGHT OPS"
+
+msgid "운영 준비 중"
+msgstr "OPENING SOON"
+
+msgid "움직이는 물체가 보이는 X-ray 모니터를 껐습니다. (수칙 p.7)"
+msgstr "You turned off an X-ray monitor showing a moving object. (Rule p.7)"
+
+msgid "위치 · %s"
+msgstr "Location · %s"
+
+msgid ""
+"위치: 보안검색 구역 1번 레인 / 판독 모니터는 기계 동쪽 데스크\n"
+"\n"
+"[b][정상][/b] [가방 투입] 시 판독 화면: 노트북, 물병, 열쇠, 케이블.\n"
+"\n"
+"① 판독 화면에 [b]사람의 형체[/b]가 보이면:\n"
+"　→ 모니터를 끄지 마십시오.\n"
+"　→ 화면 앞에서 [b]눈을 감고 10초[/b]를 세십시오. 형체와 눈을 마주치지 마십시오.\n"
+"\n"
+"② 가방 속에서 무언가 [b]규칙적으로 움직이면[/b]:\n"
+"　→ X-ray [비상정지]를 누르십시오. 모니터를 끄지 마십시오."
+msgstr ""
+"Location: Security, Lane 1 / Scan monitor on the desk east of the machine\n"
+"\n"
+"[b][NORMAL][/b] On [Insert Bag / 가방 투입], the scan screen shows: laptop, water bottle, keys, cable.\n"
+"\n"
+"① If the scan screen shows [b]a human shape[/b]:\n"
+"→ Do not turn off the monitor.\n"
+"→ In front of the screen, [b]close your eyes and count 10 seconds[/b]. Do not meet the shape's eyes.\n"
+"\n"
+"② If something inside a bag [b]moves rhythmically[/b]:\n"
+"→ Press the X-ray [Emergency Stop / 비상정지]. Do not turn off the monitor."
+
+msgid ""
+"위치: 수하물 수취 구역 / 제어대는 수취대 서쪽\n"
+"\n"
+"[b][정상][/b] [가동] 시 노란 [b]TEST[/b] 태그를 단 점검용 가방 [b]3개[/b]가 나옴. 벨트는 화살표 방향으로 회전.\n"
+"\n"
+"① 테스트 수하물 외의 가방이 나오면:\n"
+"　→ [b]절대 손대지 말고[/b] [비상정지]를 누르십시오.\n"
+"\n"
+"② 벨트가 화살표와 [b]반대 방향[/b]으로 돌면:\n"
+"　→ [비상정지]를 누르지 마십시오.\n"
+"　→ 시설관리실 배전반에서 [b]B-03 전원을 차단[/b]하십시오.\n"
+"\n"
+"③ [정지]를 눌러도 멈추지 않으면: → [비상정지]를 누르십시오.\n"
+"\n"
+"④ 당신의 이름이 적힌 수하물은 [b]존재하지 않습니다[/b].\n"
+"　→ 손대지 말고 [비상정지] 후 즉시 그 구역을 떠나십시오."
+msgstr ""
+"Location: Baggage Claim / Control stand west of the carousel\n"
+"\n"
+"[b][NORMAL][/b] On [Start / 가동], [b]3[/b] inspection bags with yellow [b]TEST[/b] tags come out. The belt turns in the direction of the arrows.\n"
+"\n"
+"① If any bag other than the test baggage comes out:\n"
+"→ [b]Never touch it[/b]. Press [Emergency Stop / 비상정지].\n"
+"\n"
+"② If the belt turns in the [b]opposite direction[/b] to the arrows:\n"
+"→ Do not press [Emergency Stop / 비상정지].\n"
+"→ [b]Cut B-03 power[/b] at the Facility Office breaker panel.\n"
+"\n"
+"③ If it does not stop when you press [Stop / 정지]: → Press [Emergency Stop / 비상정지].\n"
+"\n"
+"④ Baggage with your name on it [b]does not exist[/b].\n"
+"→ Do not touch it. Press [Emergency Stop / 비상정지], then leave the area at once."
+
+msgid ""
+"위치: 체크인 홀 북측 벽 / 제어함은 전광판 오른쪽 아래\n"
+"\n"
+"[b][정상][/b] 상단에 TEST MODE 표시. 테스트 항공편 8개(SH 101 ~ SH 804), 비고란은 모두 TEST.\n"
+"\n"
+"① 목록에 없는 항공편이 있거나, 낮에 기록한 목록과 ▒▒ 행이 있으면:\n"
+"　→ 제어함의 [b][▒▒▒▒][/b]을 누르십시오.\n"
+"　→ 전광판 ▒▒을 차단하지 마십시오.\n"
+"\n"
+"② 전광판 ▒▒가 근무 태블릿의 시각과 [b]다르게 흐르면[/b]:\n"
+"　→ 시설관리실 ▒▒▒에서 [b]FIDS 전원을 ▒▒[/b]하십시오.\n"
+"　→ [RESET]을 누르지 ▒▒▒▒."
+msgstr ""
+"Location: Check-in Hall, north wall / Control box at the lower right of the board\n"
+"\n"
+"[b][NORMAL][/b] TEST MODE shown at the top. 8 test flights (SH 101 – SH 804); every remark reads TEST.\n"
+"\n"
+"① If there is a flight not on the list, or a row that ▒▒▒▒ from the list you recorded during the day:\n"
+"→ Press [b][▒▒▒▒][/b] on the control box.\n"
+"→ Do not cut ▒▒▒ to the board.\n"
+"\n"
+"② If the board ▒▒▒ [b]runs differently[/b] from the time on the shift tablet:\n"
+"→ [b]▒▒ FIDS power[/b] at the Facility Office ▒▒▒▒▒▒▒.\n"
+"→ Do ▒▒ press [RESET]."
+
+msgid ""
+"위치: 체크인 홀 북측 벽 / 제어함은 전광판 오른쪽 아래\n"
+"\n"
+"[b][정상][/b] 상단에 TEST MODE 표시. 테스트 항공편 8개(SH 101 ~ SH 804), 비고란은 모두 TEST.\n"
+"※ 테스트 목록은 낮 근무 중 촬영해 두십시오.\n"
+"\n"
+"① 목록에 없는 항공편이 있거나, 낮에 기록한 목록과 [b]다른 행[/b]이 있으면:\n"
+"　→ 제어함의 [b][RESET][/b]을 누르십시오.\n"
+"　→ 전광판 전원을 차단하지 마십시오.\n"
+"\n"
+"② 전광판 시계가 근무 태블릿의 시각과 [b]다르게 흐르면[/b]:\n"
+"　→ 시설관리실 배전반에서 [b]FIDS 전원을 차단[/b]하십시오.\n"
+"　→ [RESET]을 누르지 마십시오."
+msgstr ""
+"Location: Check-in Hall, north wall / Control box at the lower right of the board\n"
+"\n"
+"[b][NORMAL][/b] TEST MODE shown at the top. 8 test flights (SH 101 – SH 804); every remark reads TEST.\n"
+"※ Photograph the test list during the day shift.\n"
+"\n"
+"① If there is a flight not on the list, or [b]a row that differs[/b] from the list you recorded during the day:\n"
+"→ Press [b][RESET][/b] on the control box.\n"
+"→ Do not cut power to the board.\n"
+"\n"
+"② If the board clock [b]runs differently[/b] from the time on the shift tablet:\n"
+"→ [b]Cut FIDS power[/b] at the Facility Office breaker panel.\n"
+"→ Do not press [RESET]."
+
+msgid ""
+"위치: 체크인 홀 서측 벽 (시설관리실 출입문 옆)\n"
+"\n"
+"[b][정상][/b] 켠 구역의 모든 천장 조명이 일정한 밝기로 켜져 있음.\n"
+"\n"
+"① 한 구역의 조명이 [b]일정한 리듬[/b](짧게 세 번, 길게 한 번)으로 깜빡이면:\n"
+"　→ 해당 구역 스위치를 내리고, [b]10초 이상 기다린 뒤[/b] 다시 올리십시오.\n"
+"\n"
+"② [b]붉게 빛나는 조명[/b]이 있으면:\n"
+"　→ 그 조명 아래에 서지 마십시오.\n"
+"　→ 해당 구역의 조명 스위치를 내리십시오. 오늘 밤 다시 켜지 마십시오."
+msgstr ""
+"Location: Check-in Hall, west wall (next to the Facility Office door)\n"
+"\n"
+"[b][NORMAL][/b] Every ceiling light in a switched-on zone is lit at a steady brightness.\n"
+"\n"
+"① If a zone's lights blink in a [b]steady rhythm[/b] (three short, one long):\n"
+"→ Switch that zone off, [b]wait at least 10 seconds[/b], then switch it back on.\n"
+"\n"
+"② If any light is [b]glowing red[/b]:\n"
+"→ Do not stand under that light.\n"
+"→ Switch off that zone's lights. Do not switch them on again tonight."
+
+msgid ""
+"위치: 체크인 홀 안내 데스크\n"
+"\n"
+"[b][표준 테스트 문안][/b]\n"
+"\"안내 말씀 드립니다. 현재 터미널 [b]시설 점검[/b]이 진행 중입니다.\n"
+" [b]관계자[/b] 외에는 출입을 삼가 주시기 바랍니다. [b]감사합니다[/b].\"\n"
+" (이어서 영어 안내)\n"
+"\n"
+"① 테스트 방송에서 표준 문안과 [b]다른 단어[/b]가 들리면:\n"
+"　→ 방송 도중 즉시 [b][송출 중지][/b]를 누르십시오.\n"
+"\n"
+"② 방송 목소리가 [b]점점 느려지거나 낮아지면[/b]:\n"
+"　→ [송출 중지]를 누르지 마십시오.\n"
+"　→ [b]탑승동(북쪽)을 등지고[/b] 서서, 방송이 끝날 때까지 돌아보지 마십시오."
+msgstr ""
+"Location: Check-in Hall information desk\n"
+"\n"
+"[b][Standard Test Script][/b]\n"
+"\"Attention please. [b]Facility inspection[/b] is currently in progress in this terminal.\n"
+" [b]Authorized personnel[/b] only. [b]Thank you[/b].\"\n"
+" (then repeated in English)\n"
+"\n"
+"① If you hear [b]any word that differs[/b] from the standard script during the test broadcast:\n"
+"→ Press [b][Stop Broadcast / 송출 중지][/b] immediately, while it is still playing.\n"
+"\n"
+"② If the broadcast voice [b]gradually slows down or drops lower[/b]:\n"
+"→ Do not press [Stop Broadcast / 송출 중지].\n"
+"→ Stand [b]with your back to the concourse (north)[/b] and do not turn around until the broadcast ends."
+
+msgid ""
+"위치: 탑승 게이트 구역\n"
+"\n"
+"[b][정상][/b] 출입문 닫힘·잠김, 상단 표시 CLOSED. 대기석은 탑승구를 향함. 승객 없음.\n"
+"※ [상태 확인] 버튼으로 점검을 시작하십시오.\n"
+"\n"
+"① 닫혀 있어야 할 탑승구가 [b]열려[/b] 있으면:\n"
+"　→ 문 너머를 보지 말고, 절대 들어가지 마십시오.\n"
+"　→ 포디움의 [b][닫기·잠금][/b]을 누르십시오.\n"
+"\n"
+"② 대기석이 모두 [b]반대쪽을 향해[/b] 돌아가 있으면:\n"
+"　→ 게이트 구역 조명을 끄십시오. (게이트 입구 조명 스위치)\n"
+"\n"
+"③ 대기석에 [b]승객[/b]이 앉아 있으면:\n"
+"　→ 다가가지 마십시오. 말을 걸지 마십시오.\n"
+"　→ 승객에게 [b]등을 돌린 채 10초[/b]간 기다리십시오."
+msgstr ""
+"Location: Boarding Gates\n"
+"\n"
+"[b][NORMAL][/b] Door closed and locked; top display reads CLOSED. Waiting seats face the gate. No passengers.\n"
+"※ Start the inspection with the [Check Status / 상태 확인] button.\n"
+"\n"
+"① If a gate that should be closed is [b]open[/b]:\n"
+"→ Do not look past the door. Never go through it.\n"
+"→ Press [b][Close & Lock / 닫기·잠금][/b] on the podium.\n"
+"\n"
+"② If the waiting seats have all turned to [b]face the other way[/b]:\n"
+"→ Turn off the gate area lights. (Light switch at the gate area entrance)\n"
+"\n"
+"③ If a [b]passenger[/b] is sitting in the waiting seats:\n"
+"→ Do not approach. Do not speak to them.\n"
+"→ Wait [b]10 seconds with your back turned[/b] to the passenger."
+
+msgid ""
+"위치: 탑승동 연결 통로 / 제어대는 통로 남쪽 입구\n"
+"\n"
+"[b][정상][/b] [가동] 시 표시 방향(▲ 탑승동 쪽)으로 천천히 이동.\n"
+"\n"
+"① 표시 방향과 [b]반대로[/b] 움직이면:\n"
+"　→ 절대 탑승하지 마십시오.\n"
+"　→ 시설관리실 배전반에서 [b]MW-1 전원을 차단[/b]하십시오.\n"
+"\n"
+"② 속도가 비정상적으로 [b]빠르면[/b]:\n"
+"　→ 탑승하지 말고 [비상정지]를 누르십시오.\n"
+"\n"
+"③ 아무도 켜지 않았는데 움직이고 있으면:\n"
+"　→ 탑승하지 말고 [정지]하십시오."
+msgstr ""
+"Location: Concourse Corridor / Control stand at the south entrance of the corridor\n"
+"\n"
+"[b][NORMAL][/b] On [Start / 가동], moves slowly in the marked direction (▲ toward Concourse).\n"
+"\n"
+"① If it moves [b]against[/b] the marked direction:\n"
+"→ Never step onto it.\n"
+"→ [b]Cut MW-1 power[/b] at the Facility Office breaker panel.\n"
+"\n"
+"② If it moves abnormally [b]fast[/b]:\n"
+"→ Do not step onto it. Press [Emergency Stop / 비상정지].\n"
+"\n"
+"③ If it is moving although no one switched it on:\n"
+"→ Do not step onto it. Press [Stop / 정지]."
+
+msgid ""
+"위치: 탑승동 연결 통로 / 제어대는 통로 남쪽 입구\n"
+"\n"
+"[b][정상][/b] [가동] 시 표시 방향(▲ 탑승동 쪽)으로 천천히 이동.\n"
+"\n"
+"① 표시 방향과 ▒▒▒ 움직이면:\n"
+"　→ 절대 ▒▒하지 마십시오.\n"
+"　→ 시설관리실 ▒▒▒에서 [b]MW-1 ▒▒을 차단[/b]하십시오.\n"
+"\n"
+"② 속도가 비정상적으로 ▒▒▒:\n"
+"　→ ▒▒하지 말고 [▒▒정지]를 누르십시오.\n"
+"\n"
+"③ 아무도 켜지 않았는데 ▒▒▒▒ 있으면:\n"
+"　→ 탑승하지 말고 [▒▒]하십시오."
+msgstr ""
+"Location: Concourse Corridor / Control stand at the south entrance of the corridor\n"
+"\n"
+"[b][NORMAL][/b] On [Start / 가동], moves slowly in the marked direction (▲ toward Concourse).\n"
+"\n"
+"① If it moves ▒▒▒▒ the marked direction:\n"
+"→ Never ▒▒▒▒▒▒.\n"
+"→ [b]Cut MW-1 ▒▒▒[/b] at the Facility Office ▒▒▒▒▒▒▒.\n"
+"\n"
+"② If it moves abnormally ▒▒:\n"
+"→ Do not ▒▒▒▒▒▒. Press [▒▒▒▒▒ Stop / ▒▒정지].\n"
+"\n"
+"③ If it is ▒▒▒ although no one switched it on:\n"
+"→ Do not step onto it. Press [▒▒ / ▒▒]."
+
+msgid "위험"
+msgstr "Danger"
+
+msgid "위험 — 시스템이 당신을 인식하고 있습니다"
+msgstr "Danger — the system is aware of you"
+
+msgid "음악"
+msgstr "Music"
+
+msgid "의자 위에 놓인 업무일지 읽기"
+msgstr "Read the work log on the chair"
+
+msgid "이 %s 다시 시작"
+msgstr "Restart This %s"
+
+msgid ""
+"이 게임에는 [b]깜빡이는 조명과 화면 효과[/b]가 포함되어 있습니다. 빛에 민감하거나 발작 병력이 있는 분은 플레이 전에 의사와 상의하십시오. 플레이 중 어지러움, 시야 이상, 경련 등이 느껴지면 즉시 중단하십시오.\n"
+"\n"
+"[color=#9aa3ae]설정 › 자막·접근성에서 UI 흔들림과 깜빡임을 줄일 수 있습니다.[/color]"
+msgstr ""
+"This game contains [b]flashing lights and screen effects[/b]. If you are sensitive to light or have a history of seizures, consult a doctor before playing. If you experience dizziness, altered vision or convulsions while playing, stop playing immediately.\n"
+"\n"
+"[color=#9aa3ae]You can reduce UI shake and flicker in Settings › Accessibility.[/color]"
+
+msgid "이 근무 다시 시작"
+msgstr "Restart This Shift"
+
+msgid "이동"
+msgstr "Move"
+
+msgid "이름을 부르는 방송 중에 움직였습니다. (수칙 p.9 ②)"
+msgstr "You moved while the PA was calling your name. (Rule p.9 ②)"
+
+msgid "이름을 입력하십시오"
+msgstr "Enter your name"
+
+msgid "이미 [이상] 보고됨 — 수칙에 따라 대응하십시오."
+msgstr "Already reported as [ANOMALY] — respond according to the rules."
+
+msgid "이상"
+msgstr "ANOMALY"
+
+msgid "이상 판정 접수 — 이미 정상화된 상태입니다."
+msgstr "ANOMALY report received — the facility has already returned to normal."
+
+msgid "이상 판정 접수. 근무 수칙에 따라 대응하십시오. (제한 %d초)"
+msgstr "ANOMALY report received. Respond according to the Shift Rules. (Time limit %ds)"
+
+msgid "이상 해제"
+msgstr "Anomaly cleared"
+
+msgid "이상 현상 해제 — 대응 완료."
+msgstr "Anomaly cleared — response complete."
+
+msgid "이상 현상 해제."
+msgstr "Anomaly cleared."
+
+msgid "이어하기"
+msgstr "Continue"
+
+msgid "일시정지"
+msgstr "Paused"
+
+msgid "입력"
+msgstr "Input"
+
+msgid "자막 · 접근성"
+msgstr "Accessibility"
+
+msgid "자막 배경"
+msgstr "Subtitle Background"
+
+msgid "자막 크기"
+msgstr "Subtitle Size"
+
+msgid "자막 표시"
+msgstr "Subtitles"
+
+msgid "작게"
+msgstr "Small"
+
+msgid "잘했어요. 사진 남았으면 벨트도 찍어 두고요. 가방 개수랑 색깔."
+msgstr "Nice work. If you have photos left, get the belt too. How many bags, and what color."
+
+msgid "저 직원인데요. 사번… 1103이요."
+msgstr "I'm staff, though. Employee number… 1103."
+
+msgid "저장된 사진이 없습니다."
+msgstr "No saved photos."
+
+msgid "전광판 RESET"
+msgstr "Reset board"
+
+msgid "전광판 시계가 태블릿 시각과 다르게 흐르고 있었습니다."
+msgstr "The board clock was running differently from the tablet's time."
+
+msgid "전광판에 테스트 목록에 없는 항공편(SH 000)이 있었습니다."
+msgstr "The board showed a flight that was not on the test list (SH 000)."
+
+msgid "전광판은 낮에 찍은 사진이랑 비교해 봐요. 태블릿 [점검 앨범]에 있어요."
+msgstr "Compare the board with the photo you took during the day. It's in the tablet, under [Inspection Album]."
+
+msgid "전광판의 한 행이 낮에 기록한 테스트 목록과 달랐습니다."
+msgstr "One row on the board differed from the test list recorded during the day."
+
+msgid "전원 차단"
+msgstr "Power off"
+
+msgid "전원 투입"
+msgstr "Power on"
+
+msgid "전임 점검원 업무일지 #1"
+msgstr "Previous Inspector's Work Log #1"
+
+msgid "전임 점검원 업무일지 #2"
+msgstr "Previous Inspector's Work Log #2"
+
+msgid "전임 점검원 업무일지 #3"
+msgstr "Previous Inspector's Work Log #3"
+
+msgid "전체 볼륨"
+msgstr "Master Volume"
+
+msgid "전체 화면"
+msgstr "Fullscreen"
+
+msgid "절대 손대지 말고 [비상정지] 후 떠나야 했습니다. (수칙 p.5)"
+msgstr "You should have pressed [Emergency Stop / 비상정지] without touching it, then left. (Rule p.5)"
+
+msgid "절대 탑승하지 말고 배전반에서 MW-1 전원을 차단해야 했습니다. (수칙 p.6)"
+msgstr "You should have stayed off it entirely and cut MW-1 power at the breaker panel. (Rule p.6)"
+
+msgid "점검"
+msgstr "Inspection"
+
+msgid "점검 구역 외 · 통제"
+msgstr "Outside inspection area · Closed"
+
+msgid "점검 앨범"
+msgstr "Album"
+
+msgid "점검 앨범 동기화 완료 — 변경된 사진 1건"
+msgstr "Inspection album synced — 1 photo changed"
+
+msgid "점검 위치"
+msgstr "Target"
+
+msgid "점검 지시"
+msgstr "Orders"
+
+msgid "점검 카메라"
+msgstr "Inspection Camera"
+
+msgid "점검원"
+msgstr "Inspector"
+
+msgid "점등 구역: %d"
+msgstr "Zones lit: %d"
+
+msgid "정비 통로"
+msgstr "Maintenance Passage"
+
+msgid ""
+"정비 통로\n"
+"MAINTENANCE\n"
+"관계자 외 출입금지"
+msgstr ""
+"MAINTENANCE\n"
+"PASSAGE\n"
+"AUTHORIZED PERSONNEL ONLY"
+
+msgid "정상"
+msgstr "NORMAL"
+
+msgid "정상 판정"
+msgstr "Confirmed normal"
+
+msgid "정상 판정 접수."
+msgstr "NORMAL report received."
+
+msgid "정상 확인"
+msgstr "Normal confirmed"
+
+msgid "정상이라는데요. 다음 거 봐요."
+msgstr "They say it's normal. Next one."
+
+msgid "정전 중에 눈을 떴습니다. (수칙 p.9 ①)"
+msgstr "You opened your eyes during the blackout. (Rule p.9 ①)"
+
+msgid "정전…? 수칙 9페이지! 그 자리에서 눈 감아요. [C] 길게!"
+msgstr "A blackout…? Rule page 9! Close your eyes right where you are. Hold [C]!"
+
+msgid "정지"
+msgstr "Stopped"
+
+msgid "정확 판정"
+msgstr "Correct calls"
+
+msgid "제어함의 [RESET]을 눌러야 했습니다. (수칙 p.3)"
+msgstr "You should have pressed [RESET] on the control box. (Rule p.3)"
+
+msgid "제작"
+msgstr "PRODUCTION"
+
+msgid "제한 없음"
+msgstr "Unlimited"
+
+msgid "조명 끄기"
+msgstr "Lights off"
+
+msgid "조명 리듬 점멸"
+msgstr "Rhythmic Flicker"
+
+msgid "조명 분전반"
+msgstr "Lighting Panel"
+
+msgid "조명 분전반  LIGHTING"
+msgstr "LIGHTING PANEL"
+
+msgid "조명 분전반 LP-1"
+msgstr "Lighting Panel LP-1"
+
+msgid "조명 분전반 앞에서 켜져 있는 구역의 조명 상태를 관찰하고 보고하십시오."
+msgstr "At the lighting panel, observe and report the lighting in the zones that are on."
+
+msgid "조명 분전반 점검"
+msgstr "Inspect Lighting Panel"
+
+msgid "조명 분전반 점등 확인"
+msgstr "Check Lighting Panel"
+
+msgid "조명 켜기"
+msgstr "Lights on"
+
+msgid "조명 켜짐"
+msgstr "Lights On"
+
+msgid "조명이 돌아왔다."
+msgstr "The lights are back."
+
+msgid "조명이 켜진 곳으로"
+msgstr "Get to a lit area"
+
+msgid "조작"
+msgstr "Controls"
+
+msgid "조정"
+msgstr "Adjust"
+
+msgid "조준점 표시"
+msgstr "Crosshair"
+
+msgid "종료"
+msgstr "Exit"
+
+msgid "좋아요. 밤에 그 목록이랑 다르면 이상이에요. 테스트 항공편은 여덟 개뿐이에요."
+msgstr "Good. If it doesn't match that list at night, it's an anomaly. There are only eight test flights."
+
+msgid "주 전원 레버"
+msgstr "Main power lever"
+
+msgid "주 전원 레버가 잠금 장치에 걸려 있다. 지금은 움직이지 않는다."
+msgstr "The main power lever is caught in a lock. It won't move for now."
+
+msgid "주의"
+msgstr "Caution"
+
+msgid "중간 보고 — 시설관리실 복귀"
+msgstr "Interim Report — Return to Facility Office"
+
+msgid "지금은 기록할 수 없습니다."
+msgstr "Cannot record at this time."
+
+msgid "지급품: 점검 태블릿, 무전기,"
+msgstr "Issued: an inspection tablet, a radio,"
+
+msgid "지시"
+msgstr "Order"
+
+msgid "직원"
+msgstr "Staff"
+
+msgid "직원 번호가 아닌데요."
+msgstr "That's not a staff number."
+
+msgid "집"
+msgstr "Home"
+
+msgid "집으로 가는 가장 빠른 길"
+msgstr "The fastest way home"
+
+msgid "창 모드"
+msgstr "Windowed"
+
+msgid "책상 위에 바인더 있죠? 그게 근무 수칙이에요. 챙기세요."
+msgstr "See the binder on the desk? That's the Shift Rules. Take it with you."
+
+msgid "챕터 선택"
+msgstr "Chapter Select"
+
+msgid "처리됐네요. 개장 전이라 이런 게 가끔 있대요. 너무 신경 쓰지 마요."
+msgstr "That's taken care of. They say this happens now and then before an opening. Don't let it get to you."
+
+msgid "청취 완료"
+msgstr "Heard"
+
+msgid "체크인 홀"
+msgstr "Check-in Hall"
+
+msgid ""
+"체크인 홀 북측 [b]출발 전광판[/b]이 낮에 기록한 테스트 목록과 같은지 확인하십시오.\n"
+"태블릿 [b]점검 앨범[/b]의 사진과 비교할 수 있습니다."
+msgstr ""
+"Confirm that the [b]departures board[/b] on the north side of the Check-in Hall matches the test list recorded during the day.\n"
+"You can compare it with the photos in the tablet's [b]inspection album[/b]."
+
+msgid ""
+"체크인 홀 안내 데스크의 [b]PA 콘솔[/b]에서 [테스트 방송]을 끝까지 들으십시오.\n"
+"표준 문안은 근무 수칙 p.4에 있습니다."
+msgstr ""
+"At the [b]PA console[/b] on the Check-in Hall information desk, listen to the [Test Broadcast / 테스트 방송] all the way through.\n"
+"The standard script is in the Shift Rules, p.4."
+
+msgid "체크인 홀 출구가 저절로 열려 있다."
+msgstr "The Check-in Hall exit has opened by itself."
+
+msgid "총칙"
+msgstr "General Provisions"
+
+msgid "촬영"
+msgstr "Take Photo"
+
+msgid "최대 프레임"
+msgstr "Max FPS"
+
+msgid ""
+"추 모\n"
+"\n"
+"1987. 11. 3.\n"
+"서해비행장을 떠난 0편\n"
+"탑승객 41명을 기리며\n"
+"\n"
+"그들이 집으로 돌아오기를.\n"
+"— 유족 일동"
+msgstr ""
+"IN MEMORIAM\n"
+"\n"
+"1987. 11. 3.\n"
+"Flight 0, which left Seohae Airfield\n"
+"In memory of its 41 passengers\n"
+"\n"
+"May they come home.\n"
+"— The Bereaved Families"
+
+msgid "추록 · 1987. 11. 03."
+msgstr "Addendum · 1987.11.03"
+
+msgid "추록 · 2026. 10. 18."
+msgstr "Addendum · 2026.10.18"
+
+msgid "추록 · 2026. 10. 19."
+msgstr "Addendum · 2026.10.19"
+
+msgid "추록 날짜 확인해 봐요. 10월 18일. 맨 앞 개정 이력에 적힌 날짜랑 같아야 진짜예요."
+msgstr "Check the date on the addendum. October 18. It's only genuine if it matches the date in the revision history at the front."
+
+msgid ""
+"추모\n"
+"1987. 11. 3.\n"
+"서해비행장 0편\n"
+"탑승객 41명을 기리며"
+msgstr ""
+"IN MEMORIAM\n"
+"1987. 11. 3.\n"
+"Seohae Airfield Flight 0\n"
+"In memory of the 41 passengers"
+
+msgid "추모 동판 (자재창고 임시 보관)"
+msgstr "Memorial Plaque (Temporarily in Materials Storage)"
+
+msgid "출구  EXIT"
+msgstr "EXIT"
+
+msgid "출발  DEPARTURES"
+msgstr "DEPARTURES"
+
+msgid "출발 전광판의 테스트 목록과 시계를 낮의 기록·태블릿 시각과 비교하십시오."
+msgstr "Compare the departures board's test list and clock with the daytime record and the tablet's time."
+
+msgid "출발 전광판의 테스트 목록과 시계를 낮의 기록과 비교하십시오."
+msgstr "Compare the departures board's test list and clock with the daytime record."
+
+msgid "출입문 닫기 및 잠금"
+msgstr "Close and lock door"
+
+msgid "출입문 열림"
+msgstr "Door open"
+
+msgid "출입문 잠김"
+msgstr "Door locked"
+
+msgid "출입카드 태그"
+msgstr "Tag access card"
+
+msgid "취소"
+msgstr "Cancel"
+
+msgid "카드가 안 찍혀요? 잠깐만요, 확인해 볼게요."
+msgstr "The card won't read? Hold on, let me check."
+
+msgid "카메라"
+msgstr "Camera"
+
+msgid "카메라 실행"
+msgstr "Open Camera"
+
+msgid "카메라 종료"
+msgstr "Exit Camera"
+
+msgid "켜기"
+msgstr "On"
+
+msgid "크게"
+msgstr "Large"
+
+msgid "크레딧"
+msgstr "Credits"
+
+msgid "크레딧 · 라이선스"
+msgstr "Credits · Licenses"
+
+msgid "키를 누르십시오…"
+msgstr "Press a key…"
+
+msgid "타이베이"
+msgstr "Taipei"
+
+msgid "탑승"
+msgstr "Boarding"
+
+msgid "탑승 게이트"
+msgstr "Boarding Gates"
+
+msgid "탑승 게이트 구역 둘러보기 (선택)"
+msgstr "Look Around Boarding Gates (Optional)"
+
+msgid "탑승 게이트 구역 확인"
+msgstr "Check Boarding Gates Area"
+
+msgid "탑승 마감 방송 중 어두운 구역에 있었습니다. (수칙 p.9 ③)"
+msgstr "You were in an unlit area during the 'Boarding Closed' announcement. (Rule p.9 ③)"
+
+msgid "탑승 안내"
+msgstr "Boarding Info"
+
+msgid "탑승 중"
+msgstr "NOW BOARDING"
+
+msgid "탑승 처리되었습니다."
+msgstr "Your boarding has been processed."
+
+msgid "탑승 확정"
+msgstr "Boarding confirmed"
+
+msgid "탑승교로 들어가기"
+msgstr "Enter jet bridge"
+
+msgid "탑승구 "
+msgstr "Gate "
+
+msgid "탑승구 (추록)"
+msgstr "Gates (Addendum)"
+
+msgid "탑승구 GATE "
+msgstr "Gate "
+
+msgid "탑승구 GATE %s 점검"
+msgstr "Inspect GATE %s"
+
+msgid "탑승구 GATE 01~04 (추록)"
+msgstr "Gates GATE 01–04 (Addendum)"
+
+msgid "탑승구 앞 대기석이 전부 반대쪽을 보고 있었습니다."
+msgstr "Every waiting seat in front of the gate was facing the other way."
+
+msgid "탑승구가 곧 닫힙니다."
+msgstr "The gate will close shortly."
+
+msgid "탑승권 · BOARDING PASS"
+msgstr "BOARDING PASS"
+
+msgid "탑승권을 준비해 주세요"
+msgstr "Please have your boarding pass ready"
+
+msgid "탑승동 끝 [b]탑승 게이트 구역[/b]으로 가서 GATE 03 포디움의 [b][상태 확인][/b]을 눌러 보십시오. (대기석 배치 촬영 권장)"
+msgstr "Go to the [b]Boarding Gates[/b] area at the end of the concourse and press [b][Check Status / 상태 확인][/b] on the GATE 03 podium. (Photo of seating layout recommended)"
+
+msgid "탑승동 통로"
+msgstr "Concourse Corridor"
+
+msgid "탑승동 통로 [b]MW-1[/b]을 가동하고 이동 방향과 속도를 관찰하십시오."
+msgstr "Start [b]MW-1[/b] in the Concourse Corridor and observe its direction and speed."
+
+msgid ""
+"탑승동 통로 [b]MW-1[/b]을 가동하고 이동 방향과 속도를 관찰하십시오.\n"
+"정상: 표시 방향(▲ 탑승동 쪽), 천천히."
+msgstr ""
+"Start [b]MW-1[/b] in the Concourse Corridor and observe its direction and speed.\n"
+"Normal: marked direction (▲ toward the concourse), slow."
+
+msgid "탑승동 통로 남쪽 [b]MW-1 제어대[/b]에서 [가동]을 누르고 이동 방향(▲ 탑승동 쪽)을 확인하십시오."
+msgstr "At the [b]MW-1 control stand[/b] at the south end of the Concourse Corridor, press [Start / 가동] and check the direction of travel (▲ toward the concourse)."
+
+msgid "탑승동만 불이 켜져 있다. 북쪽 창밖에 무언가 서 있다."
+msgstr "Only the concourse is lit. Something is standing outside the north windows."
+
+msgid "탑승하지 말고 [비상정지]를 눌러야 했습니다. (수칙 p.6)"
+msgstr "You should have stayed off it and pressed [Emergency Stop / 비상정지]. (Rule p.6)"
+
+msgid "탑승하지 말고 정지시켜야 했습니다. (수칙 p.6)"
+msgstr "You should have stayed off it and stopped it. (Rule p.6)"
+
+msgid "태블릿"
+msgstr "Tablet"
+
+msgid "태블릿 [Tab]에 점검 지시가 하나씩 떠요. 현장 가서 직접 보고, [정상]이든 [이상]이든 바로 보고하세요."
+msgstr "Inspection orders come up on the tablet [Tab] one at a time. Go there, see it for yourself, and report right away, [NORMAL] or [ANOMALY]."
+
+msgid ""
+"태블릿 [b][Tab] → 카메라[/b]로 체크인 홀의 [b]FIDS 출발 전광판[/b]을 촬영하십시오.\n"
+"밤에 테스트 목록이 바뀌었는지 비교할 기준이 됩니다."
+msgstr ""
+"Use the tablet ([b][Tab] → Camera[/b]) to photograph the [b]FIDS departures board[/b] in the Check-in Hall.\n"
+"It is your reference for checking whether the test list has changed at night."
+
+msgid ""
+"태블릿 [b][야간 조명 배분][/b] 탭에서 밤에 켜 둘 구역 3곳을 고르고 확정하십시오.\n"
+"수칙 p.9 ③을 참고하십시오."
+msgstr ""
+"On the tablet's [b][Night Lighting Plan][/b] tab, choose 3 zones to keep lit at night and confirm.\n"
+"Refer to Rule p.9 ③."
+
+msgid "태블릿 열어서 카메라로 시설 정상 상태를 찍어 두세요. 하루 여섯 장이에요. 홀에 있는 출발 전광판부터요."
+msgstr "Open the tablet and use the camera to photograph the facilities in their normal state. Six shots a day. Start with the departures board in the hall."
+
+msgid "태블릿: MAINTENANCE TASKS → BOARDING INFORMATION"
+msgstr "Tablet: MAINTENANCE TASKS → BOARDING INFORMATION"
+
+msgid "터미널 안내도"
+msgstr "Terminal Map"
+
+msgid "터미널 침식도"
+msgstr "Terminal erosion"
+
+msgid "테두리 없는 전체 화면"
+msgstr "Borderless Fullscreen"
+
+msgid "테스트 가방 투입 (스캔)"
+msgstr "Load test bag (scan)"
+
+msgid "테스트 방송"
+msgstr "Test Broadcast"
+
+msgid "테스트 방송 송출"
+msgstr "Play test broadcast"
+
+msgid "테스트 방송의 단어 하나가 표준 문안과 달랐습니다."
+msgstr "One word in the test broadcast differed from the standard script."
+
+msgid "테스트 수하물이 아닌 가방에 손을 댔습니다. (수칙 p.5)"
+msgstr "You touched a bag that was not test baggage. (Rule p.5)"
+
+msgid "통로"
+msgstr "Corridor"
+
+msgid "통로 무빙워크도 돌려 봐요. 표시대로 탑승동 쪽으로 가면 정상."
+msgstr "Run the corridor walkway too. If it moves toward the concourse like the marking shows, it's normal."
+
+msgid "통제"
+msgstr "RESTRICTED"
+
+msgid "퇴근 기록"
+msgstr "Clock Out"
+
+msgid "특이사항 없음. 개장 준비는 예정대로 진행됩니다."
+msgstr "Nothing to report. Opening preparations will proceed as scheduled."
+
+msgid "판독 화면 속 사람"
+msgstr "Person on the Scan"
+
+msgid "판독 화면 표시"
+msgstr "Showing scan image"
+
+msgid "판정 기록 불일치 — 대응은 확인되었습니다."
+msgstr "Judgment mismatch — response confirmed."
+
+msgid "판정 오류"
+msgstr "Misjudged"
+
+msgid "판정 접수."
+msgstr "Report received."
+
+msgid "팩스로 온 개정 수칙 챙기기"
+msgstr "Take the faxed rule revisions"
+
+msgid "팩스로 탑승구 수칙 왔을 거예요. 8페이지."
+msgstr "The gate rules should have come in by fax. Page 8."
+
+msgid "표시 중"
+msgstr "Displaying"
+
+msgid "한 명의 승객"
+msgstr "One Passenger"
+
+msgid "한국어"
+msgstr "Korean"
+
+msgid "한도 초과 — 다른 구역을 먼저 해제하십시오."
+msgstr "Limit exceeded — switch off another zone first."
+
+msgid "해당 구역 스위치를 내리고 10초 뒤 다시 올려야 했습니다. (수칙 p.2)"
+msgstr "You should have switched that zone off, then back on after 10 seconds. (Rule p.2)"
+
+msgid "헤드폰 착용을 권장합니다"
+msgstr "Headphones recommended"
+
+msgid "헤드폰 착용을 권장합니다. 소리가 단서가 됩니다."
+msgstr "Headphones are recommended. Sounds are clues."
+
+msgid "현장 확인 필요"
+msgstr "On-site check needed"
+
+msgid "현장에서 시설을 직접 관찰해야 보고할 수 있습니다."
+msgstr "You must observe the facility on site before reporting."
+
+msgid "현재 시각, 새벽 세 시입니다. 영편 탑승을 마감합니다."
+msgstr "The time is now 3 a.m. Boarding for flight zero is now closed."
+
+msgid "현재 위치"
+msgstr "You"
+
+msgid "현재 지시 없음"
+msgstr "No current order"
+
+msgid "홀"
+msgstr "Hall"
+
+msgid "홍콩"
+msgstr "Hong Kong"
+
+msgid "화면"
+msgstr "Display"
+
+msgid "화면 모드"
+msgstr "Window Mode"
+
+msgid "화면 밝기 조정"
+msgstr "Adjust Brightness"
+
+msgid "확인"
+msgstr "OK"
+
+msgid "확인해 봤는데 정상이에요. 시간만 버렸네요."
+msgstr "I checked. It's normal. We just lost time."
+
+msgid "효과음 · 방송"
+msgstr "Sound Effects · PA"
+

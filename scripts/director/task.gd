@@ -33,7 +33,7 @@ func status_text() -> String:
 		"active":
 			return "관찰 완료 — 보고 가능" if observed else "현장 확인 필요"
 		"responding":
-			return "대응 중 (%d초)" % int(ceil(deadline))
+			return tr("대응 중 (%d초)") % int(ceil(deadline))
 		"done":
 			match result:
 				"correct":

@@ -120,7 +120,7 @@ func _draw() -> void:
 		var k := fmod(_t, 1.2) / 1.2
 		draw_arc(tp, 10.0 + k * 22.0, 0, TAU, 40, Color(UiKit.SIGNAL, 1.0 - k), 2.5, true)
 		draw_arc(tp, 9.0, 0, TAU, 32, UiKit.SIGNAL, 3.0, true)
-		var label := "점검 위치"
+		var label := UiKit.t("점검 위치")
 		var lw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x
 		var lr := Rect2(tp + Vector2(16, -30), Vector2(lw + 18, 28))
 		if lr.end.x > map_area.end.x - 4.0:
@@ -142,22 +142,24 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([cx + Vector2(52, -7), cx + Vector2(42, -13), cx + Vector2(42, -1)]), UiKit.TEXT_DIM)
 	var ly := size.y - 16.0
 	var lx := 18.0
-	draw_circle(Vector2(lx + 4, ly - 6), 4.5, UiKit.OPS)
-	draw_string(f, Vector2(lx + 16, ly), "시설", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
-	lx += 76.0
-	draw_colored_polygon(PackedVector2Array([Vector2(lx + 12, ly - 6), Vector2(lx, ly - 13), Vector2(lx + 3, ly - 6), Vector2(lx, ly + 1)]), UiKit.CLEAR)
-	draw_string(f, Vector2(lx + 20, ly), "현재 위치", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
-	lx += 112.0
-	draw_arc(Vector2(lx + 6, ly - 6), 6.5, 0, TAU, 20, UiKit.SIGNAL, 2.0, true)
-	draw_string(f, Vector2(lx + 20, ly), "점검 위치", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
-	lx += 112.0
-	draw_circle(Vector2(lx + 5, ly - 6), 5.0, UiKit.SIGNAL)
-	draw_string(f, Vector2(lx + 18, ly), "조명 켜짐", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	for item in ["시설", "현재 위치", "점검 위치", "조명 켜짐"]:
+		match item:
+			"시설":
+				draw_circle(Vector2(lx + 4, ly - 6), 4.5, UiKit.OPS)
+			"현재 위치":
+				draw_colored_polygon(PackedVector2Array([Vector2(lx + 12, ly - 6), Vector2(lx, ly - 13), Vector2(lx + 3, ly - 6), Vector2(lx, ly + 1)]), UiKit.CLEAR)
+			"점검 위치":
+				draw_arc(Vector2(lx + 6, ly - 6), 6.5, 0, TAU, 20, UiKit.SIGNAL, 2.0, true)
+			_:
+				draw_circle(Vector2(lx + 5, ly - 6), 5.0, UiKit.SIGNAL)
+		var label := UiKit.t(item)
+		draw_string(f, Vector2(lx + 20, ly), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+		lx += 20.0 + f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x + 26.0
 	_draw_side(Rect2(size.x - SIDE_W, 0, SIDE_W, size.y), target_zone, f, disp)
 
 
 func _draw_zone_name(zn: String, rect: Rect2, rects: Dictionary, placed: Array, area: Rect2, f: Font) -> void:
-	var name_text: String = Terminal.ZONE_NAMES.get(zn, zn)
+	var name_text: String = UiKit.t(Terminal.ZONE_NAMES.get(zn, zn))
 	var fs := 17
 	var tw := f.get_string_size(name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var col := UiKit.TEXT if not _locked(zn) else Color("5a636e")
@@ -200,7 +202,7 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 	var x := r.position.x + 22.0
 	var w := r.size.x - 44.0
 	var y := r.position.y + 34.0
-	draw_string(disp, Vector2(x, y), "ZONE STATUS · 구역 상태", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_MUTE)
+	draw_string(disp, Vector2(x, y), UiKit.t("ZONE STATUS · 구역 상태"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_MUTE)
 	y += 16.0
 	var here: String = player.zone if player else ""
 	for zn in _zones():
@@ -211,9 +213,9 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 		elif zn == here:
 			draw_rect(Rect2(row.position, Vector2(3, row.size.y)), UiKit.CLEAR)
 		var locked := _locked(zn)
-		draw_string(f, Vector2(x, y + 26.0), Terminal.ZONE_NAMES.get(zn, zn), HORIZONTAL_ALIGNMENT_LEFT, w - 150.0, 18,
+		draw_string(f, Vector2(x, y + 26.0), UiKit.t(Terminal.ZONE_NAMES.get(zn, zn)), HORIZONTAL_ALIGNMENT_LEFT, w - 150.0, 18,
 			UiKit.TEXT if not locked else UiKit.TEXT_MUTE)
-		var state := "통제" if locked else ("—" if not terminal.zones.has(zn) else ("ON" if terminal.zones[zn].is_on else "OFF"))
+		var state := UiKit.t("통제") if locked else ("—" if not terminal.zones.has(zn) else ("ON" if terminal.zones[zn].is_on else "OFF"))
 		var sc := UiKit.ALERT.darkened(0.15) if locked else (UiKit.SIGNAL if state == "ON" else UiKit.TEXT_MUTE)
 		var sw := disp.get_string_size(state, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x
 		var chip := Rect2(Vector2(x + w - sw - 18.0, y + 8.0), Vector2(sw + 18.0, 24.0))
@@ -227,12 +229,12 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 		y += 40.0
 	# active order
 	y += 40.0
-	draw_string(disp, Vector2(x, y), "CURRENT ORDER · 현재 지시", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL)
-	var title := director.current.title if director and director.current else "—"
+	draw_string(disp, Vector2(x, y), UiKit.t("CURRENT ORDER · 현재 지시"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL)
+	var title := UiKit.t(director.current.title) if director and director.current else "—"
 	draw_multiline_string(f, Vector2(x, y + 30.0), title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2, UiKit.TEXT)
 	var th := f.get_multiline_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2).y
 	if target_zone != "":
-		draw_string(f, Vector2(x, y + 30.0 + th + 6.0), "위치 · %s" % Terminal.ZONE_NAMES.get(target_zone, target_zone), HORIZONTAL_ALIGNMENT_LEFT, w, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+		draw_string(f, Vector2(x, y + 30.0 + th + 6.0), UiKit.t("위치 · %s") % UiKit.t(Terminal.ZONE_NAMES.get(target_zone, target_zone)), HORIZONTAL_ALIGNMENT_LEFT, w, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 
 
 func _locked(zn: String) -> bool:

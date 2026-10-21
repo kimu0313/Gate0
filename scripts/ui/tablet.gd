@@ -190,11 +190,19 @@ func _apply_mode() -> void:
 	_tab_indicator.color = _accent()
 	for key in _tabs:
 		var t: Dictionary = _tabs[key]
-		(t.label as Label).text = UiKit.keep_all(BOARDING_TABS.get(key, t.title) if boarding_mode else t.title)
+		(t.label as Label).text = UiKit.keep_all(UiKit.t(BOARDING_TABS.get(key, t.title) if boarding_mode else t.title))
 		_style_tab(key)
 	_detail_panel.add_theme_stylebox_override("panel", UiKit.boxm(Color("10204a") if boarding_mode else UiKit.SCREEN_2, Vector4(32, 26, 32, 28)))
 	_erosion_box.add_theme_stylebox_override("panel", UiKit.boxm(Color("10204a") if boarding_mode else UiKit.SCREEN_3, Vector4(16, 12, 16, 14)))
 	_refresh_erosion()
+
+
+## Photo labels are stored as "<facility title> · DAY n hh:mm" in the source language; show them in
+## the current one.
+static func photo_label(label: String) -> String:
+	var parts := label.split(" · ", true, 1)
+	parts[0] = UiKit.t(parts[0])
+	return " · ".join(parts)
 
 
 ## Tab and indicator accent: signal yellow, or boarding-pass cream in BOARDING INFORMATION.
@@ -229,7 +237,11 @@ func _make_tab(key: String, title: String, icon_name: String) -> Button:
 	b.focus_mode = Control.FOCUS_NONE
 	for st in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
 		b.add_theme_stylebox_override(st, UiKit.empty_box())
-	b.custom_minimum_size = Vector2(72 + title.length() * 19, 56)
+	# wide enough for the bold (selected) name in this language, in both the work and boarding apps
+	var tw := 0.0
+	for s in [title, BOARDING_TABS.get(key, title)]:
+		tw = maxf(tw, UiKit.font("sans", 700).get_string_size(UiKit.t(s), HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x)
+	b.custom_minimum_size = Vector2(72 + tw, 56)
 	var h := HBoxContainer.new()
 	UiKit.full_rect(h)
 	h.offset_left = 20
@@ -529,7 +541,7 @@ func refresh() -> void:
 		if task.state != "done":
 			open_n += 1
 		_task_list.add_child(_task_row(task))
-	_task_caption.text = "WORK ORDERS · 근무 지시 %d" % open_n
+	_task_caption.text = UiKit.t("WORK ORDERS · 근무 지시 %d") % open_n
 	_build_detail()
 
 
@@ -585,7 +597,7 @@ func _task_row(task: Task) -> Button:
 	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(tv)
-	var tl := UiKit.label(task.title + ("  (선택)" if task.optional else ""), 17, title_col, "sans", 700 if sel else 500)
+	var tl := UiKit.label(UiKit.t(task.title) + (UiKit.t("  (선택)") if task.optional else ""), 17, title_col, "sans", 700 if sel else 500)
 	tl.clip_text = true
 	tl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	tv.add_child(tl)
@@ -629,12 +641,12 @@ func _build_detail() -> void:
 	if task.urgent and task.state != "done":
 		chips.add_child(UiKit.chip("URGENT · 긴급", UiKit.INK_0, UiKit.WARN, "warn", 15))
 	if task.location != "":
-		chips.add_child(UiKit.chip(str(Terminal.ZONE_NAMES.get(task.location, task.location)), UiKit.OPS, Color("13283a"), "pin", 15))
+		chips.add_child(UiKit.chip(str(Terminal.ZONE_NAMES.get(task.location, task.location)), UiKit.OPS, Color("13283a"), "pin"))
 	var st_col := UiKit.SIGNAL if task.state != "done" else UiKit.TEXT_DIM
 	chips.add_child(UiKit.chip(task.status_text(), st_col, Color(st_col, 0.14), "", 15))
 	var f: Facility = director.t.facility(task.facility_id) if task.facility_id != "" else null
 	if f:
-		chips.add_child(UiKit.chip("시설: " + f.describe_state(), UiKit.TEXT_DIM, Color(1, 1, 1, 0.05), "", 15))
+		chips.add_child(UiKit.chip(UiKit.t("시설: ") + UiKit.t(f.describe_state()), UiKit.TEXT_DIM, Color(1, 1, 1, 0.05), ""))
 	var body := UiKit.rich(task.detail, 20, UiKit.BODY)
 	_detail.add_child(body)
 	if task.kind != "inspect":
@@ -698,7 +710,8 @@ func _report_button(task: Task, anomaly: bool, enabled: bool) -> Button:
 	tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(tv)
 	tv.add_child(UiKit.label("이상" if anomaly else "정상", 34, fg, "sans", 900))
-	tv.add_child(UiKit.label("ANOMALY" if anomaly else "NORMAL", 19, fg, "display", 700))
+	if not UiKit.same("이상" if anomaly else "정상", "ANOMALY" if anomaly else "NORMAL"):
+		tv.add_child(UiKit.label("ANOMALY" if anomaly else "NORMAL", 19, fg, "display", 700))
 	b.pressed.connect(_report.bind(task, anomaly))
 	b.mouse_entered.connect(func():
 		if b.disabled:
@@ -759,14 +772,14 @@ func _refresh_erosion() -> void:
 		return
 	if boarding_mode:
 		# the terminal has stopped measuring an inspector: it has checked in a passenger
-		_erosion_caption.text = UiKit.keep_all("PASSENGER STATUS · 승객 상태")
-		_erosion_state.text = UiKit.keep_all("탑승 확정")
+		_erosion_caption.text = UiKit.keep_all(UiKit.t("PASSENGER STATUS · 승객 상태"))
+		_erosion_state.text = UiKit.keep_all(UiKit.t("탑승 확정"))
 		_erosion_state.add_theme_color_override("font_color", UiKit.NAVY_TEXT)
 		_erosion_meter.value = 100.0
 		_erosion_meter.color = UiKit.NAVY_TEXT
 		_erosion_meter.queue_redraw()
 		return
-	_erosion_caption.text = UiKit.keep_all("TERMINAL SYSTEM · 침식도")
+	_erosion_caption.text = UiKit.keep_all(UiKit.t("TERMINAL SYSTEM · 침식도"))
 	var e := Game.erosion
 	var st := UiKit.erosion_state(e)
 	_erosion_meter.value = e
@@ -774,15 +787,15 @@ func _refresh_erosion() -> void:
 	_erosion_meter.queue_redraw()
 	var txt: String = st[1]
 	if e >= 75.0:
-		txt = "위험 — 시스템이 당신을 인식하고 있습니다"
-	_erosion_state.text = "%s · %d%%" % [txt, int(e)]
+		txt = UiKit.t("위험 — 시스템이 당신을 인식하고 있습니다")
+	_erosion_state.text = UiKit.keep_all("%s · %d%%" % [txt, int(e)])
 	_erosion_state.add_theme_color_override("font_color", st[0])
 
 
 func _build_boarding_pass() -> void:
 	for c in _detail.get_children():
 		c.queue_free()
-	_task_caption.text = "MAINTENANCE TASKS — 0건"
+	_task_caption.text = UiKit.t("MAINTENANCE TASKS — 0건")
 	# where the work orders were, the passenger's itinerary
 	for row in [["FLIGHT · 항공편", "000  서해 → HOME"], ["GATE · 탑승구", "0"], ["STATUS · 상태", "탑승 중"],
 			["SEAT · 좌석", "—"], ["BAGGAGE · 수하물", "0개"]]:
@@ -935,7 +948,7 @@ func _photo_card(i: int) -> Button:
 func _view_photo(i: int) -> void:
 	var ph: Dictionary = Game.photos[i]
 	_album_tex.texture = ph.tex
-	_album_caption.text = "#%02d   %s" % [i + 1, ph.label]
+	_album_caption.text = "#%02d   %s" % [i + 1, photo_label(str(ph.label))]
 	_album_viewer.visible = true
 	_album_viewer.modulate.a = 0.0
 	_album_tex.pivot_offset = _album_tex.size * 0.5
@@ -997,7 +1010,7 @@ func _refresh_records() -> void:
 			continue
 		any = true
 		var c: Dictionary = RulesDB.CLUES[id]
-		var body := str(c.body)
+		var body := UiKit.t(str(c.body))    # translate the template before the name goes in
 		if id == "syslog":
 			body = body % Game.player_name
 		var b := Button.new()
@@ -1025,10 +1038,10 @@ func _refresh_records() -> void:
 			Snd.play("page_flip", -14.0, 1.2)
 			_records_body.add_theme_font_override("normal_font", UiKit.font("mono" if is_log else "sans", 400))
 			_records_body.add_theme_font_override("bold_font", UiKit.font("mono" if is_log else "sans", 700))
-			_records_body.text = UiKit.keep_all("[b]%s[/b]\n\n%s" % [c.title, body])
+			_records_body.text = UiKit.keep_all("[b]%s[/b]\n\n%s" % [UiKit.t(c.title), body])
 			UiFx.typewrite(_records_body, clampf(body.length() * 0.004, 0.2, 0.7)))
 		_records_list.add_child(b)
-	_records_body.text = "" if any else "[color=#7c8590]아직 수집한 기록이 없습니다. 터미널 곳곳의 문서를 살펴보십시오.[/color]"
+	_records_body.text = "" if any else UiKit.keep_all(UiKit.t("[color=#7c8590]아직 수집한 기록이 없습니다. 터미널 곳곳의 문서를 살펴보십시오.[/color]"))
 	UiFx.stagger(_records_list.get_children(), 0.035, 0.18)
 
 
@@ -1081,7 +1094,7 @@ func _refresh_camera() -> void:
 		cell.custom_minimum_size = Vector2(34, 46)
 		cell.add_theme_stylebox_override("panel", UiKit.box(UiKit.SIGNAL if left else Color(0, 0, 0, 0), UiKit.SIGNAL if left else UiKit.LINE, 0, 2, 0))
 		_film_row.add_child(cell)
-	_camera_info.text = "오늘 남은 촬영  %d / %d" % [Game.photos_left, Game.PHOTOS_PER_DAY]
+	_camera_info.text = UiKit.t("오늘 남은 촬영  %d / %d") % [Game.photos_left, Game.PHOTOS_PER_DAY]
 	for c in _shots_row.get_children():
 		c.queue_free()
 	var taken := Game.PHOTOS_PER_DAY - Game.photos_left
@@ -1207,7 +1220,7 @@ func _style_zone(zn: String, on: bool, animate: bool) -> void:
 	var ic: UiIcon = b.find_child("Icon", true, false)
 	ic.set_icon("lamp_on" if on else "lamp", UiKit.SIGNAL if on else UiKit.TEXT_MUTE)
 	var st_l: Label = b.find_child("State", true, false)
-	st_l.text = "ON · 예약됨" if on else "OFF · 꺼짐"
+	st_l.text = UiKit.keep_all(UiKit.t("ON · 예약됨" if on else "OFF · 꺼짐"))
 	st_l.add_theme_color_override("font_color", UiKit.SIGNAL if on else UiKit.TEXT_MUTE)
 	var sw: Control = b.find_child("Switch", true, false)
 	var target := 1.0 if on else 0.0
@@ -1235,8 +1248,8 @@ func _refresh_power(animate := false) -> void:
 			var names := PackedStringArray()
 			for f in director.t.facilities.values():
 				if (f as Facility).zone == zn:
-					names.append("· " + (f as Facility).title)
-			facs.text = UiKit.keep_all("\n".join(names) if not names.is_empty() else "· 점검 시설 없음")
+					names.append("· " + UiKit.t((f as Facility).title))
+			facs.text = UiKit.keep_all("\n".join(names) if not names.is_empty() else UiKit.t("· 점검 시설 없음"))
 	for c in _power_meter.get_children():
 		c.queue_free()
 	for i in 3:
@@ -1244,7 +1257,7 @@ func _refresh_power(animate := false) -> void:
 		seg.custom_minimum_size = Vector2(46, 16)
 		seg.add_theme_stylebox_override("panel", UiKit.box(UiKit.SIGNAL if i < n else Color("232b36"), Color(0, 0, 0, 0), 0, 0, 0))
 		_power_meter.add_child(seg)
-	_power_info.text = "%d / 3 구역 예약됨" % n
+	_power_info.text = UiKit.t("%d / 3 구역 예약됨") % n
 	_power_info.add_theme_color_override("font_color", UiKit.SIGNAL)
 
 
@@ -1257,7 +1270,7 @@ func _toggle_power(zn: String) -> void:
 	if on and n >= 3:
 		Snd.play("beep_error", -8.0)
 		_power_buttons[zn].set_pressed_no_signal(false)
-		_power_info.text = "한도 초과 — 다른 구역을 먼저 해제하십시오."
+		_power_info.text = UiKit.keep_all(UiKit.t("한도 초과 — 다른 구역을 먼저 해제하십시오."))
 		_power_info.add_theme_color_override("font_color", UiKit.ALERT)
 		UiFx.shake(_rig, 6.0, 0.2)
 		return
@@ -1269,7 +1282,7 @@ func _toggle_power(zn: String) -> void:
 func _confirm_power() -> void:
 	Snd.play("beep_ok", -6.0)
 	Events.player_action.emit("power_plan", "")
-	_power_info.text = "야간 조명 배분이 확정되었습니다."
+	_power_info.text = UiKit.keep_all(UiKit.t("야간 조명 배분이 확정되었습니다."))
 	_power_info.add_theme_color_override("font_color", UiKit.CLEAR)
 
 

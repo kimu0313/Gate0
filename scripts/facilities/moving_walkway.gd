@@ -166,4 +166,4 @@ func _remove_anomaly(anomaly_id: String) -> void:
 func describe_state() -> String:
 	if not powered:
 		return "전원 차단"
-	return ("가동 중 %.1fm/s" % speed) if running else "정지"
+	return (tr("가동 중 %.1fm/s") % speed) if running else tr("정지")

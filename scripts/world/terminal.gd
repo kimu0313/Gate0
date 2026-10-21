@@ -713,7 +713,7 @@ func _build_facility_systems() -> void:
 	for g in gate_defs:
 		var gate := BoardingGate.new()
 		gate.id = "gate" + g[0]
-		gate.title = "탑승구 GATE " + g[0]
+		gate.title = tr("탑승구 GATE ") + g[0]
 		gate.short_name = "GATE " + g[0]
 		gate.zone = "gates"
 		add_child(gate)

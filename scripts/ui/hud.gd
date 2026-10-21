@@ -340,7 +340,8 @@ func _guide_label(kr: String, en: String) -> VBoxContainer:
 	v.add_theme_constant_override("separation", -3)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(UiKit.label(kr, 18, UiKit.TEXT, "sans", 500))
-	v.add_child(UiKit.label(en, 14, UiKit.TEXT_MUTE, "display", 700))
+	if not UiKit.same(kr, en):     # in English the sub-label would repeat the action name
+		v.add_child(UiKit.label(en, 14, UiKit.TEXT_MUTE, "display", 700))
 	return v
 
 
@@ -394,13 +395,14 @@ func _process(delta: float) -> void:
 func _zone_text() -> String:
 	if player == null:
 		return ""
-	return Terminal.ZONE_NAMES.get(player.zone, "")
+	return UiKit.t(Terminal.ZONE_NAMES.get(player.zone, ""))
 
 
 # =========================================================================================
 # objective
 # =========================================================================================
 func set_objective(text: String) -> void:
+	text = UiKit.t(text)
 	_obj_text = text
 	if text == "":
 		if _obj_head.visible:
@@ -490,7 +492,7 @@ func _set_boarding(on: bool) -> void:
 	# the rest of the signage goes over with it: control guide, phase chip, observation accents
 	_keys_tile.add_theme_stylebox_override("panel", UiKit.box(_accent(), Color(0, 0, 0, 0), 0, 0, 0))
 	_keys_icon.set_icon("keyboard", UiKit.NAVY if on else UiKit.INK_0)
-	_keys_caption.text = UiKit.keep_all("PASSENGER GUIDE · 승객 안내" if on else "CONTROLS · 조작 안내")
+	_keys_caption.text = UiKit.keep_all(UiKit.t("PASSENGER GUIDE · 승객 안내" if on else "CONTROLS · 조작 안내"))
 	_keys_caption.add_theme_color_override("font_color", Color("9fb3e0") if on else UiKit.SIGNAL)
 	_keys.add_theme_stylebox_override("panel", UiKit.boxm(Color(UiKit.NAVY, 0.88) if on else Color(0.035, 0.043, 0.055, 0.8), Vector4.ZERO))
 	_observe_label.add_theme_color_override("font_color", _accent())
@@ -504,7 +506,7 @@ func set_prompt(text: String) -> void:
 	var had := has_target
 	has_target = text != ""
 	if has_target:
-		_prompt_text.text = text
+		_prompt_text.text = UiKit.keep_all(UiKit.t(text))
 	if has_target == had:
 		return
 	var tw := _prompt_row.create_tween().set_parallel(true)
@@ -523,10 +525,10 @@ func set_inspect_progress(v: float) -> void:
 		_burst = 1.0
 	_progress = v
 	if v >= 0.0:
-		_observe_label.text = "OBSERVING · 관찰 중 %d%%" % int(clampf(v, 0.0, 1.0) * 100.0)
+		_observe_label.text = UiKit.t("OBSERVING · 관찰 중 %d%%") % int(clampf(v, 0.0, 1.0) * 100.0)
 		_observe_label.modulate.a = 1.0
 	elif _burst > 0.9:
-		_observe_label.text = "OBSERVED · 관찰 완료"
+		_observe_label.text = UiKit.t("OBSERVED · 관찰 완료")
 		_observe_label.add_theme_color_override("font_color", UiKit.CLEAR)
 		var tw := _observe_label.create_tween()
 		tw.tween_interval(0.7)
@@ -562,7 +564,7 @@ func flash_warning(text: String, seconds := 0.6) -> void:
 		Snd.play("ui_alert", -14.0, 0.8)
 		if _warn_t <= 0.0:
 			_warn_age = 0.0
-	_warn_text = text
+	_warn_text = UiKit.t(text)
 	_warn_t = maxf(_warn_t, seconds)
 
 
@@ -606,7 +608,7 @@ func _draw_warning() -> void:
 	_warn.draw_rect(Rect2(x0 + pw - 3, 0, 3, h), fr)
 	# caption + message
 	var tx := x0 + tile + 28.0
-	_warn.draw_string(fc, Vector2(tx, 25), "WARNING · 수칙 경고", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, Color(UiKit.ALERT.lightened(0.25), a))
+	_warn.draw_string(fc, Vector2(tx, 25), UiKit.t("WARNING · 수칙 경고"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, Color(UiKit.ALERT.lightened(0.25), a))
 	var base := h * 0.5 + 12.0 + (f.get_ascent(fs) - f.get_descent(fs)) * 0.5 - 6.0
 	_warn.draw_string(f, Vector2(tx + 2, base + 2), _warn_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.6 * a))
 	_warn.draw_string(f, Vector2(tx, base), _warn_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, a))
@@ -645,13 +647,19 @@ func _draw_reticle() -> void:
 # subtitles
 # =========================================================================================
 func show_subtitle(speaker: String, text: String, duration: float) -> void:
+	# whole line first (scripted "speaker|text" keys), else speaker and text separately (radio())
+	var full := UiKit.t(text)
 	var who := ""
-	var body := text
-	if "|" in text:
-		var parts := text.split("|", true, 1)
-		who = parts[0]
-		body = parts[1]
+	var body := full
+	if "|" in full:
+		var parts := full.split("|", true, 1)
+		who = UiKit.t(parts[0])
+		body = UiKit.t(parts[1])
 	if not Game.settings.subtitles:
+		return
+	# bilingual PA (Korean then English audio) reads the same once translated: keep the line up
+	if _sub_root.visible and _sub_time > 0.0 and _sub_text.text == UiKit.keep_all(body):
+		_sub_time = maxf(_sub_time, duration)
 		return
 	for c in _sub_chip_slot.get_children():
 		c.queue_free()
@@ -697,6 +705,7 @@ const NOTE_KINDS := {
 
 
 func add_note(text: String, kind: String) -> void:
+	text = UiKit.t(text)
 	if kind == "task":
 		# the order sign already announces a new order; a toast repeating it is noise
 		await get_tree().process_frame

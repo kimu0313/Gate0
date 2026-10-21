@@ -162,7 +162,7 @@ func _do_goal(task: Task) -> void:
 	elif "중간 보고" in title:
 		await goto(Vector3(-20.8, 0.05, 1.55), Vector3(-21.78, 1.25, 1.55))
 		d._on_office_reader(t.readers.office_out)
-		await _until(func(): return d.escape_mode, 60.0)
+		await _until(func(): return d.escape_mode, 240.0)
 		await shot("boarding_pass_mode")
 		await _escape()
 		return
@@ -373,6 +373,7 @@ func _escape() -> void:
 		await shot("syslog")
 		if world.ui.modal == "doc":
 			world.ui._close_reader()
+		await _until(func(): return d.main_power_enabled, 60.0)
 		d._on_main_power()
 		await wait(4.0)
 		await goto(Vector3(17, 0.05, 11.5), Vector3(17, 1.5, 14))

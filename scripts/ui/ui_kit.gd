@@ -45,6 +45,7 @@ const C_INFO := OPS
 static var _fonts := {}
 static var _theme: Theme
 static var _textures := {}
+static var _keep_all_re: RegEx
 
 
 # =========================================================================================
@@ -211,9 +212,17 @@ static func _tex(key: String, size: Vector2i, paint: Callable) -> Texture2D:
 # =========================================================================================
 # widgets
 # =========================================================================================
+## ICU wraps Korean between any two syllables ("정상/이 | 상을"). Gluing the syllables of a word
+## with WORD JOINER (zero width in every UI font) makes lines break only at spaces, like CSS keep-all.
+static func keep_all(s: String) -> String:
+	if _keep_all_re == null:
+		_keep_all_re = RegEx.create_from_string("([가-힣])(?=[가-힣])")
+	return _keep_all_re.sub(s, "$1" + String.chr(0x2060), true)
+
+
 static func label(text: String, size := 20, color := TEXT, kind := "sans", weight := 400) -> Label:
 	var l := Label.new()
-	l.text = text
+	l.text = keep_all(text)
 	l.add_theme_font_override("font", font(kind, weight))
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
@@ -231,7 +240,7 @@ static func rich(text: String, size := 20, color := TEXT, kind := "sans") -> Ric
 	r.bbcode_enabled = true
 	r.fit_content = true
 	r.scroll_active = false
-	r.text = text
+	r.text = keep_all(text)
 	r.add_theme_font_override("normal_font", font(kind, 400))
 	r.add_theme_font_override("bold_font", font(kind, 700))
 	r.add_theme_font_size_override("normal_font_size", size)

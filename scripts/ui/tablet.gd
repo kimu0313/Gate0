@@ -977,7 +977,7 @@ func _refresh_records() -> void:
 			Snd.play("page_flip", -14.0, 1.2)
 			_records_body.add_theme_font_override("normal_font", UiKit.font("mono" if is_log else "sans", 400))
 			_records_body.add_theme_font_override("bold_font", UiKit.font("mono" if is_log else "sans", 700))
-			_records_body.text = "[b]%s[/b]\n\n%s" % [c.title, body]
+			_records_body.text = UiKit.keep_all("[b]%s[/b]\n\n%s" % [c.title, body])
 			UiFx.typewrite(_records_body, clampf(body.length() * 0.004, 0.2, 0.7)))
 		_records_list.add_child(b)
 	_records_body.text = "" if any else "[color=#7c8590]아직 수집한 기록이 없습니다. 터미널 곳곳의 문서를 살펴보십시오.[/color]"

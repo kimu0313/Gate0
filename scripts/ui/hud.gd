@@ -617,7 +617,7 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 		(ic as UiIcon).animated = speaker in ["radio", "pa"]
 	_sub_chip_slot.add_child(chip)
 	_sub_text.add_theme_color_override("font_color", Color(0.86, 0.87, 0.9) if speaker == "self" else Color(0.97, 0.97, 0.97))
-	_sub_text.text = body
+	_sub_text.text = UiKit.keep_all(body)
 	var was := _sub_root.visible and _sub_root.modulate.a > 0.5
 	_sub_root.visible = true
 	_sub_root.modulate.a = 1.0

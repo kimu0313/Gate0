@@ -110,7 +110,7 @@ func _text(title: String, lines: String, color := Color(0.95, 0.95, 0.95)) -> vo
 		_board_tiles.text_color = color
 		_board_tiles.modulate.a = 1.0
 		_board_tiles.show_text(title, 0.2, 0.07, 5)
-	_lines.text = lines
+	_lines.text = UiKit.keep_all(lines)
 	_lines.modulate.a = 0.0
 	var tw := create_tween()
 	tw.tween_interval(_board_tiles.settle_time() + 0.4 if title != "" else 0.2)

@@ -1,0 +1,12 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+*.tmp
+# OS
+Thumbs.db
+.DS_Store
+# Python
+__pycache__/
+# Local agent / MCP tool configs (may contain auth headers)
+.mcp.json
+.kimi-code/

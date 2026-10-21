@@ -1,0 +1,54 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="GATE 0"
+config/description="승객은 아무도 없는데, 탑승 안내 방송이 울립니다. — 1인칭 리미널 호러 프로토타입"
+run/main_scene="res://scenes/menu.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/show_image=false
+config/icon="res://icon.svg"
+
+[autoload]
+
+Events="*res://scripts/autoload/events.gd"
+Game="*res://scripts/autoload/game.gd"
+Snd="*res://scripts/autoload/snd.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1600
+window/size/window_height_override=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/ui_font.tres"
+theme/default_font_antialiasing=1
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+
+[rendering]
+
+anti_aliasing/quality/msaa_3d=2
+anti_aliasing/quality/screen_space_aa=1
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/positional_shadow/atlas_size=4096
+environment/volumetric_fog/volume_size=96
+environment/volumetric_fog/volume_depth=96

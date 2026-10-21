@@ -11,6 +11,9 @@ const TEX_SCREEN := Rect2(147, 136, 1243, 718)   # display area inside tablet_be
 const TEX_DEVICE_CENTER := Vector2(768, 506)
 const TEX_SIZE := Vector2(1536, 1024)
 const ART_SCALE := 1.08
+## Tab names once the app has become BOARDING INFORMATION.
+const BOARDING_TABS := {"tasks": "탑승 안내", "album": "기념 앨범", "map": "터미널 안내도", "records": "승객 기록",
+	"camera": "기념 촬영", "power": "객실 조명"}
 
 var ui: GameUI
 var director: ShiftDirector
@@ -44,6 +47,8 @@ var _stamp_layer: Control
 var _selected: Task
 var _erosion_meter: ErosionMeter
 var _erosion_state: Label
+var _erosion_box: PanelContainer
+var _erosion_caption: Label
 var _countdown: Label
 var _album_grid: GridContainer
 var _album_viewer: Control
@@ -57,6 +62,7 @@ var _power_meter: HBoxContainer
 var _map: MapView
 var _camera_info: Label
 var _film_row: HBoxContainer
+var _shots_row: HBoxContainer
 var _anim: Tween
 var _closing := false
 
@@ -131,6 +137,7 @@ func _ready() -> void:
 	_screen.add_child(_power_fx)
 	Events.tasks_changed.connect(refresh)
 	Events.erosion_changed.connect(func(_v): _refresh_erosion())
+	_apply_mode()
 
 
 # =========================================================================================
@@ -153,13 +160,13 @@ func _build_status_bar(parent: Control) -> void:
 	var sig := UiIcon.make("signal", 20, UiKit.TEXT_DIM)
 	sig.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(sig)
-	_header_clock = UiKit.label("", 18, UiKit.TEXT, "mono", 700)
+	_header_clock = UiKit.label("", 18, UiKit.TEXT, "display", 700)
 	_header_clock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	h.add_child(_header_clock)
 	var bat := UiIcon.make("battery", 26, UiKit.TEXT_DIM)
 	bat.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(bat)
-	var pct := UiKit.label("78%", 15, UiKit.TEXT_DIM, "mono")
+	var pct := UiKit.label("78%", UiKit.MIN_TEXT, UiKit.TEXT_DIM, "display")
 	pct.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	h.add_child(pct)
 	_apply_mode()
@@ -176,6 +183,23 @@ func _apply_mode() -> void:
 	_app_label.add_theme_color_override("font_color", UiKit.NAVY_TEXT if boarding_mode else UiKit.OPS)
 	_header_title.add_theme_color_override("font_color", Color("9fb3e0") if boarding_mode else UiKit.TEXT_DIM)
 	_header_title.flap_to("BOARDING INFORMATION" if boarding_mode else "MAINTENANCE TASKS", visible)
+	if _tab_indicator == null:
+		return
+	# the whole app goes over, not just the header: screen, tabs (renamed), panels, meter
+	_screen.add_theme_stylebox_override("panel", UiKit.box(Color("0a1530") if boarding_mode else UiKit.SCREEN, Color(0, 0, 0, 0), 18, 0, 0))
+	_tab_indicator.color = _accent()
+	for key in _tabs:
+		var t: Dictionary = _tabs[key]
+		(t.label as Label).text = UiKit.keep_all(BOARDING_TABS.get(key, t.title) if boarding_mode else t.title)
+		_style_tab(key)
+	_detail_panel.add_theme_stylebox_override("panel", UiKit.boxm(Color("10204a") if boarding_mode else UiKit.SCREEN_2, Vector4(32, 26, 32, 28)))
+	_erosion_box.add_theme_stylebox_override("panel", UiKit.boxm(Color("10204a") if boarding_mode else UiKit.SCREEN_3, Vector4(16, 12, 16, 14)))
+	_refresh_erosion()
+
+
+## Tab and indicator accent: signal yellow, or boarding-pass cream in BOARDING INFORMATION.
+func _accent() -> Color:
+	return UiKit.NAVY_TEXT if boarding_mode else UiKit.SIGNAL
 
 
 func _build_tab_bar(parent: Control) -> void:
@@ -227,14 +251,14 @@ func _make_tab(key: String, title: String, icon_name: String) -> Button:
 			ic.color = UiKit.TEXT
 			ic.queue_redraw())
 	b.mouse_exited.connect(func(): _style_tab(key))
-	_tabs[key] = {"button": b, "icon": ic, "label": l}
+	_tabs[key] = {"button": b, "icon": ic, "label": l, "title": title}
 	return b
 
 
 func _style_tab(key: String) -> void:
 	var t: Dictionary = _tabs[key]
 	var on := key == _current_tab
-	var col := UiKit.SIGNAL if on else UiKit.TEXT_DIM
+	var col := _accent() if on else (Color("8193bd") if boarding_mode else UiKit.TEXT_DIM)
 	(t.label as Label).add_theme_color_override("font_color", col)
 	(t.label as Label).add_theme_font_override("font", UiKit.font("sans", 700 if on else 500))
 	(t.icon as UiIcon).color = col
@@ -261,7 +285,7 @@ func _build_footer(parent: Control) -> void:
 	sb.border_color = UiKit.SCREEN_LINE
 	f.add_theme_stylebox_override("panel", sb)
 	parent.add_child(f)
-	f.add_child(UiKit.key_hints([["TAB", "닫기   ·   보고는 반드시 현장에서 관찰한 뒤에 하십시오."]], 14, UiKit.TEXT_MUTE))
+	f.add_child(UiKit.key_hints([[Game.key_label("tablet"), "닫기   ·   보고는 반드시 현장에서 관찰한 뒤에 하십시오."]], UiKit.MIN_TEXT, UiKit.TEXT_MUTE))
 
 
 func _draw_rig_shadow() -> void:
@@ -455,17 +479,17 @@ func _build_tasks_page(parent: Control) -> void:
 	_task_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_task_list.add_theme_constant_override("separation", 6)
 	scroll.add_child(_task_list)
-	var ebox := PanelContainer.new()
-	ebox.add_theme_stylebox_override("panel", UiKit.boxm(UiKit.SCREEN_3, Vector4(16, 12, 16, 14)))
-	left.add_child(ebox)
+	_erosion_box = PanelContainer.new()
+	_erosion_box.add_theme_stylebox_override("panel", UiKit.boxm(UiKit.SCREEN_3, Vector4(16, 12, 16, 14)))
+	left.add_child(_erosion_box)
 	var ev := VBoxContainer.new()
 	ev.add_theme_constant_override("separation", 10)
-	ebox.add_child(ev)
+	_erosion_box.add_child(ev)
 	var eh := HBoxContainer.new()
 	ev.add_child(eh)
-	var ecap := UiKit.caption("TERMINAL SYSTEM · 침식도", UiKit.TEXT_DIM, 15)
-	ecap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	eh.add_child(ecap)
+	_erosion_caption = UiKit.caption("TERMINAL SYSTEM · 침식도", UiKit.TEXT_DIM)
+	_erosion_caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	eh.add_child(_erosion_caption)
 	_erosion_state = UiKit.caption("", UiKit.CLEAR, 15)
 	eh.add_child(_erosion_state)
 	_erosion_meter = ErosionMeter.new()
@@ -595,7 +619,7 @@ func _build_detail() -> void:
 		s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.add_child(s)
 		return
-	_detail.add_child(UiKit.label("WORK ORDER %s · %s" % [task.id, "INSPECT" if task.kind == "inspect" else "TASK"], 15, UiKit.TEXT_MUTE, "mono"))
+	_detail.add_child(UiKit.label("WORK ORDER %s · %s" % [task.id, "INSPECT" if task.kind == "inspect" else "TASK"], UiKit.MIN_TEXT, UiKit.TEXT_MUTE, "display", 700))
 	var title := UiKit.label(task.title, 36, UiKit.TEXT, "sans", 900)
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail.add_child(title)
@@ -615,7 +639,9 @@ func _build_detail() -> void:
 	_detail.add_child(body)
 	if task.kind != "inspect":
 		return
-	_detail.add_child(UiKit.spacer(false))
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 22)
+	_detail.add_child(gap)
 	if task.state == "responding":
 		_build_response_block(task)
 		return
@@ -704,7 +730,7 @@ func _build_response_block(task: Task) -> void:
 	h.add_child(rv)
 	var msg := UiKit.rich("[b]이상 판정 접수됨.[/b] 근무 수칙에서 해당 시설 페이지를 찾아 지시대로 대응하십시오.", 19, Color("ffc9c2"))
 	rv.add_child(msg)
-	rv.add_child(UiKit.key_hints([["B", "근무 수칙 열기"]], 16, Color("ffc9c2")))
+	rv.add_child(UiKit.key_hints([[Game.key_label("binder"), "근무 수칙 열기"]], UiKit.MIN_TEXT, Color("ffc9c2")))
 
 
 func _report(task: Task, anomaly: bool) -> void:
@@ -731,6 +757,16 @@ func _report(task: Task, anomaly: bool) -> void:
 func _refresh_erosion() -> void:
 	if _erosion_meter == null:
 		return
+	if boarding_mode:
+		# the terminal has stopped measuring an inspector: it has checked in a passenger
+		_erosion_caption.text = UiKit.keep_all("PASSENGER STATUS · 승객 상태")
+		_erosion_state.text = UiKit.keep_all("탑승 확정")
+		_erosion_state.add_theme_color_override("font_color", UiKit.NAVY_TEXT)
+		_erosion_meter.value = 100.0
+		_erosion_meter.color = UiKit.NAVY_TEXT
+		_erosion_meter.queue_redraw()
+		return
+	_erosion_caption.text = UiKit.keep_all("TERMINAL SYSTEM · 침식도")
 	var e := Game.erosion
 	var st := UiKit.erosion_state(e)
 	_erosion_meter.value = e
@@ -747,6 +783,17 @@ func _build_boarding_pass() -> void:
 	for c in _detail.get_children():
 		c.queue_free()
 	_task_caption.text = "MAINTENANCE TASKS — 0건"
+	# where the work orders were, the passenger's itinerary
+	for row in [["FLIGHT · 항공편", "000  서해 → HOME"], ["GATE · 탑승구", "0"], ["STATUS · 상태", "탑승 중"],
+			["SEAT · 좌석", "—"], ["BAGGAGE · 수하물", "0개"]]:
+		var rv := VBoxContainer.new()
+		rv.add_theme_constant_override("separation", 0)
+		rv.add_child(UiKit.caption(row[0], Color("9fb3e0")))
+		rv.add_child(UiKit.label(row[1], 24, UiKit.NAVY_TEXT, "display", 700))
+		var box := PanelContainer.new()
+		box.add_theme_stylebox_override("panel", UiKit.boxm(Color("14275a"), Vector4(16, 10, 16, 12)))
+		box.add_child(rv)
+		_task_list.add_child(box)
 	var card := BoardingPassCard.make(800.0, Game.player_name)
 	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_detail.add_child(card)
@@ -862,7 +909,7 @@ func _photo_card(i: int) -> Button:
 	tr.clip_contents = true
 	v.add_child(tr)
 	var parts := str(ph.label).split(" · ")
-	var stamp := UiKit.label(parts[parts.size() - 1], 14, UiKit.SIGNAL, "mono", 700)
+	var stamp := UiKit.label(parts[parts.size() - 1], UiKit.MIN_TEXT, UiKit.SIGNAL, "display", 700)
 	stamp.add_theme_constant_override("outline_size", 4)
 	stamp.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	stamp.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -877,7 +924,7 @@ func _photo_card(i: int) -> Button:
 	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(cap)
 	cap.add_child(UiKit.chip("#%02d" % (i + 1), UiKit.INK_0, UiKit.TEXT_DIM, "", 13))
-	var l := UiKit.label(parts[0], 15, UiKit.BODY)
+	var l := UiKit.label(parts[0], 17, UiKit.BODY)
 	l.clip_text = true
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cap.add_child(l)
@@ -990,7 +1037,6 @@ func _build_camera_page(parent: Control) -> void:
 	var page := VBoxContainer.new()
 	UiKit.full_rect(page)
 	page.add_theme_constant_override("separation", 18)
-	page.alignment = BoxContainer.ALIGNMENT_CENTER
 	parent.add_child(page)
 	_pages["camera"] = page
 	var head := HBoxContainer.new()
@@ -1019,8 +1065,13 @@ func _build_camera_page(parent: Control) -> void:
 	var hints := UiKit.key_hints([["LMB", "촬영"], ["RMB", "종료"]], 16, UiKit.TEXT_DIM)
 	hints.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(hints)
+	page.add_child(UiKit.caption("TODAY'S FILM · 오늘의 필름", UiKit.TEXT_MUTE))
+	_shots_row = HBoxContainer.new()
+	_shots_row.add_theme_constant_override("separation", 12)
+	page.add_child(_shots_row)
 
 
+## Film counter plus a contact strip: today's shots, then empty frames for what is left.
 func _refresh_camera() -> void:
 	for c in _film_row.get_children():
 		c.queue_free()
@@ -1031,6 +1082,30 @@ func _refresh_camera() -> void:
 		cell.add_theme_stylebox_override("panel", UiKit.box(UiKit.SIGNAL if left else Color(0, 0, 0, 0), UiKit.SIGNAL if left else UiKit.LINE, 0, 2, 0))
 		_film_row.add_child(cell)
 	_camera_info.text = "오늘 남은 촬영  %d / %d" % [Game.photos_left, Game.PHOTOS_PER_DAY]
+	for c in _shots_row.get_children():
+		c.queue_free()
+	var taken := Game.PHOTOS_PER_DAY - Game.photos_left
+	var today: Array = Game.photos.filter(func(p): return int(p.get("cycle", 0)) == Game.cycle)
+	today = today.slice(maxi(0, today.size() - taken))
+	for i in Game.PHOTOS_PER_DAY:
+		var frame := PanelContainer.new()
+		frame.custom_minimum_size = Vector2(178, 112)
+		var has := i < today.size()
+		frame.add_theme_stylebox_override("panel", UiKit.boxm(Color(0, 0, 0, 0.35) if has else Color(1, 1, 1, 0.02), Vector4(4, 4, 4, 4),
+			UiKit.LINE if has else Color("26303b"), 1))
+		_shots_row.add_child(frame)
+		if has:
+			var tr := TextureRect.new()
+			tr.texture = today[i].tex
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			frame.add_child(tr)
+		else:
+			var l := UiKit.label("#%02d" % (i + 1), UiKit.MIN_TEXT, Color("3a4552"), "display", 700)
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			frame.add_child(l)
 
 
 # --- night lighting plan ----------------------------------------------------------------------------
@@ -1080,7 +1155,7 @@ func _zone_card(zn: String) -> Button:
 	var b := Button.new()
 	b.toggle_mode = true
 	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(0, 176)
+	b.custom_minimum_size = Vector2(0, 300)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var v := VBoxContainer.new()
 	UiKit.full_rect(v)
@@ -1096,9 +1171,15 @@ func _zone_card(zn: String) -> Button:
 	v.add_child(ic)
 	var name_l := UiKit.label(Terminal.ZONE_NAMES[zn], 20, UiKit.TEXT, "sans", 700)
 	v.add_child(name_l)
-	var st := UiKit.caption("", UiKit.TEXT_MUTE, 14)
+	var st := UiKit.caption("", UiKit.TEXT_MUTE)
 	st.name = "State"
 	v.add_child(st)
+	# what this zone's light is for: the facilities inspected there (filled once the world is bound)
+	var facs := UiKit.label("", UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	facs.name = "Facs"
+	facs.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	facs.custom_minimum_size = Vector2(150, 0)
+	v.add_child(facs)
 	v.add_child(UiKit.spacer(false))
 	var sw := Control.new()
 	sw.name = "Switch"
@@ -1149,6 +1230,13 @@ func _refresh_power(animate := false) -> void:
 		_style_zone(zn, on, animate)
 		if on:
 			n += 1
+		var facs: Label = _power_buttons[zn].find_child("Facs", true, false)
+		if facs.text == "" and director:
+			var names := PackedStringArray()
+			for f in director.t.facilities.values():
+				if (f as Facility).zone == zn:
+					names.append("· " + (f as Facility).title)
+			facs.text = UiKit.keep_all("\n".join(names) if not names.is_empty() else "· 점검 시설 없음")
 	for c in _power_meter.get_children():
 		c.queue_free()
 	for i in 3:

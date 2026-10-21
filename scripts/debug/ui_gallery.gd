@@ -51,6 +51,28 @@ func _run_menu() -> void:
 	menu._on_settings()
 	await _wait(0.5)
 	await _shot("05_menu_settings")
+	for t in ["display", "access"]:
+		menu._settings._show_tab(t, false)
+		await _wait(0.3)
+		await _shot("05_menu_settings_" + t)
+	menu._settings.visible = false
+	var notice := BootNotice.new()
+	menu.add_child(notice)
+	await _wait(0.9)
+	await _shot("06_boot_warning")
+	notice.show_calibration()
+	await _wait(0.6)
+	await _shot("07_boot_calibration")
+	notice.queue_free()
+	var cv := CreditsView.new()
+	cv.autoscroll = false
+	menu.add_child(cv)
+	await _wait(0.8)
+	await _shot("08_credits")
+	cv._scroll.scroll_vertical = 1500
+	await _wait(0.2)
+	await _shot("09_credits_licenses")
+	cv.queue_free()
 	Game.reset_session()
 	Game.player_name = "김훈철"
 	var args := OS.get_cmdline_user_args()
@@ -130,12 +152,16 @@ func _run_world() -> void:
 	await _wait(0.3)
 	await _shot("22_tablet_stamp")
 	await _wait(1.2)
+	# stand-in album photos: like the real camera, no HUD in the frame
+	ui.hud.set_visible_all(false)
+	await RenderingServer.frame_post_draw
 	for i in 3:
 		var img := get_viewport().get_texture().get_image()
 		img.resize(960, 540)
 		Game.photos.append({"image": img, "tex": ImageTexture.create_from_image(img),
 			"label": ["FIDS 출발 전광판", "수하물 수취대 B-03", "조명 분전반 LP-1"][i] + " · DAY 2 %s" % Game.clock_text(), "cycle": 2, "altered": false})
 		await get_tree().process_frame
+	ui.hud.set_visible_all(true)
 	ui.open_tablet()
 	ui.tablet._show_tab("album")
 	await _wait(0.9)

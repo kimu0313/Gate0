@@ -14,10 +14,15 @@ const ART_KEY_STEP := Vector2(181.5, 181.3)
 const ART_KEY_SIZE := Vector2(160, 158)
 const KEYS := ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "OK"]
 const K := 0.48
+const LCD_GREEN := Color(0.45, 1.0, 0.55)
+## Lit segments per character (a top, b upper right, c lower right, d bottom, e lower left, f upper left, g middle).
+const SEGMENTS := {"8": "abcdefg", "0": "abcdef", "O": "abcdef", "E": "adefg", "r": "eg", "P": "abefg", "n": "ceg",
+	"-": "g", "_": "d", " ": ""}
 
 var _rig: Control
-var _display: Label          # words: OPEN / ERROR
-var _cells: Array[Label] = []  # one LCD digit cell per code position, over a faint "8" segment ghost
+var _lcd: Control
+var _lcd_chars := "_   "
+var _lcd_color := LCD_GREEN
 var _led_color := Color(0.35, 0.05, 0.04)
 var _code := ""
 var _hover := -1
@@ -37,26 +42,14 @@ func _ready() -> void:
 	_rig.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_rig.draw.connect(_draw_device)
 	holder.add_child(_rig)
-	# LCD text sits inside the painted window
+	# 7-segment LCD inside the painted window: unlit segments show as faint ghosts, like real glass
 	var lcd := Rect2(ART_LCD.position * K, ART_LCD.size * K).grow(-10)
-	var cw := lcd.size.x / 4.0
-	for i in 4:
-		for ghost in [true, false]:
-			var l := UiKit.label("8" if ghost else "-", 66, Color(0.4, 1.0, 0.5, 0.07) if ghost else Color(0.45, 1.0, 0.55), "display", 700)
-			l.position = lcd.position + Vector2(i * cw, 0)
-			l.size = Vector2(cw, lcd.size.y)
-			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			_rig.add_child(l)
-			if not ghost:
-				_cells.append(l)
-	_display = UiKit.label("", 66, Color(0.45, 1.0, 0.55), "display", 700)
-	_display.visible = false
-	_display.position = lcd.position
-	_display.size = lcd.size
-	_display.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_display.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_rig.add_child(_display)
+	_lcd = Control.new()
+	_lcd.position = lcd.position
+	_lcd.size = lcd.size
+	_lcd.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_lcd.draw.connect(_draw_lcd)
+	_rig.add_child(_lcd)
 	# invisible hit areas over the painted keys
 	for i in KEYS.size():
 		var b := Button.new()
@@ -87,7 +80,7 @@ func _ready() -> void:
 	var cap := UiKit.caption("MAINT. ACCESS · 정비 통로 도어락", UiKit.TEXT_DIM, 16)
 	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	foot.add_child(cap)
-	var hints := UiKit.key_hints([["0-9", "입력"], ["ENTER", "확인"], ["ESC", "닫기"]], 14, UiKit.TEXT_DIM)
+	var hints := UiKit.key_hints([["0-9", "입력"], ["ENTER", "확인"], ["ESC", "닫기"]], UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 	hints.alignment = BoxContainer.ALIGNMENT_CENTER
 	foot.add_child(hints)
 
@@ -174,12 +167,9 @@ func _flash_key(i: int) -> void:
 
 
 func show_result(ok: bool) -> void:
-	for c in _cells:
-		c.get_parent().get_child(c.get_index() - 1).visible = false
-		c.visible = false
-	_display.visible = true
-	_display.text = "OPEN" if ok else "ERROR"
-	_display.add_theme_color_override("font_color", Color(0.45, 1.0, 0.55) if ok else Color(1.0, 0.32, 0.26))
+	_lcd_chars = "OPEn" if ok else "Err "
+	_lcd_color = LCD_GREEN if ok else Color(1.0, 0.32, 0.26)
+	_lcd.queue_redraw()
 	Snd.play("beep_ok" if ok else "beep_error", -4.0)
 	_set_led(Color(0.3, 1.0, 0.45) if ok else Color(1.0, 0.2, 0.15))
 	if not ok:
@@ -195,16 +185,45 @@ func _set_led(c: Color) -> void:
 	_rig.queue_redraw()
 
 
+## Entered digits stay masked ("-"); "_" marks the next position.
 func _refresh() -> void:
-	_display.visible = false
-	for i in _cells.size():
-		var c := _cells[i]
-		c.visible = true
-		c.get_parent().get_child(c.get_index() - 1).visible = true
-		var filled := i < _code.length()
-		c.text = "●" if filled else "_"
-		c.add_theme_font_size_override("font_size", 40 if filled else 66)
-		c.modulate.a = 1.0 if i <= _code.length() else 0.35
+	_lcd_chars = ""
+	for i in 4:
+		_lcd_chars += "-" if i < _code.length() else ("_" if i == _code.length() else " ")
+	_lcd_color = LCD_GREEN
+	_lcd.queue_redraw()
+
+
+func _draw_lcd() -> void:
+	var cw := _lcd.size.x / 4.0
+	# real segment displays lean slightly
+	_lcd.draw_set_transform_matrix(Transform2D(Vector2(1, 0), Vector2(-0.1, 1), Vector2(_lcd.size.y * 0.05, 0)))
+	for i in 4:
+		var ch := _lcd_chars[i] if i < _lcd_chars.length() else " "
+		var box := Rect2(i * cw + cw * 0.2, _lcd.size.y * 0.13, cw * 0.6, _lcd.size.y * 0.74)
+		_draw_digit(box, SEGMENTS.get(ch, ""))
+	_lcd.draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
+func _draw_digit(box: Rect2, lit: String) -> void:
+	var w := box.size.x
+	var h := box.size.y
+	var t := w * 0.17
+	var half := h * 0.5
+	var segs := {
+		"a": Rect2(t * 0.7, 0, w - t * 1.4, t), "g": Rect2(t * 0.7, half - t * 0.5, w - t * 1.4, t),
+		"d": Rect2(t * 0.7, h - t, w - t * 1.4, t),
+		"f": Rect2(0, t * 0.7, t, half - t * 1.1), "b": Rect2(w - t, t * 0.7, t, half - t * 1.1),
+		"e": Rect2(0, half + t * 0.4, t, half - t * 1.1), "c": Rect2(w - t, half + t * 0.4, t, half - t * 1.1),
+	}
+	for k in segs:
+		var r: Rect2 = segs[k]
+		r.position += box.position
+		if lit.contains(k):
+			_lcd.draw_rect(r.grow(3.0), Color(_lcd_color, 0.12))
+			_lcd.draw_rect(r, _lcd_color)
+		else:
+			_lcd.draw_rect(r, Color(LCD_GREEN, 0.07))
 
 
 func _unhandled_input(event: InputEvent) -> void:

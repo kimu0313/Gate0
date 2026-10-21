@@ -19,9 +19,43 @@ var settings := {
 	"master_volume": 0.9,
 	"music_volume": 0.8,
 	"sfx_volume": 1.0,
-	"fullscreen": false,
+	"window_mode": "windowed",  # "windowed" | "fullscreen" (exclusive) | "borderless"
+	"vsync": true,
+	"max_fps": 0,               # 0 = unlimited
+	"render_scale": 1.0,        # 3D resolution; below 1 upscales with FSR (Steam Deck)
 	"quality": "high",  # "high" | "low"
+	"brightness": 1.0,          # world exposure multiplier (Environment.adjustment_brightness)
+	"calibrated": false,        # brightness calibration shown on first launch
+	"subtitles": true,
+	"subtitle_size": 1,         # 0 small / 1 medium / 2 large
+	"subtitle_bg": 0.62,
+	"reduce_motion": false,     # calmer UI: no shakes, flickers or HUD glitch jitter
+	"crosshair": true,
+	"keys": {},                 # action -> physical keycode (rebound primary key)
 }
+
+## Primary + alternate keys and mouse buttons per action; the first key of the actions listed in
+## REBINDABLE can be changed in Settings (stored in settings.keys).
+const BINDINGS := {
+	"move_forward": [[KEY_W, KEY_UP], []],
+	"move_back": [[KEY_S, KEY_DOWN], []],
+	"move_left": [[KEY_A, KEY_LEFT], []],
+	"move_right": [[KEY_D, KEY_RIGHT], []],
+	"sprint": [[KEY_SHIFT], []],
+	"interact": [[KEY_E], [MOUSE_BUTTON_LEFT]],
+	"flashlight": [[KEY_F], []],
+	"tablet": [[KEY_TAB], []],
+	"binder": [[KEY_B], []],
+	"close_eyes": [[KEY_C], []],
+	"pause": [[KEY_ESCAPE], []],
+	"ui_page_next": [[KEY_D, KEY_RIGHT, KEY_PAGEDOWN], []],
+	"ui_page_prev": [[KEY_A, KEY_LEFT, KEY_PAGEUP], []],
+	"camera_shoot": [[], [MOUSE_BUTTON_LEFT]],
+	"camera_cancel": [[], [MOUSE_BUTTON_RIGHT]],
+}
+const REBINDABLE := [["move_forward", "앞으로 이동"], ["move_back", "뒤로 이동"], ["move_left", "왼쪽 이동"],
+	["move_right", "오른쪽 이동"], ["sprint", "달리기"], ["interact", "상호작용"], ["flashlight", "손전등"],
+	["close_eyes", "눈 감기"], ["tablet", "태블릿"], ["binder", "근무 수칙"]]
 
 # --- session state ---------------------------------------------------------------
 var player_name := "점검원"
@@ -41,10 +75,12 @@ var name_voice_path := ""   # runtime TTS of the player's name (optional)
 
 var _snapshot := {}
 var paused_by_ui := false   # true while tablet/binder/panels own the mouse
+var _default_settings := {}
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_default_settings = settings.duplicate(true)
 	_register_input()
 	load_settings()
 	reset_session()
@@ -95,21 +131,29 @@ func reset_session() -> void:
 
 # --- input -----------------------------------------------------------------------
 func _register_input() -> void:
-	_bind("move_forward", [KEY_W, KEY_UP])
-	_bind("move_back", [KEY_S, KEY_DOWN])
-	_bind("move_left", [KEY_A, KEY_LEFT])
-	_bind("move_right", [KEY_D, KEY_RIGHT])
-	_bind("sprint", [KEY_SHIFT])
-	_bind("interact", [KEY_E], [MOUSE_BUTTON_LEFT])
-	_bind("flashlight", [KEY_F])
-	_bind("tablet", [KEY_TAB])
-	_bind("binder", [KEY_B])
-	_bind("close_eyes", [KEY_C])
-	_bind("pause", [KEY_ESCAPE])
-	_bind("ui_page_next", [KEY_D, KEY_RIGHT, KEY_PAGEDOWN])
-	_bind("ui_page_prev", [KEY_A, KEY_LEFT, KEY_PAGEUP])
-	_bind("camera_shoot", [], [MOUSE_BUTTON_LEFT])
-	_bind("camera_cancel", [], [MOUSE_BUTTON_RIGHT])
+	var rebound: Dictionary = settings.get("keys", {})
+	for action in BINDINGS:
+		var keys: Array = (BINDINGS[action][0] as Array).duplicate()
+		if rebound.has(action) and not keys.is_empty():
+			keys[0] = int(rebound[action])
+		_bind(action, keys, BINDINGS[action][1])
+
+
+## Label of the key an action is bound to ("E", "TAB", "SHIFT") for prompts and guides.
+func key_label(action: String) -> String:
+	if InputMap.has_action(action):
+		for ev in InputMap.action_get_events(action):
+			if ev is InputEventKey:
+				var code: Key = (ev as InputEventKey).physical_keycode
+				match code:
+					KEY_ESCAPE:
+						return "ESC"
+					KEY_SPACE:
+						return "SPACE"
+					KEY_CTRL:
+						return "CTRL"
+				return OS.get_keycode_string(code).to_upper()
+	return "?"
 
 
 func _bind(action: String, keys: Array, mouse_buttons: Array = []) -> void:
@@ -133,7 +177,21 @@ func load_settings() -> void:
 	if cfg.load(SETTINGS_PATH) == OK:
 		for k in settings.keys():
 			settings[k] = cfg.get_value("settings", k, settings[k])
+		# older settings files had a fullscreen bool
+		if cfg.has_section_key("settings", "fullscreen") and not cfg.has_section_key("settings", "window_mode"):
+			settings.window_mode = "fullscreen" if cfg.get_value("settings", "fullscreen") else "windowed"
+	get_tree().node_added.connect(func(n: Node):
+		if n is WorldEnvironment:
+			_apply_brightness.call_deferred(n))
 	apply_settings()
+
+
+## Settings › 기본값으로 되돌리기 (the brightness calibration is not asked again).
+func reset_settings() -> void:
+	settings = _default_settings.duplicate(true)
+	settings.calibrated = true
+	apply_settings()
+	save_settings()
 
 
 func save_settings() -> void:
@@ -145,12 +203,32 @@ func save_settings() -> void:
 
 func apply_settings() -> void:
 	if DisplayServer.get_name() != "headless":
-		var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
+		var mode := DisplayServer.WINDOW_MODE_WINDOWED
+		match str(settings.window_mode):
+			"fullscreen":
+				mode = DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+			"borderless":
+				mode = DisplayServer.WINDOW_MODE_FULLSCREEN
 		if DisplayServer.window_get_mode() != mode:
 			DisplayServer.window_set_mode(mode)
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if settings.vsync else DisplayServer.VSYNC_DISABLED)
+	Engine.max_fps = int(settings.max_fps)
+	var vp := get_tree().root
+	vp.scaling_3d_scale = clampf(float(settings.render_scale), 0.5, 1.0)
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if vp.scaling_3d_scale < 0.99 else Viewport.SCALING_3D_MODE_BILINEAR
 	_set_bus_volume("Master", settings.master_volume)
 	_set_bus_volume("Music", settings.music_volume)
 	_set_bus_volume("SFX", settings.sfx_volume)
+	_register_input()
+	for we in get_tree().root.find_children("*", "WorldEnvironment", true, false):
+		_apply_brightness(we)
+
+
+## Brightness setting on a world's environment (post-tonemap multiplier; the UI is unaffected).
+func _apply_brightness(we: WorldEnvironment) -> void:
+	if is_instance_valid(we) and we.environment:
+		we.environment.adjustment_enabled = true
+		we.environment.adjustment_brightness = float(settings.brightness)
 
 
 func _set_bus_volume(bus_name: String, linear: float) -> void:

@@ -1,13 +1,20 @@
 class_name MapView
 extends Control
-## Schematic terminal map in the OPS style: zone states, the active work order and the player.
+## Schematic terminal map in the OPS style. The terminal runs north–south, so the plan is turned a
+## quarter (north → right) to fill the wide tablet screen. A side panel lists every zone's lights and
+## access, the active work order and where the player is.
 
 var terminal: Terminal
 var player: Player
 var director: ShiftDirector
 var _t := 0.0
-const WORLD_MIN := Vector2(-36, -104)
-const WORLD_MAX := Vector2(60, 16)
+var _bounds := Rect2()     # world (x, z) extent of the drawn zones
+var _scale := 1.0
+var _origin := Vector2.ZERO
+
+const SIDE_W := 380.0
+const PAD := 30.0
+const ZONE_ORDER := ["hall", "office", "baggage", "storage", "maint", "security", "corridor", "gates", "bridge0"]
 
 
 func _process(delta: float) -> void:
@@ -16,17 +23,43 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
+## World (x, z) → map. North (-z) points right, east (+x) points down.
 func _to_map(p: Vector2) -> Vector2:
-	var span := WORLD_MAX - WORLD_MIN
-	var s := minf((size.x - 40) / span.x, (size.y - 40) / span.y)
-	var off := (size - span * s) * 0.5
-	return off + (p - WORLD_MIN) * s
+	return _origin + Vector2(_bounds.end.y - p.y, p.x - _bounds.position.x) * _scale
+
+
+func _map_rect(r: Rect2) -> Rect2:
+	var a := _to_map(r.position)
+	var b := _to_map(r.end)
+	return Rect2(Vector2(minf(a.x, b.x), minf(a.y, b.y)), (b - a).abs())
+
+
+func _zones() -> Array:
+	var out := []
+	for zn in ZONE_ORDER:
+		if zn == "bridge0" and terminal.gate0_parts == null:
+			continue
+		out.append(zn)
+	return out
+
+
+func _layout(area: Rect2) -> void:
+	var b := Rect2()
+	for zn in _zones():
+		var r: Rect2 = Terminal.ZONE_RECTS[zn]
+		b = r if b.size == Vector2.ZERO else b.merge(r)
+	_bounds = b.grow(2.0)
+	# leave room below for outside name plates and the legend row
+	_scale = minf((area.size.x - PAD * 2.0) / _bounds.size.y, (area.size.y - PAD * 2.0 - 64.0) / _bounds.size.x)
+	var used := Vector2(_bounds.size.y, _bounds.size.x) * _scale
+	_origin = area.position + Vector2((area.size.x - used.x) * 0.5, PAD)
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), UiKit.SCREEN)
+	var map_area := Rect2(0, 0, size.x - SIDE_W - 16.0, size.y)
+	draw_rect(map_area, UiKit.SCREEN)
 	var gx := 0.0
-	while gx < size.x:
+	while gx < map_area.size.x:
 		var gy := 0.0
 		while gy < size.y:
 			draw_rect(Rect2(gx, gy, 1.5, 1.5), Color(1, 1, 1, 0.05))
@@ -34,6 +67,7 @@ func _draw() -> void:
 		gx += 24.0
 	if terminal == null:
 		return
+	_layout(map_area)
 	var f := UiKit.font("sans", 700)
 	var disp := UiKit.font("display", 700)
 	var target_zone := ""
@@ -43,13 +77,11 @@ func _draw() -> void:
 		var fac := terminal.facility(director.current.facility_id)
 		if fac:
 			target_pos = fac.focus_position()
-	for zn in Terminal.ZONE_RECTS.keys():
-		if zn == "bridge0" and terminal.gate0_parts == null:
-			continue
-		var r: Rect2 = Terminal.ZONE_RECTS[zn]
-		var a := _to_map(r.position)
-		var b := _to_map(r.position + r.size)
-		var rect := Rect2(a, b - a)
+	# zones
+	var rects := {}
+	for zn in _zones():
+		var rect := _map_rect(Terminal.ZONE_RECTS[zn])
+		rects[zn] = rect
 		var locked := _locked(zn)
 		var col := UiKit.SCREEN_3 if not locked else Color("0b0f14")
 		if zn == target_zone:
@@ -65,49 +97,142 @@ func _draw() -> void:
 		draw_rect(rect, Color("2b3a4c") if not locked else Color("1c232c"), false, 2.0)
 		if zn == target_zone:
 			draw_rect(rect, Color(UiKit.SIGNAL, 0.7), false, 2.0)
-		var lit: bool = terminal.zones.has(zn) and terminal.zones[zn].is_on
-		var name_col := UiKit.TEXT if not locked else Color("4a525d")
-		var roomy := rect.size.x >= 120.0 and rect.size.y >= 56.0
-		draw_string(f, rect.position + Vector2(10, 24), Terminal.ZONE_NAMES.get(zn, zn), HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 14, 15, name_col)
-		if terminal.zones.has(zn) and not locked:
-			var lp := rect.position + Vector2(16, 42) if roomy else rect.position + Vector2(rect.size.x - 12, 14)
-			draw_circle(lp, 5.0, UiKit.SIGNAL if lit else Color("3a4552"))
+		# lamp in the corner, clear of the name
+		if terminal.zones.has(zn) and not locked and rect.size.x > 20.0 and rect.size.y > 20.0:
+			var lp := Vector2(rect.end.x - 12.0, rect.position.y + 12.0)
+			var lit: bool = terminal.zones[zn].is_on
 			if lit:
 				draw_circle(lp, 9.0, Color(UiKit.SIGNAL, 0.18))
-			if roomy:
-				draw_string(disp, lp + Vector2(12, 5), "LIGHT ON" if lit else "LIGHT OFF", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiKit.SIGNAL if lit else UiKit.TEXT_MUTE)
-		if locked and roomy:
-			draw_string(disp, rect.get_center() + Vector2(-70, 6), "RESTRICTED · 통제", HORIZONTAL_ALIGNMENT_CENTER, 140, 13, Color("4a525d"))
+			draw_circle(lp, 5.0, UiKit.SIGNAL if lit else Color("3a4552"))
+	# facilities
 	for fac in terminal.facilities.values():
 		var fp: Vector3 = (fac as Facility).focus_position()
 		var mp := _to_map(Vector2(fp.x, fp.z))
 		draw_circle(mp, 4.0, Color(UiKit.OPS, 0.85))
 		draw_arc(mp, 7.0, 0, TAU, 16, Color(UiKit.OPS, 0.3), 1.5, true)
+	# zone names on top (inside when they fit, else outside on a plate with a leader line)
+	var placed: Array = []
+	for zn in _zones():
+		_draw_zone_name(zn, rects[zn], rects, placed, map_area, f)
+	# work order target
 	if target_pos != Vector3.INF:
 		var tp := _to_map(Vector2(target_pos.x, target_pos.z))
 		var k := fmod(_t, 1.2) / 1.2
 		draw_arc(tp, 10.0 + k * 22.0, 0, TAU, 40, Color(UiKit.SIGNAL, 1.0 - k), 2.5, true)
 		draw_arc(tp, 9.0, 0, TAU, 32, UiKit.SIGNAL, 3.0, true)
 		var label := "점검 위치"
-		var lw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-		draw_rect(Rect2(tp + Vector2(16, -26), Vector2(lw + 16, 24)), UiKit.SIGNAL)
-		draw_string(f, tp + Vector2(24, -9), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UiKit.INK_0)
+		var lw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x
+		var lr := Rect2(tp + Vector2(16, -30), Vector2(lw + 18, 28))
+		if lr.end.x > map_area.end.x - 4.0:
+			lr.position.x = tp.x - 16.0 - lr.size.x
+		draw_rect(lr, UiKit.SIGNAL)
+		draw_string(f, lr.position + Vector2(9, 20), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.INK_0)
+	# player
 	if player:
 		var pp := _to_map(Vector2(player.global_position.x, player.global_position.z))
 		var fw := player.forward()
-		var dir := Vector2(fw.x, fw.z).normalized()
+		var dir := Vector2(-fw.z, fw.x).normalized()
 		var side := Vector2(-dir.y, dir.x)
 		draw_colored_polygon(PackedVector2Array([pp, pp + dir * 70.0 + side * 34.0, pp + dir * 70.0 - side * 34.0]), Color(UiKit.CLEAR, 0.12))
 		draw_colored_polygon(PackedVector2Array([pp + dir * 13.0, pp - dir * 8.0 + side * 8.0, pp - dir * 4.0, pp - dir * 8.0 - side * 8.0]), UiKit.CLEAR)
 	# compass + legend
-	draw_string(disp, Vector2(size.x - 60, 34), "N ↑", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, UiKit.TEXT_DIM)
-	var ly := size.y - 18
-	draw_circle(Vector2(20, ly - 5), 4.0, UiKit.OPS)
-	draw_string(f, Vector2(32, ly), "시설", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiKit.TEXT_DIM)
-	draw_colored_polygon(PackedVector2Array([Vector2(86, ly - 12), Vector2(93, ly + 1), Vector2(79, ly + 1)]), UiKit.CLEAR)
-	draw_string(f, Vector2(100, ly), "현재 위치", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiKit.TEXT_DIM)
-	draw_arc(Vector2(178, ly - 5), 6.0, 0, TAU, 20, UiKit.SIGNAL, 2.0, true)
-	draw_string(f, Vector2(190, ly), "점검 위치", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiKit.TEXT_DIM)
+	var cx := Vector2(map_area.end.x - 70.0, 34.0)
+	draw_string(disp, cx, "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, UiKit.TEXT_DIM)
+	draw_line(cx + Vector2(20, -7), cx + Vector2(46, -7), UiKit.TEXT_DIM, 2.0)
+	draw_colored_polygon(PackedVector2Array([cx + Vector2(52, -7), cx + Vector2(42, -13), cx + Vector2(42, -1)]), UiKit.TEXT_DIM)
+	var ly := size.y - 16.0
+	var lx := 18.0
+	draw_circle(Vector2(lx + 4, ly - 6), 4.5, UiKit.OPS)
+	draw_string(f, Vector2(lx + 16, ly), "시설", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	lx += 76.0
+	draw_colored_polygon(PackedVector2Array([Vector2(lx + 12, ly - 6), Vector2(lx, ly - 13), Vector2(lx + 3, ly - 6), Vector2(lx, ly + 1)]), UiKit.CLEAR)
+	draw_string(f, Vector2(lx + 20, ly), "현재 위치", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	lx += 112.0
+	draw_arc(Vector2(lx + 6, ly - 6), 6.5, 0, TAU, 20, UiKit.SIGNAL, 2.0, true)
+	draw_string(f, Vector2(lx + 20, ly), "점검 위치", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	lx += 112.0
+	draw_circle(Vector2(lx + 5, ly - 6), 5.0, UiKit.SIGNAL)
+	draw_string(f, Vector2(lx + 18, ly), "조명 켜짐", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	_draw_side(Rect2(size.x - SIDE_W, 0, SIDE_W, size.y), target_zone, f, disp)
+
+
+func _draw_zone_name(zn: String, rect: Rect2, rects: Dictionary, placed: Array, area: Rect2, f: Font) -> void:
+	var name_text: String = Terminal.ZONE_NAMES.get(zn, zn)
+	var fs := 17
+	var tw := f.get_string_size(name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var col := UiKit.TEXT if not _locked(zn) else Color("5a636e")
+	if tw + 34.0 <= rect.size.x and rect.size.y >= 34.0:
+		draw_string(f, rect.position + Vector2(10, 24), name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+		return
+	var box := Vector2(tw + 16.0, 26.0)
+	var cands := [
+		Rect2(Vector2(rect.get_center().x - box.x * 0.5, rect.end.y + 10.0), box),
+		Rect2(Vector2(rect.get_center().x - box.x * 0.5, rect.position.y - 10.0 - box.y), box),
+		Rect2(Vector2(rect.end.x + 10.0, rect.get_center().y - box.y * 0.5), box),
+		Rect2(Vector2(rect.position.x - 10.0 - box.x, rect.get_center().y - box.y * 0.5), box),
+	]
+	var pick: Rect2 = cands[0]
+	var best := INF
+	for c: Rect2 in cands:
+		if not area.grow(-4.0).encloses(c):
+			continue
+		var cost := 0.0
+		for other in rects:
+			if other != zn and (rects[other] as Rect2).intersects(c):
+				cost += 1.0
+		for p: Rect2 in placed:
+			if p.intersects(c):
+				cost += 5.0
+		if cost < best:
+			best = cost
+			pick = c
+	placed.append(pick)
+	var to := rect.get_center().clamp(pick.position, pick.end)
+	draw_line(to.clamp(rect.position, rect.end), to, Color("4a5a6e"), 1.0)
+	draw_rect(pick, Color(UiKit.SCREEN_2, 0.96))
+	draw_rect(pick, Color("2b3a4c"), false, 1.0)
+	draw_string(f, pick.position + Vector2(8, 19), name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+
+
+## Right panel: every zone's lights and access, then the active order.
+func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
+	draw_rect(r, UiKit.SCREEN_2)
+	var x := r.position.x + 22.0
+	var w := r.size.x - 44.0
+	var y := r.position.y + 34.0
+	draw_string(disp, Vector2(x, y), "ZONE STATUS · 구역 상태", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_MUTE)
+	y += 16.0
+	var here: String = player.zone if player else ""
+	for zn in _zones():
+		var row := Rect2(r.position.x + 10.0, y, r.size.x - 20.0, 38.0)
+		if zn == target_zone:
+			draw_rect(row, Color(UiKit.SIGNAL, 0.08))
+			draw_rect(Rect2(row.position, Vector2(3, row.size.y)), UiKit.SIGNAL)
+		elif zn == here:
+			draw_rect(Rect2(row.position, Vector2(3, row.size.y)), UiKit.CLEAR)
+		var locked := _locked(zn)
+		draw_string(f, Vector2(x, y + 26.0), Terminal.ZONE_NAMES.get(zn, zn), HORIZONTAL_ALIGNMENT_LEFT, w - 150.0, 18,
+			UiKit.TEXT if not locked else UiKit.TEXT_MUTE)
+		var state := "통제" if locked else ("—" if not terminal.zones.has(zn) else ("ON" if terminal.zones[zn].is_on else "OFF"))
+		var sc := UiKit.ALERT.darkened(0.15) if locked else (UiKit.SIGNAL if state == "ON" else UiKit.TEXT_MUTE)
+		var sw := disp.get_string_size(state, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x
+		var chip := Rect2(Vector2(x + w - sw - 18.0, y + 8.0), Vector2(sw + 18.0, 24.0))
+		if state == "ON":
+			draw_rect(chip, UiKit.SIGNAL)
+			sc = UiKit.INK_0
+		else:
+			draw_rect(chip, sc if locked else Color("3a4552"), false, 1.0)
+		draw_string(disp, chip.position + Vector2(9, 18), state, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, sc)
+		draw_line(Vector2(x, y + 38.0), Vector2(x + w, y + 38.0), UiKit.SCREEN_LINE, 1.0)
+		y += 40.0
+	# active order
+	y += 40.0
+	draw_string(disp, Vector2(x, y), "CURRENT ORDER · 현재 지시", HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL)
+	var title := director.current.title if director and director.current else "—"
+	draw_multiline_string(f, Vector2(x, y + 30.0), title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2, UiKit.TEXT)
+	var th := f.get_multiline_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2).y
+	if target_zone != "":
+		draw_string(f, Vector2(x, y + 30.0 + th + 6.0), "위치 · %s" % Terminal.ZONE_NAMES.get(target_zone, target_zone), HORIZONTAL_ALIGNMENT_LEFT, w, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 
 
 func _locked(zn: String) -> bool:

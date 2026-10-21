@@ -11,7 +11,9 @@ var tile_color := Color("0d1014")
 var accent_first := Color(0, 0, 0, 0)   # optional color for the first character
 var flip_time := 0.055
 var gap := 8.0
+var housing := false        # draw the tiles in a hung sign case (ending titles over the scene)
 var _font: Font
+var _tiles_w := 0.0
 var _cells: Array = []    # {cur, target, settle}
 var _t := 0.0
 var _running := false
@@ -35,10 +37,22 @@ func show_text(txt: String, delay := 0.0, per_tile := 0.07, min_flips := 5) -> v
 		var ch := txt[i]
 		_cells.append({"cur": " ", "target": ch, "settle": -1.0 if ch == " " else delay + (min_flips + i * per_tile / flip_time) * flip_time})
 	var ts := tile_size()
-	custom_minimum_size = Vector2(txt.length() * ts.x + maxi(txt.length() - 1, 0) * gap, ts.y)
+	_tiles_w = txt.length() * ts.x + maxi(txt.length() - 1, 0) * gap
+	custom_minimum_size = Vector2(_tiles_w, ts.y)
+	if housing:
+		# the case and its hanging rods take part in layout, so text below never touches them
+		custom_minimum_size += Vector2(_case_pad() * 2.0, _case_pad() * 2.0 + _rod())
 	_t = 0.0
 	_running = true
 	queue_redraw()
+
+
+func _case_pad() -> float:
+	return font_size * 0.16
+
+
+func _rod() -> float:
+	return font_size * 0.6
 
 
 func settle_time() -> float:
@@ -86,10 +100,19 @@ func _draw() -> void:
 	var ts := tile_size()
 	var asc := _font.get_ascent(font_size)
 	var desc := _font.get_descent(font_size)
-	var x0 := (size.x - custom_minimum_size.x) * 0.5
+	var x0 := (size.x - _tiles_w) * 0.5
+	var y0 := (size.y - ts.y) * 0.5
+	if housing and not _cells.is_empty():
+		y0 += _rod() * 0.5
+		var case := Rect2(Vector2(x0, y0), Vector2(_tiles_w, ts.y)).grow(_case_pad())
+		for rx in [case.position.x + case.size.x * 0.15, case.end.x - case.size.x * 0.15]:
+			draw_rect(Rect2(rx - 3, case.position.y - _rod(), 6, _rod()), Color(0.16, 0.17, 0.19))
+		draw_rect(case.grow(6), Color(0, 0, 0, 0.35))
+		draw_rect(case, Color("07090b"))
+		draw_rect(case, Color(text_color, 0.45), false, 3.0)
 	for i in _cells.size():
 		var c: Dictionary = _cells[i]
-		var r := Rect2(Vector2(x0 + i * (ts.x + gap), (size.y - ts.y) * 0.5), ts)
+		var r := Rect2(Vector2(x0 + i * (ts.x + gap), y0), ts)
 		if c.target == " ":
 			continue
 		draw_rect(r, tile_color)

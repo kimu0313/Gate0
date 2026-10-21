@@ -1,6 +1,9 @@
-[gd_resource type="SystemFont" format=3]
+[gd_resource type="SystemFont" load_steps=2 format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSansKR-Variable.ttf" id="1_noto"]
 
 [resource]
 font_names = PackedStringArray("Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans KR", "NanumGothic", "sans-serif")
+fallbacks = Array[Font]([ExtResource("1_noto")])
 antialiasing = 1
 subpixel_positioning = 0

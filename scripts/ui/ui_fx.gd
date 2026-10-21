@@ -46,13 +46,20 @@ static func flicker_on(c: CanvasItem, delay := 0.0, sound := true) -> Tween:
 		tw.tween_interval(delay)
 	if sound:
 		tw.tween_callback(func(): Snd.play("flicker_zap", -20.0, randf_range(1.1, 1.3)))
+	if Game.settings.reduce_motion:
+		# accessibility: a plain fade instead of strobing
+		tw.tween_property(c, "modulate:a", 1.0, 0.25)
+		return tw
 	for step in [[0.85, 0.03], [0.1, 0.05], [0.0, 0.07], [0.7, 0.03], [0.25, 0.06], [1.0, 0.04], [0.6, 0.03], [1.0, 0.05]]:
 		tw.tween_property(c, "modulate:a", step[0], step[1])
 	return tw
 
 
 ## Short positional shake (impacts, errors). Works on free-positioned controls.
+## Skipped when the player asked for calmer UI (Settings › 자막·접근성).
 static func shake(c: Control, amp := 8.0, dur := 0.28) -> Tween:
+	if Game.settings.reduce_motion:
+		amp *= 0.0
 	var base := c.position
 	var tw := c.create_tween()
 	var steps := 7

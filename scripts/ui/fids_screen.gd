@@ -24,7 +24,7 @@ var mono: Font
 func _ready() -> void:
 	Geo.fonts()
 	sans = Geo.sign_font
-	mono = Geo.mono_font
+	mono = Geo.led_font
 
 
 func _process(delta: float) -> void:

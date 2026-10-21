@@ -29,18 +29,18 @@ func _build() -> void:
 
 func show_result(granted: bool, text := "") -> void:
 	if granted:
-		display.text = text if text != "" else "OK"
+		Geo.set_text(display, text if text != "" else "OK")
 		display.modulate = Color(0.4, 1.0, 0.5)
 		led.material_override = Mats.get_mat("lamp_green")
 		Snd.play_at("beep_ok", global_position, -6.0, 1.0, 4.0)
 	else:
-		display.text = text if text != "" else "DENIED"
+		Geo.set_text(display, text if text != "" else "DENIED")
 		display.modulate = Color(1.0, 0.3, 0.25)
 		led.material_override = Mats.get_mat("lamp_red")
 		Snd.play_at("beep_error", global_position, -2.0, 1.0, 6.0)
 	var t := create_tween()
 	t.tween_interval(2.5)
 	t.tween_callback(func():
-		display.text = "STAFF"
+		Geo.set_text(display, "STAFF")
 		display.modulate = Color(0.4, 0.8, 1.0)
 		led.material_override = Mats.get_mat("lamp_amber"))

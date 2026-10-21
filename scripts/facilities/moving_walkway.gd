@@ -71,11 +71,12 @@ func build(len_m := 42.0) -> void:
 		var face_rot := 0.0 if entry else PI
 		var l := Geo.label(post, "▲" if entry else "⛔", Vector3(0, 1.0, 0.095 if entry else -0.095), face_rot, 72,
 			Color(0.3, 1.0, 0.45) if entry else Color(1.0, 0.25, 0.2), 0.004)
+		l.set_meta("no_fit", true)   # the glyph is meant to stand proud of the thin post
 		_arrow_labels.append(l)
 	var sign := Node3D.new()
 	add_child(sign)
 	sign.position = Vector3(0, 2.6, 1.0)
-	Geo.box(sign, Vector3.ZERO, Vector3(1.8, 0.45, 0.08), Mats.get_mat("sign_back"), false)
+	Geo.box(sign, Vector3.ZERO, Vector3(2.5, 0.45, 0.08), Mats.get_mat("sign_back"), false)
 	Geo.label(sign, "MW-1  ▲  탑승동 GATES", Vector3(0, 0, 0.045), 0.0, 44, Color(0.95, 0.95, 0.95), 0.005)
 	Geo.cyl(sign, Vector3(0, 1.0, 0), 0.02, 2.0, Mats.get_mat("steel_frame"))
 	focus = surf

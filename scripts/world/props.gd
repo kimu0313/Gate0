@@ -14,7 +14,8 @@ static func button(parent: Node3D, pos: Vector3, rot_y: float, mat_name: String,
 	var cap := Geo.cyl(holder, Vector3(0, 0, 0.03), radius, 0.03, Mats.get_mat(mat_name))
 	cap.rotation.x = PI / 2
 	if caption != "":
-		Geo.label(holder, caption, Vector3(0, -radius - 0.045, 0.004), 0.0, 24, Color(0.9, 0.9, 0.9), 0.0024)
+		# keep the caption within the button's own column so neighbours never overlap or spill off the panel
+		Geo.fit(Geo.label(holder, caption, Vector3(0, -radius - 0.045, 0.004), 0.0, 24, Color(0.9, 0.9, 0.9), 0.0024, false, "print"), radius * 3.6)
 	var it := Interactable.create(holder, Vector3(0, 0, 0.03), Vector3(radius * 2.8, radius * 2.8, 0.1), prompt, cb)
 	it.press_node = cap
 	it.press_axis = Vector3(0, 0, 1)
@@ -30,7 +31,7 @@ static func panel_box(parent: Node3D, pos: Vector3, rot_y: float, size: Vector2,
 	Geo.box(holder, Vector3(0, 0, -depth * 0.5), Vector3(size.x, size.y, depth), Mats.get_mat("plastic_grey"), true)
 	Geo.box(holder, Vector3(0, 0, 0.001), Vector3(size.x - 0.04, size.y - 0.04, 0.004), Mats.get_mat("metal_dark"), false)
 	if title != "":
-		Geo.label(holder, title, Vector3(0, size.y * 0.5 - 0.07, 0.006), 0.0, 30, Color(0.95, 0.85, 0.3), 0.0025)
+		Geo.fit(Geo.label(holder, title, Vector3(0, size.y * 0.5 - 0.07, 0.006), 0.0, 30, Color(0.95, 0.85, 0.3), 0.0025, false, "print"), size.x - 0.08)
 	return holder
 
 
@@ -46,7 +47,7 @@ static func pedestal(parent: Node3D, pos: Vector3, rot_y: float, title := "") ->
 	top.rotation.x = -0.6
 	Geo.box(top, Vector3(0, 0, -0.03), Vector3(0.56, 0.36, 0.06), Mats.get_mat("plastic_grey"), false)
 	if title != "":
-		Geo.label(top, title, Vector3(0, 0.14, 0.004), 0.0, 26, Color(0.95, 0.85, 0.3), 0.0025)
+		Geo.label(top, title, Vector3(0, 0.14, 0.004), 0.0, 26, Color(0.95, 0.85, 0.3), 0.0025, false, "print")
 	return top
 
 
@@ -89,7 +90,7 @@ static func hanging_sign(parent: Node3D, pos: Vector3, rot_y: float, size: Vecto
 			var off: Vector2 = line[3] if line.size() > 3 else Vector2.ZERO
 			var z := 0.075 if side == 0.0 else -0.075
 			var x := off.x if side == 0.0 else -off.x
-			var l := Geo.label(holder, str(line[0]), Vector3(x, off.y, z), side, int(line[1]), line[2], 0.006)
+			var l := Geo.fit(Geo.label(holder, str(line[0]), Vector3(x, off.y, z), side, int(line[1]), line[2], 0.006), size.x * 0.92)
 			labels.append(l)
 	if ceiling_y > pos.y:
 		var rod_h := ceiling_y - pos.y - size.y * 0.5
@@ -121,7 +122,7 @@ static func exit_sign(parent: Node3D, pos: Vector3, rot_y: float, text := "ë¹„ìƒ
 	holder.position = pos
 	holder.rotation.y = rot_y
 	var m := Geo.box(holder, Vector3.ZERO, Vector3(0.9, 0.3, 0.08), Mats.get_mat("exit_green"), false)
-	Geo.label(holder, text, Vector3(0, 0, 0.045), 0.0, 40, Color(0.02, 0.15, 0.04), 0.004)
+	Geo.fit(Geo.label(holder, text, Vector3(0, 0, 0.045), 0.0, 40, Color(0.02, 0.15, 0.04), 0.004), 0.82)
 	var l := Geo.omni(holder, Vector3(0, -0.1, 0.3), Color(0.2, 1.0, 0.4), 0.35, 3.0)
 	l.light_volumetric_fog_energy = 1.0
 	return m
@@ -134,9 +135,9 @@ static func lightbox(parent: Node3D, pos: Vector3, rot_y: float, size: Vector2, 
 	holder.rotation.y = rot_y
 	Geo.box(holder, Vector3(0, 0, -0.06), Vector3(size.x + 0.1, size.y + 0.1, 0.12), Mats.get_mat("metal_dark"), false)
 	Geo.box(holder, Vector3.ZERO, Vector3(size.x, size.y, 0.02), Mats.get_mat("lightbox"), false)
-	Geo.label(holder, text, Vector3(0, 0.15, 0.015), 0.0, 60, Color(0.05, 0.1, 0.22), 0.006)
+	Geo.fit(Geo.label(holder, text, Vector3(0, 0.15, 0.015), 0.0, 60, Color(0.05, 0.1, 0.22), 0.006), size.x * 0.88)
 	if sub != "":
-		Geo.label(holder, sub, Vector3(0, -0.25, 0.015), 0.0, 26, Color(0.1, 0.15, 0.3), 0.006)
+		Geo.fit(Geo.label(holder, sub, Vector3(0, -0.25, 0.015), 0.0, 26, Color(0.1, 0.15, 0.3), 0.006), size.x * 0.88)
 	return holder
 
 
@@ -156,7 +157,7 @@ static func suitcase(parent: Node3D, color: Color, tag_text := "", soft := false
 		root.add_child(tag)
 		tag.position = Vector3(0.1, size.y + 0.012, 0.25)
 		Geo.box(tag, Vector3.ZERO, Vector3(0.14, 0.005, 0.09), Mats.std(Color(0.95, 0.8, 0.1), 0.6), false)
-		var l := Geo.label(tag, tag_text, Vector3(0, 0.004, 0), 0.0, 28, Color(0.05, 0.05, 0.05), 0.0018)
+		var l := Geo.label(tag, tag_text, Vector3(0, 0.004, 0), 0.0, 28, Color(0.05, 0.05, 0.05), 0.0018, false, "print")
 		l.rotation.x = -PI / 2
 		l.name = "TagLabel"
 	return root

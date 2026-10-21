@@ -27,14 +27,14 @@ func _build(prompt: String) -> void:
 		"binder":
 			Geo.box(self, Vector3(0, 0.035, 0), Vector3(0.26, 0.07, 0.32), Mats.std(Color(0.08, 0.12, 0.28), 0.5), false)
 			Geo.box(self, Vector3(0.0, 0.072, 0.0), Vector3(0.2, 0.002, 0.08), Mats.get_mat("paper"), false)
-			Geo.label(self, "근무 수칙", Vector3(0, 0.075, 0), 0.0, 22, Color(0.1, 0.1, 0.1), 0.0025).rotation.x = -PI / 2
+			Geo.label(self, "근무 수칙", Vector3(0, 0.075, 0), 0.0, 22, Color(0.1, 0.1, 0.1), 0.0025, false, "print").rotation.x = -PI / 2
 		"folder":
 			Geo.box(self, Vector3(0, 0.01, 0), Vector3(0.24, 0.02, 0.32), Mats.std(Color(0.75, 0.6, 0.3), 0.7), false)
 			Geo.box(self, Vector3(0.01, 0.022, 0.0), Vector3(0.21, 0.004, 0.29), Mats.get_mat("paper"), false)
 		"plaque":
 			var plate := Geo.box(self, Vector3(0, 0.3, 0), Vector3(0.7, 0.5, 0.04), Mats.std(Color(0.4, 0.28, 0.12), 0.35, 0.8), false)
 			plate.rotation.x = -0.25
-			var l := Geo.label(plate, "추모\n1987. 11. 3.\n서해비행장 0편\n탑승객 41명을 기리며", Vector3(0, 0, 0.022), 0.0, 26, Color(0.15, 0.1, 0.03), 0.0035)
+			var l := Geo.label(plate, "추모\n1987. 11. 3.\n서해비행장 0편\n탑승객 41명을 기리며", Vector3(0, 0, 0.022), 0.0, 26, Color(0.15, 0.1, 0.03), 0.0035, false, "engrave")
 			l.name = "PlaqueText"
 		_:
 			var sheet := Geo.box(self, Vector3(0, 0.002, 0), Vector3(0.21, 0.003, 0.297), Mats.get_mat("paper"), false)

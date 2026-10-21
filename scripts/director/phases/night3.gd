@@ -156,7 +156,7 @@ func _on_zone(zone: String) -> void:
 func _change_signs() -> void:
 	for key in ["hall_departures", "security_main", "corridor_mid", "gates_main", "hall_baggage", "hall_staff"]:
 		for l in d.t.signs.get(key, []):
-			(l as Label3D).text = "↑   GATE 0"
+			Geo.set_text(l as Label3D, "↑   GATE 0")
 			(l as Label3D).modulate = Color(1.0, 0.85, 0.3)
 
 

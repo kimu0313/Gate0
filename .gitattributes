@@ -3,3 +3,5 @@
 *.wav binary
 *.png binary
 *.jpg binary
+*.ttf binary
+*.ico binary

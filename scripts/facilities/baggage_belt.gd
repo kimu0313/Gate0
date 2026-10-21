@@ -69,7 +69,7 @@ func build() -> void:
 	_beacon = Geo.omni(hatch, Vector3(0.3, 2.3, 0.5), Color(1.0, 0.55, 0.05), 0.0, 8.0)
 	# direction arrows painted on the island
 	for side in [-1.0, 1.0]:
-		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, 0.765, side * (radius - 0.55)), 0.0, 64, Color(0.95, 0.75, 0.1), 0.006)
+		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, 0.765, side * (radius - 0.55)), 0.0, 64, Color(0.95, 0.75, 0.1), 0.006, false, "print")
 		arrow.rotation.x = -PI / 2
 	# carousel display
 	var disp_holder := Node3D.new()
@@ -235,7 +235,7 @@ func clear_bags() -> void:
 func _on_start() -> void:
 	estopped = false
 	target_speed = SPEED
-	_display.text = "RUN"
+	Geo.set_text(_display, "RUN")
 	_display.modulate = Color(0.4, 1.0, 0.5)
 	direction = -1.0 if anomaly == "bag_reverse" else 1.0
 	if bags.is_empty() and spawn_queue.is_empty():
@@ -249,7 +249,7 @@ func _on_start() -> void:
 
 func _on_stop() -> void:
 	target_speed = 0.0
-	_display.text = "STOP"
+	Geo.set_text(_display, "STOP")
 	_display.modulate = Color(0.6, 0.65, 0.7)
 
 
@@ -264,7 +264,7 @@ func press_stop() -> void:
 	act("stop", id)
 	if anomaly == "bag_nostop" and running:
 		Snd.play_at("beep_error", focus_position(), -6.0)
-		_display.text = "RUN"
+		Geo.set_text(_display, "RUN")
 		return
 	stop()
 
@@ -276,7 +276,7 @@ func press_estop() -> void:
 	speed = 0.0
 	running = false
 	_beacon_t = 6.0
-	_display.text = "E-STOP"
+	Geo.set_text(_display, "E-STOP")
 	_display.modulate = Color(1.0, 0.3, 0.2)
 	Snd.play_at("ui_alert", focus_position(), -4.0, 0.8, 8.0)
 	changed.emit()
@@ -284,11 +284,11 @@ func press_estop() -> void:
 
 func _on_power_lost() -> void:
 	target_speed = 0.0
-	_display.text = ""
+	Geo.set_text(_display, "")
 
 
 func _on_power_restored() -> void:
-	_display.text = "STOP"
+	Geo.set_text(_display, "STOP")
 
 
 func _apply_anomaly(anomaly_id: String) -> void:

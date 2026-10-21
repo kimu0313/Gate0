@@ -37,7 +37,7 @@ func _build() -> void:
 	_led_on = Mats.get_mat("lamp_green")
 	_led_off = Mats.get_mat("lamp_red")
 	_led = Geo.box(self, Vector3(0, 0.14, 0.02), Vector3(0.03, 0.02, 0.01), _led_on, false)
-	Geo.label(self, caption, Vector3(0, -0.14, 0.022), 0.0, 22, Color(0.92, 0.92, 0.92), 0.0022)
+	Geo.label(self, caption, Vector3(0, -0.14, 0.022), 0.0, 22, Color(0.92, 0.92, 0.92), 0.0022, false, "print")
 	interactable = Interactable.create(self, Vector3(0, 0, 0.05), Vector3(0.13, 0.24, 0.1), "", _on_used)
 	interactable.press_sound = ""
 	_refresh(true)

@@ -16,6 +16,14 @@ var shots := [
 	["corridor_windows", Vector3(-1.0, 0.05, -45.0), Vector3(20.0, 3.0, -55.0)],
 	["gates", Vector3(0.0, 0.05, -78.0), Vector3(0.0, 1.8, -100.0)],
 	["gate03", Vector3(19.0, 0.05, -80.0), Vector3(26.0, 2.0, -82.0)],
+	["fids_close", Vector3(-11.0, 0.05, -8.0), Vector3(-11.0, 4.3, -13.8)],
+	["whiteboard", Vector3(-31.8, 0.05, -3.0), Vector3(-33.78, 1.6, -3.0)],
+	["lightbox", Vector3(-8.0, 0.05, -17.5), Vector3(-11.78, 2.2, -17.5)],
+	["walkway_sign", Vector3(-2.8, 0.05, -24.0), Vector3(-2.8, 2.6, -29.5)],
+	["corridor_ads", Vector3(-2.0, 0.05, -40.0), Vector3(-4.78, 2.1, -46.0)],
+	["main_power", Vector3(55.5, 0.05, 9.0), Vector3(57.78, 1.4, 9.0)],
+	["belt_pedestal", Vector3(26.2, 0.05, -1.6), Vector3(27.0, 1.0, -1.6)],
+	["xray_panel", Vector3(-2.3, 0.05, -18.6), Vector3(-2.0, 1.0, -21.0)],
 ]
 var out_dir := ""
 var _i := 0

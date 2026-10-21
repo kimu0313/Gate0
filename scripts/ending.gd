@@ -5,6 +5,7 @@ var _cam: Camera3D
 var _layer: CanvasLayer
 var _fade: ColorRect
 var _title: Label
+var _board_tiles: FlapBoard
 var _lines: Label
 var _env: Environment
 var _skip := false
@@ -27,13 +28,23 @@ func _ready() -> void:
 	v.add_theme_constant_override("separation", 22)
 	UiKit.full_rect(v)
 	_layer.add_child(v)
-	_title = UiKit.label("", 110, Color(0.95, 0.95, 0.95), "mono", 700)
+	_title = UiKit.label("", 120, Color(0.95, 0.95, 0.95), "display", 700)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_title)
+	_board_tiles = FlapBoard.new()
+	_board_tiles.font_size = 120
+	_board_tiles.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_board_tiles.visible = false
+	v.add_child(_board_tiles)
 	_lines = UiKit.label("", 28, Color(0.85, 0.86, 0.9), "sans", 300)
 	_lines.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_lines.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_lines)
+	# debug: `-- --ending-scene exit <dir>` plays one ending directly and saves mid-scene shots
+	var args := OS.get_cmdline_user_args()
+	var es := args.find("--ending-scene")
+	if es >= 0 and es + 1 < args.size():
+		Game.ending_id = args[es + 1]
 	match Game.ending_id:
 		"board":
 			_board()
@@ -53,6 +64,17 @@ func _wait(t: float) -> void:
 	while e < t and not _skip:
 		await get_tree().process_frame
 		e += get_process_delta_time()
+
+
+## Saves a screenshot when running under the debug ending runner (no-op in normal play).
+func _debug_shot(tag: String) -> void:
+	var args := OS.get_cmdline_user_args()
+	var es := args.find("--ending-scene")
+	if es < 0 or es + 2 >= args.size():
+		return
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("%s/ending_%s_%s.png" % [args[es + 2], Game.ending_id, tag])
+	print("ending shot: ", tag)
 
 
 func _fade_to(a: float, t: float) -> void:
@@ -79,14 +101,22 @@ func _env_setup(bg: Color, ambient: Color, energy: float, fog := 0.0) -> void:
 	add_child(we)
 
 
-func _text(title: String, lines: String) -> void:
-	_title.text = title
+## Ending title: departure-board tiles flip to the word, then the lines type in underneath.
+func _text(title: String, lines: String, color := Color(0.95, 0.95, 0.95)) -> void:
+	_title.text = ""
+	_title.visible = false
+	_board_tiles.visible = title != ""
+	if title != "":
+		_board_tiles.text_color = color
+		_board_tiles.modulate.a = 1.0
+		_board_tiles.show_text(title, 0.2, 0.07, 5)
 	_lines.text = lines
-	_title.modulate.a = 0.0
 	_lines.modulate.a = 0.0
 	var tw := create_tween()
-	tw.tween_property(_title, "modulate:a", 1.0, 1.5)
-	tw.tween_property(_lines, "modulate:a", 1.0, 1.5)
+	tw.tween_interval(_board_tiles.settle_time() + 0.4 if title != "" else 0.2)
+	tw.tween_callback(func():
+		_lines.modulate.a = 1.0
+		UiFx.typewrite(_lines, clampf(lines.length() * 0.05, 0.4, 2.5)))
 
 
 # --- A: BOARD -------------------------------------------------------------------------------
@@ -126,7 +156,8 @@ func _board() -> void:
 	Snd.play("door_heavy", -2.0, 0.7, "SFX")
 	await _wait(2.0)
 	await Snd.pa_announce(["pa_arrived_ko"], {"subs": [], "no_end": true})
-	_text("ARRIVED", "목적지: 집\n\n문이 닫혔다.\n정말 집으로 돌아온 걸까.")
+	_text("ARRIVED", "목적지: 집\n\n문이 닫혔다.\n정말 집으로 돌아온 걸까.", UiKit.SIGNAL)
+	get_tree().create_timer(3.0).timeout.connect(func(): _debug_shot("title"))
 	Snd.play("ending_tone", -6.0, 1.0, "Music")
 	await _wait(9.0)
 	_credits("엔딩 A — 탑승")
@@ -168,8 +199,9 @@ func _exit() -> void:
 	add_child(banner)
 	banner.position = Vector3(0, 9.6, -9.7)
 	Geo.box(banner, Vector3.ZERO, Vector3(20, 2.2, 0.05), Mats.std(Color(0.08, 0.2, 0.45), 0.8), false)
-	Geo.label(banner, "GRAND OPENING — TODAY", Vector3(0, 0.35, 0.04), 0.0, 120, Color(1, 1, 1), 0.012)
-	Geo.label(banner, "서해국제공항 오늘 정식 개장", Vector3(0, -0.55, 0.04), 0.0, 80, Color(1.0, 0.85, 0.3), 0.012)
+	Geo.label(banner, "GRAND OPENING — TODAY", Vector3(0, 0.35, 0.04), 0.0, 120, Color(1, 1, 1), 0.012, false, "print")
+	Geo.label(banner, "서해국제공항 오늘 정식 개장", Vector3(0, -0.55, 0.04), 0.0, 80, Color(1.0, 0.85, 0.3), 0.012, false, "print")
+	Geo.fit_labels(banner)
 	# FIDS seen through the glass
 	var fids := FidsBoard.new()
 	add_child(fids)
@@ -192,9 +224,11 @@ func _exit() -> void:
 	for pn in people:
 		var tw := create_tween()
 		tw.tween_property(pn, "position:z", -9.0, randf_range(14.0, 24.0))
-	_text("EXIT", "")
-	await _wait(3.0)
-	create_tween().tween_property(_title, "modulate:a", 0.0, 1.5)
+	_text("EXIT", "", UiKit.EXIT)
+	await _wait(1.6)
+	_debug_shot("banner")
+	await _wait(1.4)
+	create_tween().tween_property(_board_tiles, "modulate:a", 0.0, 1.5)
 	Snd.pa_announce(["pa_grand_opening_ko"], {"subs": [], "no_end": true})
 	var ct := create_tween()
 	ct.tween_property(_cam, "position", Vector3(2.0, 3.5, -4.0), 16.0).set_trans(Tween.TRANS_SINE)
@@ -238,7 +272,8 @@ func _announce() -> void:
 	await _wait(1.0)
 	await Snd.pa_announce(["name_call"], {"subs": [], "pitch": 0.85, "no_end": true, "wrong": true})
 	await _fade_to(1.0, 2.0)
-	_text("ANNOUNCEMENT", "당신은 안내방송이 되었다.\n\n오늘 밤에도, 누군가 수칙을 펼친다.")
+	_text("ANNOUNCEMENT", "당신은 안내방송이 되었다.\n\n오늘 밤에도, 누군가 수칙을 펼친다.", UiKit.ALERT)
+	get_tree().create_timer(3.5).timeout.connect(func(): _debug_shot("title"))
 	Snd.play("ending_tone", -6.0, 0.8, "Music")
 	await _wait(9.0)
 	_credits("엔딩 C — 안내방송")
@@ -246,17 +281,15 @@ func _announce() -> void:
 
 func _credits(ending_name: String) -> void:
 	_skip = false
-	var st := Game.stats
-	var seen := Game.endings_seen()
-	_title.text = "GATE 0"
-	_title.modulate.a = 1.0
-	_lines.text = "%s\n\n정확 판정 %d  ·  이상 해제 %d  ·  놓침 %d  ·  오판 %d  ·  사망 %d\n발견한 엔딩 %d / 3\n\n프로토타입 — 기획 김훈철 외 · Godot 4.7\n\n[Esc] 메인 메뉴" % [
-		ending_name, int(st.get("correct", 0)), int(st.get("cleared", 0)), int(st.get("missed", 0)),
-		int(st.get("false_alarm", 0)), int(st.get("deaths", 0)), seen.size()]
-	_lines.modulate.a = 1.0
+	_build_credits(ending_name)
 	if FileAccess.file_exists(Game.SAVE_PATH):
 		DirAccess.remove_absolute(Game.SAVE_PATH)
 	var args := OS.get_cmdline_user_args()
+	if args.has("--ending-scene"):
+		await _wait(4.5)
+		await _debug_shot("credits")
+		get_tree().quit()
+		return
 	var ai := args.find("--autotest")
 	if ai >= 0:
 		print("[ending] ", Game.ending_id, " credits shown")
@@ -270,3 +303,71 @@ func _credits(ending_name: String) -> void:
 		await get_tree().process_frame
 	Snd.set_music("", 1.0)
 	Game.go_menu()
+
+
+## Shift-report style credits: GATE 0 board, the ending reached, counted-up stats, endings found.
+func _build_credits(ending_name: String) -> void:
+	_board_tiles.visible = false
+	_title.visible = false
+	_lines.visible = false
+	var st := Game.stats
+	var seen := Game.endings_seen()
+	var root := VBoxContainer.new()
+	UiKit.full_rect(root)
+	root.alignment = BoxContainer.ALIGNMENT_CENTER
+	root.add_theme_constant_override("separation", 26)
+	_layer.add_child(root)
+	var cap := UiKit.caption("SEOHAE INT'L AIRPORT  ·  SHIFT REPORT", UiKit.TEXT_MUTE, 18)
+	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(cap)
+	var board := FlapBoard.new()
+	board.font_size = 120
+	board.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	root.add_child(board)
+	board.show_text("GATE 0", 0.2)
+	var line := ColorRect.new()
+	line.color = UiKit.SIGNAL
+	line.custom_minimum_size = Vector2(0, 3)
+	line.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	root.add_child(line)
+	create_tween().tween_property(line, "custom_minimum_size:x", 620.0, 0.6).set_delay(board.settle_time()).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	var en := UiKit.label(ending_name, 30, UiKit.SIGNAL, "sans", 700)
+	en.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(en)
+	var stats := HBoxContainer.new()
+	stats.alignment = BoxContainer.ALIGNMENT_CENTER
+	stats.add_theme_constant_override("separation", 56)
+	root.add_child(stats)
+	var rows := [["정확 판정", "correct", UiKit.CLEAR], ["이상 해제", "cleared", UiKit.CLEAR], ["놓침", "missed", UiKit.ALERT],
+		["오판", "false_alarm", UiKit.SIGNAL], ["사망", "deaths", UiKit.ALERT]]
+	for i in rows.size():
+		var r: Array = rows[i]
+		var n := int(st.get(r[1], 0))
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 2)
+		stats.add_child(col)
+		var num := UiKit.label("00", 64, r[2] if n > 0 else UiKit.TEXT_MUTE, "display", 700)
+		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(num)
+		var l := UiKit.label(r[0], 18, UiKit.TEXT_DIM)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(l)
+		UiFx.count_up(num, n, 0.5, "%02d", board.settle_time() + 0.4 + i * 0.15)
+	var found := HBoxContainer.new()
+	found.alignment = BoxContainer.ALIGNMENT_CENTER
+	found.add_theme_constant_override("separation", 12)
+	root.add_child(found)
+	found.add_child(UiKit.caption("ENDINGS · 발견한 엔딩  %d / 3" % seen.size(), UiKit.TEXT_DIM, 16))
+	for e in [["A", "board"], ["B", "exit"], ["C", "announce"]]:
+		var got: bool = seen.has(e[1])
+		found.add_child(UiKit.chip(e[0], UiKit.INK_0 if got else UiKit.TEXT_MUTE, UiKit.SIGNAL if got else Color(1, 1, 1, 0.06), "", 18))
+	var foot := HBoxContainer.new()
+	foot.alignment = BoxContainer.ALIGNMENT_CENTER
+	foot.add_theme_constant_override("separation", 28)
+	root.add_child(foot)
+	foot.add_child(UiKit.label("프로토타입 — 기획 김훈철 외 · Godot 4.7", 16, UiKit.TEXT_MUTE))
+	foot.add_child(UiKit.key_hints([["ESC", "메인 메뉴"]], 15, UiKit.TEXT_DIM))
+	for c in [en, stats, found, foot]:
+		(c as CanvasItem).modulate.a = 0.0
+		UiFx.fade(c, 1.0, 0.5, board.settle_time() + 0.2)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)

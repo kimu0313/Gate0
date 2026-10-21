@@ -35,7 +35,7 @@ func _build(label_text: String) -> void:
 			plate.position = Vector3(0, -height * 0.5 + 1.6, z)
 			plate.rotation.y = side
 			Geo.box(plate, Vector3(0, 0, 0.005), Vector3(1.6, 0.42, 0.01), Mats.get_mat("yellow_paint"), false)
-			Geo.label(plate, label_text, Vector3(0, 0, 0.012), 0.0, 36, Color(0.08, 0.06, 0.02), 0.0045)
+			Geo.label(plate, label_text, Vector3(0, 0, 0.012), 0.0, 36, Color(0.08, 0.06, 0.02), 0.0045, false, "print")
 
 
 func open(instant := false) -> void:

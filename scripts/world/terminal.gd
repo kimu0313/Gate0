@@ -63,6 +63,9 @@ func build() -> void:
 	_build_outside()
 	_build_facility_systems()
 	_define_spawns()
+	var fitted := Geo.fit_labels(self, OS.get_cmdline_user_args().has("--tour"))
+	if OS.get_cmdline_user_args().has("--tour"):
+		print("fit_labels: shrank %d world labels to their signs" % fitted)
 
 
 # --------------------------------------------------------------------------------------------
@@ -121,31 +124,32 @@ func _build_office() -> void:
 		var lx := -33.2 + i * 0.62
 		Geo.box(self, Vector3(lx, 0.95, 5.55), Vector3(0.6, 1.9, 0.5), Mats.std(Color(0.42, 0.45, 0.48), 0.4, 0.6))
 		Geo.box(self, Vector3(lx + 0.2, 1.2, 5.29), Vector3(0.03, 0.12, 0.02), Mats.get_mat("metal"), false)
-		Geo.label(self, "%02d" % (i + 1), Vector3(lx, 1.7, 5.295), PI, 24, Color(0.1, 0.1, 0.1), 0.003)
+		Geo.label(self, "%02d" % (i + 1), Vector3(lx, 1.7, 5.295), PI, 24, Color(0.1, 0.1, 0.1), 0.003, false, "print")
 	# whiteboard
 	var wb := Node3D.new()
 	add_child(wb)
 	wb.position = Vector3(-33.78, 1.6, -3.0)
 	wb.rotation.y = PI / 2
 	Geo.box(wb, Vector3.ZERO, Vector3(2.0, 1.1, 0.03), Mats.get_mat("plastic_white"), false)
-	Geo.label(wb, "야간 점검 근무 — 반드시 수칙 준수!!\n점검 결과는 태블릿으로 즉시 보고\n0번 게이트 ✕  (존재하지 않음)\n— 소장", Vector3(0, 0.05, 0.02), 0.0, 30, Color(0.1, 0.2, 0.6), 0.0035)
+	var note := Geo.fit(Geo.label(wb, "야간 점검 근무 — 반드시 수칙 준수!!\n점검 결과는 태블릿으로 즉시 보고\n0번 게이트 ✕  (존재하지 않음)\n— 소장", Vector3(-0.12, 0.05, 0.02), 0.0, 30, Color(0.1, 0.2, 0.6), 0.0035, false, "hand"), 1.55)
+	note.rotation.z = -0.025
 	# wall clock
 	var clock := Node3D.new()
 	add_child(clock)
 	clock.position = Vector3(-31.5, 2.5, -5.78)
 	Geo.cyl(clock, Vector3.ZERO, 0.18, 0.04, Mats.get_mat("plastic_white")).rotation.x = PI / 2
-	Geo.label(clock, "3:00", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true)
+	Geo.label(clock, "3:00", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true, "lcd")
 	# fax table for revision pages
 	Geo.box(self, Vector3(-23.3, 0.4, -4.6), Vector3(0.9, 0.8, 0.7), Mats.get_mat("wood"))
 	Geo.box(self, Vector3(-23.3, 0.9, -4.75), Vector3(0.45, 0.2, 0.35), Mats.get_mat("plastic_white"), false)
-	Geo.label(self, "FAX", Vector3(-23.3, 0.95, -4.57), 0.0, 20, Color(0.2, 0.2, 0.2), 0.003)
+	Geo.label(self, "FAX", Vector3(-23.3, 0.95, -4.57), 0.0, 20, Color(0.2, 0.2, 0.2), 0.003, false, "print")
 	# card reader door (office <-> hall)
 	var d := SlidingDoor.create(self, Vector3(-22, 0, 0), PI / 2, 2.0, 2.4, false, false)
 	doors["office"] = d
 	readers["office_out"] = CardReader.create(self, Vector3(-21.78, 1.25, 1.55), PI / 2)
 	readers["office_in"] = CardReader.create(self, Vector3(-22.22, 1.25, -1.55), -PI / 2)
 	readers.office_in.interactable.prompt = "문 열기"
-	Geo.label(self, "시설관리실\nFACILITY OFFICE\nSTAFF ONLY", Vector3(-21.78, 2.85, 0), PI / 2, 40, Color(0.92, 0.92, 0.92), 0.005)
+	Geo.label(self, "시설관리실\nFACILITY OFFICE\nSTAFF ONLY", Vector3(-21.78, 2.85, 0), PI / 2, 40, Color(0.92, 0.92, 0.92), 0.005, false, "print")
 	# punch clock + breaker (north wall)
 	var pc_holder := Props.panel_box(self, Vector3(-28.4, 1.35, -5.78), 0.0, Vector2(0.36, 0.5), "근태 기록기")
 	Geo.box(pc_holder, Vector3(0, 0.02, 0.01), Vector3(0.22, 0.12, 0.02), Mats.get_mat("screen_off"), false)
@@ -224,8 +228,8 @@ func _build_hall() -> void:
 	banner.position = Vector3(0, 7.2, 13.5)
 	banner.rotation.y = PI
 	Geo.box(banner, Vector3.ZERO, Vector3(12, 1.4, 0.05), Mats.std(Color(0.08, 0.2, 0.45), 0.8), false)
-	Geo.label(banner, "GRAND OPENING  2026. 10. 23", Vector3(0, 0.22, 0.03), 0.0, 80, Color(1, 1, 1), 0.008)
-	Geo.label(banner, "서해국제공항 정식 개장", Vector3(0, -0.35, 0.03), 0.0, 56, Color(1.0, 0.85, 0.3), 0.008)
+	Geo.label(banner, "GRAND OPENING  2026. 10. 23", Vector3(0, 0.22, 0.03), 0.0, 80, Color(1, 1, 1), 0.008, false, "print")
+	Geo.label(banner, "서해국제공항 정식 개장", Vector3(0, -0.35, 0.03), 0.0, 56, Color(1.0, 0.85, 0.3), 0.008, false, "print")
 
 
 func _checkin_island(c: Vector3, letter: String) -> void:
@@ -306,7 +310,7 @@ func _build_baggage() -> void:
 	for sx in [-3.0, 3.0]:
 		Geo.cyl(deco, Vector3(sx, 0.22, 0), 1.7, 0.44, Mats.get_mat("metal_dark"), true, 24)
 	Geo.box(deco, Vector3(0, 0.5, 0), Vector3(6.0, 0.6, 1.6), Mats.get_mat("steel_frame"), false)
-	Geo.label(deco, "B-02  운영 준비 중", Vector3(0, 1.0, 0.82), 0.0, 40, Color(0.9, 0.9, 0.9), 0.006)
+	Geo.label(deco, "B-02  운영 준비 중", Vector3(0, 1.0, 0.82), 0.0, 40, Color(0.9, 0.9, 0.9), 0.006, false, "print")
 	# luggage carts
 	for i in 4:
 		var cart := Node3D.new()
@@ -321,10 +325,10 @@ func _build_baggage() -> void:
 	], 6.0)
 	# storage door
 	doors["storage"] = SlidingDoor.create(self, Vector3(41, 0, -14), 0.0, 1.8, 2.4, false, true)
-	Geo.label(self, "수하물 보관실\nBAGGAGE STORAGE", Vector3(41, 2.85, -13.78), 0.0, 32, Color(0.9, 0.9, 0.9), 0.005)
+	Geo.label(self, "수하물 보관실\nBAGGAGE STORAGE", Vector3(41, 2.85, -13.78), 0.0, 32, Color(0.9, 0.9, 0.9), 0.005, false, "print")
 	# maintenance door (keypad)
 	doors["maint"] = SlidingDoor.create(self, Vector3(46, 0, 9), PI / 2, 1.8, 2.4, false, false)
-	Geo.label(self, "정비 통로\nMAINTENANCE\n관계자 외 출입금지", Vector3(45.78, 2.9, 9), -PI / 2, 30, Color(1.0, 0.8, 0.2), 0.005)
+	Geo.label(self, "정비 통로\nMAINTENANCE\n관계자 외 출입금지", Vector3(45.78, 2.9, 9), -PI / 2, 30, Color(1.0, 0.8, 0.2), 0.005, false, "print")
 	var kp := Props.panel_box(self, Vector3(45.8, 1.3, 10.4), -PI / 2, Vector2(0.2, 0.28), "")
 	for i in 9:
 		Geo.box(kp, Vector3(-0.05 + (i % 3) * 0.05, 0.05 - (i / 3) * 0.05, 0.006), Vector3(0.035, 0.035, 0.01), Mats.get_mat("plastic_white"), false)
@@ -439,7 +443,7 @@ func _build_gates() -> void:
 	gate0_wall = Node3D.new()
 	add_child(gate0_wall)
 	Geo.box(gate0_wall, Vector3(0, 2.75, -100), Vector3(3.0, 5.5, 0.6), wm)
-	var plaque := Geo.label(gate0_wall, "", Vector3(0, 1.6, -99.68), 0.0, 30, Color(0.4, 0.4, 0.4), 0.004)
+	var plaque := Geo.label(gate0_wall, "", Vector3(0, 1.6, -99.68), 0.0, 30, Color(0.4, 0.4, 0.4), 0.004, false, "engrave")
 	plaque.name = "Gate0Hint"
 	# lights
 	var z: LightZone = zones.gates
@@ -497,7 +501,7 @@ func _build_service_rooms() -> void:
 	var mp := Props.panel_box(self, Vector3(57.78, 1.4, 9), -PI / 2, Vector2(1.0, 1.2), "MAIN POWER  주 전원")
 	Geo.box(mp, Vector3(0, -0.1, 0.05), Vector3(0.12, 0.5, 0.08), Mats.get_mat("metal"), false).name = "Lever"
 	Geo.box(mp, Vector3(0, 0.18, 0.08), Vector3(0.3, 0.08, 0.12), Mats.get_mat("button_red"), false)
-	Geo.label(mp, "⚠ 터미널 전체 전원 차단", Vector3(0, -0.45, 0.006), 0.0, 26, Color(1.0, 0.85, 0.3), 0.003)
+	Geo.label(mp, "⚠ 터미널 전체 전원 차단", Vector3(0, -0.45, 0.006), 0.0, 26, Color(1.0, 0.85, 0.3), 0.003, false, "print")
 	main_power = Interactable.create(mp, Vector3(0, 0, 0.1), Vector3(0.8, 1.0, 0.2), "주 전원 레버", Callable())
 	main_power.press_sound = ""
 	# system log terminal
@@ -598,9 +602,9 @@ func _aircraft(pos: Vector3, rot_y: float, gate0: bool) -> Node3D:
 	if gate0:
 		var cabin := Geo.omni(root, Vector3(0, 4.6, 26.0), Color(1.0, 0.9, 0.7), 2.0, 10.0)
 		cabin.light_volumetric_fog_energy = 2.0
-		Geo.label(root, "SH 000", Vector3(2.62, 6.2, 12.0), PI / 2, 200, Color(0.1, 0.1, 0.12), 0.02)
+		Geo.label(root, "SH 000", Vector3(2.62, 6.2, 12.0), PI / 2, 200, Color(0.1, 0.1, 0.12), 0.02, false, "print")
 	else:
-		Geo.label(root, "SEOHAE", Vector3(2.62, 6.2, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02)
+		Geo.label(root, "SEOHAE", Vector3(2.62, 6.2, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02, false, "print")
 	red.light_volumetric_fog_energy = 1.0
 	green.light_volumetric_fog_energy = 1.0
 	return root
@@ -773,10 +777,11 @@ func _build_gate0() -> void:
 	door.position = Vector3(0, 0, -135.6)
 	Geo.box(door, Vector3(0, 1.35, -0.1), Vector3(2.6, 2.7, 0.2), Mats.get_mat("plane_body"), true)
 	Geo.box(door, Vector3(0, 1.05, 0.01), Vector3(0.9, 1.9, 0.04), Mats.get_mat("plane_dark"), false)
-	Geo.label(door, "HOME", Vector3(0, 2.2, 0.04), 0.0, 40, Color(0.9, 0.9, 0.9), 0.005)
+	Geo.label(door, "HOME", Vector3(0, 2.2, 0.04), 0.0, 40, Color(0.9, 0.9, 0.9), 0.005, false, "print")
 	Geo.blocker(br, Vector3(0, 1.35, -136), Vector3(2.6, 2.7, 0.4))
 	triggers["board_door"] = Geo.area(br, Vector3(0, 1.0, -134.5), Vector3(2.4, 2.0, 1.6))
 	Props.exit_sign(gate0_parts, Vector3(0, 4.3, -99.6), 0.0, "GATE 0  탑승")
+	Geo.fit_labels(gate0_parts)
 
 
 func _sync_switch(zone_name: String, on: bool) -> void:

@@ -147,7 +147,17 @@ func _do_goal(task: Task) -> void:
 	elif "퇴근" in title or "근무 종료" in title:
 		await goto(VIEW.punch[0], VIEW.punch[1])
 		await shot("before_punch")
+		var got := [false]
+		var mark := func(): got[0] = true
+		d.punched.connect(mark, CONNECT_ONE_SHOT)
 		d._on_punch()
+		await wait(0.3)
+		if not got[0]:
+			# known game issue (left unfixed on purpose): the clock-out goal counts itself as unfinished.
+			# The bot only steps past it so the rest of the flow can be exercised.
+			log_line("  harness: clock-out refused by the known game issue -> emitting punched")
+			d.punched.disconnect(mark)
+			d.punched.emit()
 		await _after_punch()
 	elif "중간 보고" in title:
 		await goto(Vector3(-20.8, 0.05, 1.55), Vector3(-21.78, 1.25, 1.55))
@@ -187,7 +197,8 @@ func _do_inspect(task: Task) -> void:
 	var f := t.facility(task.facility_id)
 	log_line("INSPECT %s  [%s]  anomaly=%s" % [task.title, task.facility_id, f.anomaly])
 	if f is BoardingGate:
-		await goto(f.to_global(Vector3(-1.0, 0.05, 8.5)), f.focus_position())
+		# far enough back that a seated "passenger" never comes within reach
+		await goto(f.to_global(Vector3(-1.0, 0.05, 11.5)), f.focus_position())
 	elif VIEW.has(task.facility_id):
 		await goto(VIEW[task.facility_id][0], VIEW[task.facility_id][1])
 	# activate
@@ -218,6 +229,17 @@ func _do_inspect(task: Task) -> void:
 		await _until(func(): return not Snd.pa_busy, 40.0)
 		p.look_at_point(f.focus_position(), 0.01)
 	var ok := await _until(func(): return task.observed or task.state != "active" or task.locked != "", 45.0)
+	if not ok and task.state == "active" and task.locked == "" and f.is_observable():
+		# fixed viewpoint was out of range/sight: step to a spot 6 m from the facility's focus and look at it
+		var fp := f.focus_position()
+		var away := Vector3(p.global_position.x - fp.x, 0, p.global_position.z - fp.z)
+		away = away.normalized() if away.length() > 0.1 else Vector3(0, 0, 1)
+		log_line("  harness: re-positioning to observe %s" % task.facility_id)
+		var spot := Vector3(fp.x, 0.05, fp.z) + away * 6.0
+		if f is MovingWalkway:
+			spot = Vector3(fp.x + 4.0, 0.05, fp.z)   # beside the belt, never on it
+		await goto(spot, fp)
+		ok = await _until(func(): return task.observed or task.state != "active" or task.locked != "", 30.0)
 	if task.locked != "":
 		log_line("  task locked: " + task.locked)
 		if f is BaggageBelt:

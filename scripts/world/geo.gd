@@ -6,20 +6,56 @@ const LAYER_WORLD := 1
 const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4
 
-static var sign_font: Font
-static var mono_font: Font
+static var sign_font: Font      # wayfinding signs: DIN-style Bahnschrift, Hangul from Malgun Gothic Bold
+static var led_font: Font       # LED / LCD displays: condensed Bahnschrift with wider tracking
+static var mono_font: Font      # computer screens (FIDS boot text, X-ray readout)
+static var hand_font: Font      # marker / pen handwriting (bundled Nanum Pen Script)
+static var engrave_font: Font   # cast or engraved plaques (bundled Nanum Myeongjo Bold)
 
 
+## World-text fonts. All are MSDF so Label3D text stays crisp at any distance and angle.
 static func fonts() -> void:
-	if sign_font == null:
-		var f := SystemFont.new()
-		f.font_names = PackedStringArray(["Malgun Gothic", "Segoe UI", "Noto Sans CJK KR", "sans-serif"])
-		f.font_weight = 700
-		sign_font = f
-		var m := SystemFont.new()
-		m.font_names = PackedStringArray(["Consolas", "Lucida Console", "DejaVu Sans Mono", "monospace"])
-		m.font_weight = 700
-		mono_font = m
+	if sign_font != null:
+		return
+	var kr := SystemFont.new()
+	kr.font_names = PackedStringArray(["Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR", "sans-serif"])
+	kr.font_weight = 700
+	kr.multichannel_signed_distance_field = true
+	sign_font = _din(600, 100, 1, kr)
+	led_font = _din(600, 75, 2, kr)
+	var m := SystemFont.new()
+	m.font_names = PackedStringArray(["Consolas", "Lucida Console", "DejaVu Sans Mono", "monospace"])
+	m.font_weight = 700
+	m.multichannel_signed_distance_field = true
+	m.fallbacks = [kr]
+	mono_font = m
+	hand_font = bundled_font("res://assets/fonts/NanumPenScript-Regular.ttf", ["Gungsuh", "Batang"], true)
+	engrave_font = bundled_font("res://assets/fonts/NanumMyeongjo-Bold.ttf", ["Batang", "serif"], true)
+
+
+static func _din(weight: int, width: int, tracking: int, fallback: Font) -> Font:
+	var base := SystemFont.new()
+	base.font_names = PackedStringArray(["Bahnschrift", "DIN Alternate", "Arial Narrow", "Arial"])
+	base.multichannel_signed_distance_field = true
+	var fv := FontVariation.new()
+	fv.base_font = base
+	fv.variation_opentype = {"wght": weight, "wdth": width}
+	fv.spacing_glyph = tracking
+	fv.fallbacks = [fallback]
+	return fv
+
+
+## A font shipped in assets/fonts (so it looks the same on every PC), falling back to system fonts.
+static func bundled_font(path: String, system_names: Array, msdf := false) -> Font:
+	var sys := SystemFont.new()
+	sys.font_names = PackedStringArray(system_names)
+	sys.multichannel_signed_distance_field = msdf
+	if not ResourceLoader.exists(path):
+		return sys
+	var f := (load(path) as FontFile).duplicate() as FontFile
+	f.multichannel_signed_distance_field = msdf
+	f.fallbacks = [sys]
+	return f
 
 
 static func box(parent: Node, pos: Vector3, size: Vector3, mat: Material, collide := true, rot_y := 0.0) -> MeshInstance3D:
@@ -111,17 +147,38 @@ static func capsule(parent: Node, pos: Vector3, radius: float, height: float, ma
 	return mi
 
 
+## World text. `style` follows the material the text sits on:
+##   sign    — backlit sign or lightbox (unlit, DIN face)            [default]
+##   print   — printed / painted on a surface (lit by the scene)
+##   led     — LED / LCD display (unlit, condensed, slightly HDR)     [default when mono]
+##   lcd     — passive LCD with dark digits (lit by the scene, condensed)
+##   hand    — marker or pen handwriting (lit)
+##   engrave — cast or engraved plaque (lit, serif)
 static func label(parent: Node, text: String, pos: Vector3, rot_y := 0.0, font_size := 64, color := Color.WHITE,
-		pixel_size := 0.01, mono := false) -> Label3D:
+		pixel_size := 0.01, mono := false, style := "") -> Label3D:
 	fonts()
+	if style == "":
+		style = "led" if mono else "sign"
 	var l := Label3D.new()
 	l.text = text
-	l.font = mono_font if mono else sign_font
 	l.font_size = font_size
 	l.pixel_size = pixel_size
 	l.modulate = color
+	match style:
+		"led":
+			l.font = led_font
+			l.modulate = Color(color.r * 1.4, color.g * 1.4, color.b * 1.4, color.a)
+		"lcd":
+			l.font = led_font
+		"hand":
+			l.font = hand_font
+			l.font_size = int(font_size * 1.3)
+		"engrave":
+			l.font = engrave_font
+		_:
+			l.font = sign_font
 	l.outline_size = 0
-	l.shaded = false
+	l.shaded = style in ["print", "lcd", "hand", "engrave"]
 	l.double_sided = false
 	l.alpha_cut = Label3D.ALPHA_CUT_DISABLED
 	l.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -129,6 +186,108 @@ static func label(parent: Node, text: String, pos: Vector3, rot_y := 0.0, font_s
 	l.position = pos
 	l.rotation.y = rot_y
 	return l
+
+
+## Shrinks a Label3D so its widest line fits `max_width` metres (signs, boards, plates).
+static func fit(l: Label3D, max_width: float) -> Label3D:
+	var w := l.font.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.font_size).x * l.pixel_size
+	if w > max_width and w > 0.0:
+		l.pixel_size *= max_width / w
+	return l
+
+
+## Text size of a Label3D at pixel_size 1 (font pixels).
+static func _text_px(l: Label3D) -> Vector2:
+	if l.text == "":
+		return Vector2.ZERO
+	var lines := l.text.count("\n") + 1
+	var w := l.font.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.font_size).x
+	var h := lines * l.font.get_height(l.font_size) + (lines - 1) * l.line_spacing
+	return Vector2(w, h)
+
+
+## The box face a label is printed on: returns the largest text size (metres) that stays inside it with a
+## margin, or Vector2.ZERO when the label isn't on a box (free-standing wall text).
+static func _backing_space(l: Label3D) -> Vector2:
+	var p := l.get_parent()
+	if p == null:
+		return Vector2.ZERO
+	var boxes: Array = []
+	if p is MeshInstance3D and (p as MeshInstance3D).mesh is BoxMesh:
+		boxes.append([Transform3D.IDENTITY, ((p as MeshInstance3D).mesh as BoxMesh).size])
+	for c in p.get_children():
+		if c is MeshInstance3D and (c as MeshInstance3D).mesh is BoxMesh:
+			boxes.append([(c as MeshInstance3D).transform, ((c as MeshInstance3D).mesh as BoxMesh).size])
+	var best := Vector2.ZERO
+	var best_area := INF
+	for b in boxes:
+		var inv: Transform3D = (b[0] as Transform3D).affine_inverse()
+		var s: Vector3 = b[1]
+		var d := inv * l.position
+		var right := (inv.basis * l.transform.basis.x).normalized()
+		var up := (inv.basis * l.transform.basis.y).normalized()
+		var nrm := (inv.basis * l.transform.basis.z).normalized()
+		var half := s * 0.5
+		var ext_r := absf(right.x) * half.x + absf(right.y) * half.y + absf(right.z) * half.z
+		var ext_u := absf(up.x) * half.x + absf(up.y) * half.y + absf(up.z) * half.z
+		var ext_n := absf(nrm.x) * half.x + absf(nrm.y) * half.y + absf(nrm.z) * half.z
+		var off_r := absf(d.dot(right))
+		var off_u := absf(d.dot(up))
+		var off_n := absf(d.dot(nrm))
+		# the label must sit on (just in front of) the face, inside its outline
+		if off_n < ext_n - 0.03 or off_n > ext_n + 0.12 or off_r > ext_r or off_u > ext_u:
+			continue
+		var area := ext_r * ext_u
+		if area >= best_area:
+			continue
+		var pad := minf(ext_r, ext_u) * 0.08
+		best_area = area
+		best = Vector2(maxf(0.01, 2.0 * (ext_r - off_r) - 2.0 * pad), maxf(0.01, 2.0 * (ext_u - off_u) - 0.01))
+	return best
+
+
+## Shrinks every Label3D under `root` that would spill off the sign/plate/panel it is printed on, and
+## remembers the space so text set later through set_text() keeps fitting. Returns the number shrunk.
+static func fit_labels(root: Node, verbose := false) -> int:
+	var n := 0
+	for node in root.find_children("*", "Label3D", true, false):
+		var l := node as Label3D
+		if l.has_meta("no_fit"):
+			continue
+		var space := _backing_space(l)
+		if space == Vector2.ZERO:
+			continue
+		var t := _text_px(l)
+		# needing to halve the text means the box found isn't really its sign (belt surface, post...)
+		if t.x > 0.0 and minf(space.x / t.x, space.y / t.y) < l.pixel_size * 0.5:
+			continue
+		l.set_meta("fit_space", space)
+		l.set_meta("fit_px", l.pixel_size)
+		if _refit(l):
+			n += 1
+			if verbose:
+				print("  fit %3d%%  %s" % [int(l.pixel_size / float(l.get_meta("fit_px")) * 100.0), l.text.replace("\n", " / ")])
+	return n
+
+
+static func _refit(l: Label3D) -> bool:
+	var space: Vector2 = l.get_meta("fit_space")
+	var base: float = l.get_meta("fit_px")
+	var t := _text_px(l)
+	var px := base
+	if t.x > 0.0:
+		px = minf(px, space.x / t.x)
+	if t.y > 0.0:
+		px = minf(px, space.y / t.y)
+	l.pixel_size = px
+	return px < base * 0.995
+
+
+## Changes a world label's text and keeps it inside its sign.
+static func set_text(l: Label3D, text: String) -> void:
+	l.text = text
+	if l.has_meta("fit_space"):
+		_refit(l)
 
 
 static func omni(parent: Node, pos: Vector3, color: Color, energy: float, light_range: float, shadow := false) -> OmniLight3D:

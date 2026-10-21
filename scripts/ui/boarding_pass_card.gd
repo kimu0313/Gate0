@@ -35,15 +35,15 @@ func _ready() -> void:
 	_text("탑승권 · BOARDING PASS", Vector2(700, 150), 40, white, "sans", 700, 580, HORIZONTAL_ALIGNMENT_RIGHT)
 	_text("BOARDING PASS", Vector2(1360, 150), 40, Color(white, 0.85), "display", 700)
 	# main section
-	_field("FLIGHT", "000", Vector2(84, 280), 88, ink, "mono")
+	_field("FLIGHT", "000", Vector2(84, 280), 88, ink)
 	_field("PASSENGER", passenger, Vector2(430, 280), 88, ink, "sans", 900)
 	_field("GATE", "0", Vector2(84, 440), 120, red, "display")
-	_field("SEAT", "—", Vector2(430, 440), 88, ink, "mono")
-	_field("DESTINATION", "HOME", Vector2(700, 440), 88, ink, "mono")
+	_field("SEAT", "—", Vector2(430, 440), 88, ink)
+	_field("DESTINATION", "HOME", Vector2(700, 440), 88, ink)
 	# stub
-	_field("FLIGHT", "000", Vector2(1360, 280), 64, ink, "mono")
+	_field("FLIGHT", "000", Vector2(1360, 280), 64, ink)
 	_field("BOARDING", "NOW", Vector2(1360, 420), 80, red, "display")
-	_field("ORIGIN", "UNKNOWN", Vector2(1360, 590), 46, ink, "mono")
+	_field("ORIGIN", "UNKNOWN", Vector2(1360, 590), 46, ink)
 
 
 func _at(p: Vector2) -> Vector2:
@@ -61,7 +61,7 @@ func _text(t: String, pos: Vector2, art_size: float, col: Color, kind := "sans",
 	return l
 
 
-func _field(caption: String, value: String, pos: Vector2, art_size: float, col: Color, kind := "mono", weight := 700) -> void:
+func _field(caption: String, value: String, pos: Vector2, art_size: float, col: Color, kind := "display", weight := 700) -> void:
 	_text(caption, pos, 30, Color("5a6478"), "display", 700)
 	_text(value, pos + Vector2(0, 34), art_size, col, kind, weight)
 

@@ -30,6 +30,7 @@ var _reader: Control
 var _reader_paper: PaperPage
 var _reader_rig: Control
 var _reader_backdrop: Control
+var _reader_holder: Control
 var _camera_overlay: Control
 var _cam_focus := 0.0
 var _cam_target := ""
@@ -154,10 +155,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.is_action_pressed("pause"):
 			get_viewport().set_input_as_handled()
 			if _settings.visible:
-				_settings.visible = false
-				_pause_menu.visible = true
+				_close_settings()
 			else:
 				_resume()
+		elif _pause_menu.visible and SignRow.navigate(_pause_rows, event):
+			get_viewport().set_input_as_handled()
 		return
 	if modal == "camera":
 		if event.is_action_pressed("camera_shoot"):
@@ -275,6 +277,7 @@ func _build_reader() -> void:
 	UiKit.center(holder, Vector2(860, 940))
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_reader.add_child(holder)
+	_reader_holder = holder
 	_reader_rig = Control.new()
 	_reader_rig.size = Vector2(860, 940)
 	_reader_rig.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -299,7 +302,7 @@ func _build_reader() -> void:
 		tr.position = Vector2(430 - 63, -112)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_reader_rig.add_child(tr)
-	var hint := UiKit.key_hints([["E/ESC", "닫기"]], 16, UiKit.TEXT_DIM)
+	var hint := UiKit.key_hints([["%s/ESC" % Game.key_label("interact"), "닫기"]], UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 	hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint.offset_top = -56
 	hint.offset_bottom = -24
@@ -314,6 +317,14 @@ func read_doc(title: String, body: String, font_kind := "serif") -> void:
 	_open_modal("doc")
 	_reader_paper.show_page({"title": title, "body": body, "font": font_kind, "stamp": "none"}, true)
 	_reader.visible = true
+	# size the sheet to its text so short notes are not two-thirds blank paper
+	_reader_rig.modulate.a = 0.0
+	await get_tree().process_frame
+	var h := clampf(_reader_paper.content_height() + 40.0, 560.0, 940.0)
+	UiKit.center(_reader_holder, Vector2(860, h))
+	_reader_rig.size = Vector2(860, h)
+	_reader_paper.size = Vector2(860, h)
+	_reader_rig.queue_redraw()
 	_reader_rig.pivot_offset = _reader_rig.size * 0.5
 	_reader_rig.position = Vector2(0, 90)
 	_reader_rig.rotation = deg_to_rad(randf_range(-3.5, -2.0))
@@ -396,22 +407,17 @@ func _draw_camera() -> void:
 		c.draw_line(s * 0.5 - Vector2(14, 0), s * 0.5 + Vector2(14, 0), Color(1, 1, 1, 0.55), 1.5)
 		c.draw_line(s * 0.5 - Vector2(0, 14), s * 0.5 + Vector2(0, 14), Color(1, 1, 1, 0.55), 1.5)
 		var disp := UiKit.font("display", 700)
-		var mono := UiKit.font("mono", 700)
 		if f > 0.5 and _cam_target != "":
 			var txt := "FOCUS LOCK  ·  " + _cam_target
 			var tw := disp.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 			var p := Vector2(s.x * 0.5 - tw * 0.5, r.end.y + 34)
 			c.draw_rect(Rect2(p - Vector2(12, 22), Vector2(tw + 24, 32)), Color(0, 0, 0, 0.55 * f))
 			c.draw_string(disp, p, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UiKit.SIGNAL, f))
-		# REC + timecode
-		if fmod(_cam_t, 1.0) < 0.6:
-			c.draw_circle(Vector2(m + 34, m + 42), 9, Color(1, 0.15, 0.1))
-		c.draw_string(disp, Vector2(m + 54, m + 50), "REC", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, white)
-		var frames := int(_cam_t * 30.0)
-		var tc := "%02d:%02d:%02d:%02d" % [frames / 108000, (frames / 1800) % 60, (frames / 30) % 60, frames % 30]
-		c.draw_string(mono, Vector2(m + 112, m + 49), tc, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, white)
+		# stills camera readout: mode + date stamp (it takes photos, so no REC timecode)
+		c.draw_circle(Vector2(m + 34, m + 42), 9, Color(UiKit.CLEAR, 0.9 if f > 0.5 else 0.35))
+		c.draw_string(disp, Vector2(m + 54, m + 50), "STILL  ·  점검 촬영", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, white)
 		var stamp := "DAY %d  ·  %s" % [Game.cycle, Game.clock_text()]
-		c.draw_string(mono, Vector2(s.x - m - 330, m + 49), stamp, HORIZONTAL_ALIGNMENT_RIGHT, 260, 22, white)
+		c.draw_string(disp, Vector2(s.x - m - 330, m + 49), stamp, HORIZONTAL_ALIGNMENT_RIGHT, 260, 22, white)
 		var bp := Vector2(s.x - m - 58, m + 30)
 		c.draw_rect(Rect2(bp, Vector2(44, 22)), white, false, 2.0)
 		c.draw_rect(Rect2(bp + Vector2(4, 4), Vector2(28, 14)), white)
@@ -423,7 +429,7 @@ func _draw_camera() -> void:
 				c.draw_rect(fr, UiKit.SIGNAL)
 			else:
 				c.draw_rect(fr, Color(1, 1, 1, 0.4), false, 2.0)
-		c.draw_string(mono, Vector2(m + 36 + Game.PHOTOS_PER_DAY * 26, s.y - m - 45), "%02d / %02d" % [Game.photos_left, Game.PHOTOS_PER_DAY],
+		c.draw_string(disp, Vector2(m + 36 + Game.PHOTOS_PER_DAY * 26, s.y - m - 45), "%d / %d" % [Game.photos_left, Game.PHOTOS_PER_DAY],
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 22, white)
 	# shutter blades
 	if _shutter > 0.0:
@@ -545,9 +551,10 @@ func _build_pause() -> void:
 	left.position = Vector2(140, 170)
 	left.add_theme_constant_override("separation", 6)
 	_pause_menu.add_child(left)
+	# Korean first, like every other sign in the game; the English line is the sign's sub-label
 	left.add_child(UiKit.caption("SEOHAE OPS  ·  SHIFT ON HOLD", UiKit.SIGNAL, 18))
-	left.add_child(UiKit.label("PAUSED", 128, UiKit.TEXT, "display", 700))
-	left.add_child(UiKit.label("일시정지", 28, UiKit.TEXT_DIM, "sans", 300))
+	left.add_child(UiKit.label("일시정지", 96, UiKit.TEXT, "sans", 900))
+	left.add_child(UiKit.label("PAUSED  ·  근무가 잠시 멈췄습니다", 26, UiKit.TEXT_DIM, "display", 700))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 40)
 	left.add_child(gap)
@@ -558,6 +565,7 @@ func _build_pause() -> void:
 		var row := SignRow.make(it[0], it[1], it[2], "", UiKit.SIGNAL if it[0] != "05" else UiKit.ALERT)
 		left.add_child(row)
 		_pause_rows.append(row)
+	SignRow.link(_pause_rows)
 	var card := PanelContainer.new()
 	card.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	card.offset_left = -640
@@ -570,11 +578,16 @@ func _build_pause() -> void:
 	card.add_child(_pause_status)
 	_settings = SettingsPanel.new()
 	_settings.visible = false
-	UiKit.center(_settings, Vector2(860, 760))
+	UiKit.center(_settings, Vector2(980, 820))
 	_pause_layer.add_child(_settings)
-	_settings.back.connect(func():
-		_settings.visible = false
-		_pause_menu.visible = true)
+	_settings.back.connect(_close_settings)
+
+
+func _close_settings() -> void:
+	_settings.visible = false
+	_pause_menu.visible = true
+	hud.refresh_keys()
+	_refresh_pause_status()
 
 
 func _refresh_pause_status() -> void:
@@ -610,7 +623,7 @@ func _refresh_pause_status() -> void:
 	ec.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eh.add_child(ec)
 	eh.add_child(UiKit.caption("%s · %d%%" % [st[1], int(Game.erosion)], st[0], 15))
-	var keys := UiKit.key_hints([["TAB", "태블릿"], ["B", "근무 수칙"], ["ESC", "돌아가기"]], 14, UiKit.TEXT_DIM)
+	var keys := UiKit.key_hints([[Game.key_label("tablet"), "태블릿"], [Game.key_label("binder"), "근무 수칙"], ["ESC", "돌아가기"]], UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 	_pause_status.add_child(keys)
 
 
@@ -623,6 +636,7 @@ func _pause() -> void:
 	(_pause_backdrop.get_node("Blur").material as ShaderMaterial).set_shader_parameter("amount", 0.0)
 	UiFx.backdrop_to(_pause_backdrop, 1.0, 0.22)
 	UiFx.stagger_slide(_pause_rows, Vector2(-26, 0), 0.04, 0.24, 0.06)
+	SignRow.select_first(_pause_rows)
 	Snd.play("tablet_close", -14.0, 1.4)
 
 
@@ -744,7 +758,7 @@ func show_death(reason: String) -> void:
 	v.add_theme_constant_override("separation", 24)
 	UiKit.full_rect(v)
 	_death.add_child(v)
-	var top := UiKit.label("FLIGHT 000  ·  GATE 0", 24, UiKit.TEXT_DIM, "mono", 700)
+	var top := UiKit.label("FLIGHT 000  ·  GATE 0", 24, UiKit.TEXT_DIM, "display", 700)
 	top.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(top)
 	var board := FlapBoard.new()
@@ -842,13 +856,13 @@ func show_report(summary: Dictionary) -> void:
 	var hc := UiKit.caption("MORNING REPORT", ink, 18)
 	hc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(hc)
-	head.add_child(UiKit.label("06:00 · NIGHT %d" % Game.cycle, 14, Color("5a564e"), "mono"))
+	head.add_child(UiKit.label("06:00 · NIGHT %d" % Game.cycle, UiKit.MIN_TEXT, Color("5a564e"), "display", 700))
 	v.add_child(UiKit.label("아침 보고", 40, ink, "sans", 900))
 	var rule := ColorRect.new()
 	rule.color = ink
 	rule.custom_minimum_size = Vector2(0, 3)
 	v.add_child(rule)
-	v.add_child(UiKit.label("서해국제공항 시설운영팀 · 야간 시설 점검 결과", 15, Color("5a564e")))
+	v.add_child(UiKit.label("서해국제공항 시설운영팀 · 야간 시설 점검 결과", UiKit.MIN_TEXT, Color("5a564e")))
 	var rows := [
 		["정상 판정", summary.get("correct", 0), Color("0f7a62")],
 		["이상 해제", summary.get("cleared", 0), Color("0f7a62")],
@@ -866,7 +880,7 @@ func show_report(summary: Dictionary) -> void:
 		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		h.add_child(l)
 		var n := int(row[1])
-		var cl := UiKit.label("00", 24, row[2] if n > 0 else Color("8a857a"), "mono", 700)
+		var cl := UiKit.label("00", 26, row[2] if n > 0 else Color("8a857a"), "display", 700)
 		cl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		h.add_child(cl)
 		h.draw.connect(func():
@@ -882,7 +896,7 @@ func show_report(summary: Dictionary) -> void:
 	var el := UiKit.label("터미널 침식도", 19, ink, "sans", 700)
 	el.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eh.add_child(el)
-	eh.add_child(UiKit.label("%d%%  →  %d%%" % [int(e0), int(e1)], 19, UiKit.STAMP_RED if e1 > e0 else Color("0f7a62"), "mono", 700))
+	eh.add_child(UiKit.label("%d%%  →  %d%%" % [int(e0), int(e1)], 19, UiKit.STAMP_RED if e1 > e0 else Color("0f7a62"), "display", 700))
 	var bar := Control.new()
 	bar.custom_minimum_size = Vector2(0, 16)
 	bar.set_meta("k", 0.0)

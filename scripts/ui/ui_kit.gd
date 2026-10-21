@@ -51,7 +51,7 @@ static var _keep_all_re: RegEx
 # =========================================================================================
 # fonts
 # =========================================================================================
-## kind: sans (Korean UI) | display (condensed DIN-style sign face) | sign (DIN-style, normal width)
+## kind: sans (Korean UI) | display / sign (DIN-style sign face, Hangul from sans)
 ##       | mono | serif | hand
 static func font(kind := "sans", weight := 400) -> Font:
 	var key := "%s_%d" % [kind, weight]
@@ -60,11 +60,8 @@ static func font(kind := "sans", weight := 400) -> Font:
 	var out: Font
 	match kind:
 		"display", "sign":
-			var base := SystemFont.new()
-			base.font_names = PackedStringArray(["Bahnschrift", "DIN Alternate", "Barlow Condensed", "Arial Narrow", "sans-serif"])
 			var fv := FontVariation.new()
-			fv.base_font = base
-			fv.variation_opentype = {"wght": weight, "wdth": 100 if kind == "sign" else 75}
+			fv.base_font = Geo.sign_face()
 			# Hangul is not in the sign face: fall back to the Korean UI font of the same weight
 			fv.fallbacks = [font("sans", maxi(weight, 400))]
 			out = fv
@@ -74,17 +71,16 @@ static func font(kind := "sans", weight := 400) -> Font:
 				["Batang", "BatangChe", "Noto Serif KR", "serif"])
 		"hand":
 			out = Geo.bundled_font("res://assets/fonts/NanumPenScript-Regular.ttf", ["Gungsuh", "GungsuhChe", "Batang", "serif"])
+		"mono":
+			var m: Font = Geo.installed_font(["Consolas"])
+			if m:
+				(m as SystemFont).font_weight = weight
+			else:
+				m = Geo.font_file("res://assets/fonts/IBMPlexMono-%s.ttf" % ("Bold" if weight >= 600 else "Regular"))
+			m.fallbacks = [font("sans", weight)]
+			out = m
 		_:
-			var f := SystemFont.new()
-			match kind:
-				"mono":
-					f.font_names = PackedStringArray(["Consolas", "D2Coding", "Lucida Console", "monospace"])
-				_:
-					f.font_names = PackedStringArray(["Malgun Gothic", "Noto Sans KR", "Noto Sans CJK KR", "sans-serif"])
-			f.font_weight = weight
-			if kind == "mono":
-				f.fallbacks = [font("sans", weight)]
-			out = f
+			out = Geo.korean_font(weight)
 	_fonts[key] = out
 	return out
 
@@ -113,6 +109,18 @@ static func boxm(bg: Color, margins: Vector4, border := Color(0, 0, 0, 0), borde
 	s.content_margin_top = margins.y
 	s.content_margin_right = margins.z
 	s.content_margin_bottom = margins.w
+	return s
+
+
+## Modal panel in the sign style: dark plate with a signal-yellow top edge and a soft shadow
+## (chapter select, settings).
+static func sign_panel(pad := Vector4(40, 34, 40, 34), accent := SIGNAL) -> StyleBoxFlat:
+	var s := boxm(Color(0.047, 0.058, 0.075, 0.97), pad)
+	s.border_width_top = 4
+	s.border_color = accent
+	s.shadow_color = Color(0, 0, 0, 0.5)
+	s.shadow_size = 28
+	s.shadow_offset = Vector2(0, 12)
 	return s
 
 
@@ -157,9 +165,11 @@ static func theme() -> Theme:
 	t.set_icon("checked", "CheckButton", _tex("switch_on", Vector2i(56, 28), func(img: Image):
 		img.fill(SIGNAL)
 		img.fill_rect(Rect2i(30, 4, 22, 20), INK_0)))
-	t.set_icon("unchecked", "CheckButton", _tex("switch_off", Vector2i(56, 28), func(img: Image):
-		img.fill(Color("232b36"))
-		img.fill_rect(Rect2i(4, 4, 22, 20), TEXT_MUTE)))
+	# OFF must read as "off", not "disabled": outlined track with a bright knob
+	t.set_icon("unchecked", "CheckButton", _tex("switch_off2", Vector2i(56, 28), func(img: Image):
+		img.fill(Color("6b7480"))
+		img.fill_rect(Rect2i(2, 2, 52, 24), Color("1d242d"))
+		img.fill_rect(Rect2i(5, 5, 20, 18), TEXT)))
 	t.set_icon("checked_disabled", "CheckButton", t.get_icon("checked", "CheckButton"))
 	t.set_icon("unchecked_disabled", "CheckButton", t.get_icon("unchecked", "CheckButton"))
 	for st in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
@@ -230,9 +240,35 @@ static func label(text: String, size := 20, color := TEXT, kind := "sans", weigh
 	return l
 
 
+## Smallest UI text at 1080p. Captions, chips and key hints never go below it; only print on props
+## (boarding pass, staff card fields) and decorative English sub-labels may.
+const MIN_TEXT := 16
+
+
 ## Small uppercase sign caption, e.g. "CURRENT ORDER · 현재 지시".
-static func caption(text: String, color := TEXT_MUTE, size := 15) -> Label:
-	return label(text, size, color, "display", 700)
+static func caption(text: String, color := TEXT_MUTE, size := MIN_TEXT) -> Label:
+	return label(text, maxi(size, MIN_TEXT), color, "display", 700)
+
+
+## Default keys named in game text, mapped to their action so a rebound key is shown instead.
+const _KEY_ACTIONS := {"TAB": "tablet", "B": "binder", "E": "interact", "F": "flashlight", "C": "close_eyes", "SHIFT": "sprint"}
+
+
+## BBCode for rich text that mentions keys: "[Tab] 태블릿" draws Tab as a pale key cap, matching
+## keycap(), and follows the player's bindings; any other "[" is escaped so bracketed words
+## ("[표시 테스트]") stay literal.
+static func key_bbcode(text: String) -> String:
+	var re := RegEx.create_from_string("\\[(Tab|TAB|Esc|ESC|Shift|SHIFT|Enter|ENTER|LMB|RMB|[A-Z0-9])\\]")
+	var out := ""
+	var at := 0
+	for m in re.search_all(text):
+		var k := m.get_string(1).to_upper()
+		if _KEY_ACTIONS.has(k):
+			k = Game.key_label(_KEY_ACTIONS[k])
+		out += text.substr(at, m.get_start() - at).replace("[", "[lb]")
+		out += "[bgcolor=#e8eaedf0][color=#0b0e12][b] %s [/b][/color][/bgcolor] " % k
+		at = m.get_end()
+	return out + text.substr(at).replace("[", "[lb]")
 
 
 static func rich(text: String, size := 20, color := TEXT, kind := "sans") -> RichTextLabel:
@@ -320,7 +356,8 @@ static func keycap(text: String, size := 18, light := true) -> PanelContainer:
 
 
 ## Row of key hints: [["E", "상호작용"], ["TAB", "태블릿"]].
-static func key_hints(pairs: Array, size := 16, color := BODY, light := true) -> HBoxContainer:
+static func key_hints(pairs: Array, size := MIN_TEXT, color := BODY, light := true) -> HBoxContainer:
+	size = maxi(size, MIN_TEXT)
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 10)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -332,14 +369,15 @@ static func key_hints(pairs: Array, size := 16, color := BODY, light := true) ->
 			h.add_child(gap)
 		for k in String(pair[0]).split("/"):
 			h.add_child(keycap(k, size, light))
-		var l := label(str(pair[1]), size - 1, color)
+		var l := label(str(pair[1]), size, color)
 		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		h.add_child(l)
 	return h
 
 
 ## Colored tag with optional icon: RADIO · 소장, DAY 2 ...
-static func chip(text: String, fg: Color, bg: Color, icon_name := "", size := 16) -> PanelContainer:
+static func chip(text: String, fg: Color, bg: Color, icon_name := "", size := MIN_TEXT) -> PanelContainer:
+	size = maxi(size, MIN_TEXT)
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", boxm(bg, Vector4(10, 3, 12, 4)))
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE

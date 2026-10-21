@@ -7,7 +7,7 @@ const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4
 
 static var sign_font: Font      # wayfinding signs: DIN-style Bahnschrift, Hangul from Malgun Gothic Bold
-static var led_font: Font       # LED / LCD displays: condensed Bahnschrift with wider tracking
+static var led_font: Font       # LED / LCD displays: Bahnschrift with wider tracking
 static var mono_font: Font      # computer screens (FIDS boot text, X-ray readout)
 static var hand_font: Font      # marker / pen handwriting (bundled Nanum Pen Script)
 static var engrave_font: Font   # cast or engraved plaques (bundled Nanum Myeongjo Bold)
@@ -17,31 +17,67 @@ static var engrave_font: Font   # cast or engraved plaques (bundled Nanum Myeong
 static func fonts() -> void:
 	if sign_font != null:
 		return
-	var kr := SystemFont.new()
-	kr.font_names = PackedStringArray(["Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR", "sans-serif"])
-	kr.font_weight = 700
-	kr.multichannel_signed_distance_field = true
-	sign_font = _din(600, 100, 1, kr)
-	led_font = _din(600, 75, 2, kr)
-	var m := SystemFont.new()
-	m.font_names = PackedStringArray(["Consolas", "Lucida Console", "DejaVu Sans Mono", "monospace"])
-	m.font_weight = 700
-	m.multichannel_signed_distance_field = true
+	var kr := korean_font(700, true)
+	sign_font = _din(1, kr)
+	led_font = _din(2, kr)
+	var m: Font = installed_font(["Consolas"], true)
+	if m:
+		(m as SystemFont).font_weight = 700
+	else:
+		m = font_file("res://assets/fonts/IBMPlexMono-Bold.ttf", true)
 	m.fallbacks = [kr]
 	mono_font = m
 	hand_font = bundled_font("res://assets/fonts/NanumPenScript-Regular.ttf", ["Gungsuh", "Batang"], true)
 	engrave_font = bundled_font("res://assets/fonts/NanumMyeongjo-Bold.ttf", ["Batang", "serif"], true)
 
 
-static func _din(weight: int, width: int, tracking: int, fallback: Font) -> Font:
-	var base := SystemFont.new()
-	base.font_names = PackedStringArray(["Bahnschrift", "DIN Alternate", "Arial Narrow", "Arial"])
-	base.multichannel_signed_distance_field = true
+static func _din(tracking: int, fallback: Font) -> Font:
 	var fv := FontVariation.new()
-	fv.base_font = base
-	fv.variation_opentype = {"wght": weight, "wdth": width}
+	fv.base_font = sign_face(true)
 	fv.spacing_glyph = tracking
 	fv.fallbacks = [fallback]
+	return fv
+
+
+## The DIN-style sign face: Bahnschrift, or bundled Barlow Medium where it is missing. This is
+## Bahnschrift's default instance on purpose — earlier {"wght", "wdth"} variation dictionaries used
+## string keys, which Godot ignores, so the look that was signed off never had them.
+static func sign_face(msdf := false) -> Font:
+	var sys := installed_font(["Bahnschrift"], msdf)
+	return sys if sys else font_file("res://assets/fonts/Barlow-Medium.ttf", msdf)
+
+
+## The UI and sign faces are Windows fonts (Bahnschrift, Malgun Gothic, Consolas). This returns the
+## installed one, or null where they are missing (Steam Deck, Proton, Linux) so callers switch to the
+## bundled OFL stand-ins. `-- --bundled-fonts` forces null to preview the stand-ins on Windows.
+static func installed_font(names: Array, msdf := false) -> SystemFont:
+	if OS.get_cmdline_user_args().has("--bundled-fonts"):
+		return null
+	var f := SystemFont.new()
+	f.font_names = PackedStringArray(names)
+	f.multichannel_signed_distance_field = msdf
+	return f if f.get_font_name() in names else null
+
+
+## Malgun Gothic, or the bundled Noto Sans KR (variable) at the same weight.
+static func korean_font(weight: int, msdf := false) -> Font:
+	var sys := installed_font(["Malgun Gothic"], msdf)
+	if sys:
+		sys.font_weight = weight
+		return sys
+	return font_file("res://assets/fonts/NotoSansKR-Variable.ttf", msdf, weight)
+
+
+## A bundled font file; `weight` > 0 picks that weight of a variable font (axis keys must be
+## TextServer tags — string keys like "wght" are silently ignored).
+static func font_file(path: String, msdf := false, weight := 0) -> Font:
+	var f := (load(path) as FontFile).duplicate() as FontFile
+	f.multichannel_signed_distance_field = msdf
+	if weight <= 0:
+		return f
+	var fv := FontVariation.new()
+	fv.base_font = f
+	fv.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): weight}
 	return fv
 
 
@@ -150,8 +186,8 @@ static func capsule(parent: Node, pos: Vector3, radius: float, height: float, ma
 ## World text. `style` follows the material the text sits on:
 ##   sign    — backlit sign or lightbox (unlit, DIN face)            [default]
 ##   print   — printed / painted on a surface (lit by the scene)
-##   led     — LED / LCD display (unlit, condensed, slightly HDR)     [default when mono]
-##   lcd     — passive LCD with dark digits (lit by the scene, condensed)
+##   led     — LED / LCD display (unlit, wide tracking, slightly HDR) [default when mono]
+##   lcd     — passive LCD with dark digits (lit by the scene, wide tracking)
 ##   hand    — marker or pen handwriting (lit)
 ##   engrave — cast or engraved plaque (lit, serif)
 static func label(parent: Node, text: String, pos: Vector3, rot_y := 0.0, font_size := 64, color := Color.WHITE,

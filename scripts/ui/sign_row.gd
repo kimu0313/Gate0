@@ -8,6 +8,8 @@ var index_text := ""
 var meta_text := ""
 var accent := Color("ffc21a")
 var font_size := 24
+var group: Array = []      # rows of one menu (see link): one stays highlighted, arrow keys / d-pad move it
+var lit := false
 var _fill := 0.0
 var _tw: Tween
 
@@ -30,7 +32,10 @@ func _init() -> void:
 	for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 		add_theme_stylebox_override(st, StyleBoxEmpty.new())
 	mouse_entered.connect(_on_hover.bind(true))
-	mouse_exited.connect(_on_hover.bind(false))
+	mouse_exited.connect(func():
+		# in a linked menu the last row stays selected, like a console menu
+		if group.is_empty():
+			_on_hover(false))
 	pressed.connect(func():
 		Snd.play("ui_tap", -8.0)
 		var tw := create_tween()
@@ -40,14 +45,51 @@ func _init() -> void:
 
 
 func _on_hover(on: bool) -> void:
-	if disabled:
+	if disabled or on == lit:
 		return
 	if on:
 		Snd.play("ui_click", -16.0, 1.1)
+		for r in group:
+			if r != self and r.lit:
+				r._on_hover(false)
+	lit = on
 	if _tw:
 		_tw.kill()
 	_tw = create_tween()
 	_tw.tween_method(_set_fill, _fill, 1.0 if on else 0.0, 0.2 if on else 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+## Makes `rows` one menu: a single highlighted row that the mouse or the keyboard / d-pad moves.
+static func link(rows: Array) -> void:
+	for r in rows:
+		r.group = rows
+
+
+## Highlights the first enabled row without the hover click (menu opened).
+static func select_first(rows: Array) -> void:
+	for r: SignRow in rows:
+		if not r.disabled:
+			r._on_hover(true)
+			return
+
+
+## ui_up / ui_down move the highlight, ui_accept presses it. Returns true if the event was used.
+static func navigate(rows: Array, event: InputEvent) -> bool:
+	var live: Array = rows.filter(func(r: SignRow): return r.is_visible_in_tree() and not r.disabled)
+	if live.is_empty():
+		return false
+	var cur := -1
+	for i in live.size():
+		if live[i].lit:
+			cur = i
+	if event.is_action_pressed("ui_down") or event.is_action_pressed("ui_up"):
+		var step := 1 if event.is_action_pressed("ui_down") else -1
+		(live[0 if cur < 0 else wrapi(cur + step, 0, live.size())] as SignRow)._on_hover(true)
+		return true
+	if event.is_action_pressed("ui_accept") and cur >= 0:
+		(live[cur] as SignRow).pressed.emit()
+		return true
+	return false
 
 
 func _set_fill(v: float) -> void:
@@ -67,7 +109,7 @@ func _draw() -> void:
 	if dim:
 		fg = Color("4a525d")
 		fg_idx = fg
-	var mono := UiKit.font("mono", 700)
+	var mono := UiKit.font("display", 700)
 	var sans := UiKit.font("sans", 700 if _fill > 0.5 else 500)
 	var base := h * 0.5
 	var x := 22.0

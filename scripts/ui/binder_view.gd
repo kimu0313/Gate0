@@ -59,7 +59,7 @@ func _ready() -> void:
 	_index.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_index.add_theme_constant_override("separation", 4)
 	scroll.add_child(_index)
-	left.add_child(UiKit.key_hints([["A/D", "넘기기"], ["B", "닫기"]], 15, Color("8fa2c8")))
+	left.add_child(UiKit.key_hints([["A/D", "넘기기"], [Game.key_label("binder"), "닫기"]], UiKit.MIN_TEXT, Color("8fa2c8")))
 	# the page
 	_paper = PaperPage.new()
 	_paper.left_margin = 118
@@ -100,7 +100,7 @@ func _index_button(i: int, no: String, title: String) -> Button:
 	h.add_theme_constant_override("separation", 12)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(h)
-	var nl := UiKit.label("p.%s" % no if no != "" else "  ─", 15, Color("8fa2c8"), "mono", 700)
+	var nl := UiKit.label("p.%s" % no if no != "" else "  ─", UiKit.MIN_TEXT, Color("8fa2c8"), "display", 700)
 	nl.custom_minimum_size = Vector2(36, 0)
 	nl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	nl.size_flags_vertical = Control.SIZE_FILL

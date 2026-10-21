@@ -9,6 +9,7 @@ var _main: Control
 var _title_box: HBoxContainer
 var _tagline: Label
 var _rows: Array = []
+var _chapter_rows: Array = []
 var _fids: Control
 var _foot: HBoxContainer
 var _name_panel: Control
@@ -17,6 +18,8 @@ var _settings: SettingsPanel
 var _name_edit: LineEdit
 var _fids_board: FidsBoard
 var _intro_started := false
+var _hold_intro := false
+static var _boot_shown := false    # the launch notice shows once per run, not on every return to the menu
 
 
 func _ready() -> void:
@@ -28,7 +31,16 @@ func _ready() -> void:
 	_build_ui()
 	Snd.set_ambience("amb_night_loop", -6.0, 2.0)
 	Snd.set_music("menu_music_loop", -10.0, 3.0)
-	if OS.get_cmdline_user_args().has("--uigallery"):
+	var args := OS.get_cmdline_user_args()
+	if not _boot_shown and not (args.has("--uigallery") or args.has("--skip-boot")):
+		_boot_shown = true
+		_hold_intro = true
+		var notice := BootNotice.new()
+		add_child(notice)
+		notice.done.connect(func():
+			_hold_intro = false
+			_t = 0.2)
+	if args.has("--uigallery"):
 		var g = load("res://scripts/debug/ui_gallery.gd").new()
 		g.menu = self
 		add_child(g)
@@ -89,11 +101,11 @@ func _build_backdrop() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	# start the intro once the first-frame shader compile hitch is over, so it is actually seen
-	if not _intro_started and ((_t > 0.15 and delta < 0.05) or _t > 6.0):
+	if not _intro_started and not _hold_intro and ((_t > 0.15 and delta < 0.05) or _t > 6.0):
 		_intro_started = true
 		_intro()
 	# the sign's tube stutters now and then, like a lightbox on a failing ballast
-	elif _intro_started and _t > 3.5 and randf() < delta * 0.25:
+	elif _intro_started and _t > 3.5 and randf() < delta * 0.25 and not Game.settings.reduce_motion:
 		var tw := _title_box.create_tween()
 		for a in [0.55, 1.0, 0.7, 1.0]:
 			tw.tween_property(_title_box, "modulate:a", a, randf_range(0.03, 0.07))
@@ -135,12 +147,14 @@ func _build_menu_rows(col: VBoxContainer) -> void:
 	var items := [["새 근무 시작", _on_new, ""]]
 	if Game.has_save():
 		items.append(["이어하기", func(): Game.continue_game(), _save_meta()])
-	items.append_array([["챕터 선택", _on_chapters, ""], ["설정", _on_settings, ""], ["종료", func(): get_tree().quit(), ""]])
+	items.append_array([["챕터 선택", _on_chapters, ""], ["설정", _on_settings, ""], ["크레딧", _on_credits, ""],
+		["종료", func(): get_tree().quit(), ""]])
 	for it in items:
 		var row := SignRow.make("%02d" % idx, it[0], it[1], it[2], UiKit.SIGNAL if it[0] != "종료" else UiKit.ALERT)
 		list.add_child(row)
 		_rows.append(row)
 		idx += 1
+	SignRow.link(_rows)
 	_fids = FidsMini.new()
 	_fids.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_fids.offset_left = -760
@@ -168,7 +182,7 @@ func _build_menu_rows(col: VBoxContainer) -> void:
 	_build_chapter_panel()
 	_settings = SettingsPanel.new()
 	_settings.visible = false
-	UiKit.center(_settings, Vector2(860, 760))
+	UiKit.center(_settings, Vector2(980, 820))
 	add_child(_settings)
 	_settings.back.connect(func():
 		_settings.visible = false
@@ -186,11 +200,33 @@ func _intro() -> void:
 	_foot.modulate.a = 0.0
 	UiFx.fade(_foot, 1.0, 0.8, 1.6)
 	UiFx.stagger_slide(_rows, Vector2(-30, 0), 0.06, 0.3, 1.15)
+	get_tree().create_timer(1.9).timeout.connect(func():
+		if _main.visible and not _rows.any(func(r): return r.lit):
+			SignRow.select_first(_rows))
 
 
 func _show_main() -> void:
 	_main.visible = true
 	UiFx.stagger_slide(_rows, Vector2(-24, 0), 0.04, 0.22)
+
+
+## Keyboard / d-pad: arrows move the highlighted row, Enter picks it, Esc backs out of a sub-panel.
+func _unhandled_input(event: InputEvent) -> void:
+	if _chapter_panel.visible:
+		if event.is_action_pressed("ui_cancel"):
+			_chapter_panel.visible = false
+			_show_main()
+		elif not SignRow.navigate(_chapter_rows, event):
+			return
+	elif _main.visible and _intro_started:
+		if not SignRow.navigate(_rows, event):
+			return
+	elif _name_panel.visible and event.is_action_pressed("ui_cancel"):
+		_name_panel.visible = false
+		_show_main()
+	else:
+		return
+	get_viewport().set_input_as_handled()
 
 
 func _save_meta() -> String:
@@ -273,7 +309,7 @@ func _build_name_panel() -> void:
 		_show_main())
 	cancel.custom_minimum_size = Vector2(150, 62)
 	row.add_child(cancel)
-	var note := UiKit.label("※ 이 이름은 게임 속에서 쓰입니다. (Windows에서는 음성으로도)", 16, UiKit.TEXT_DIM)
+	var note := UiKit.label("※ 이 이름은 근무 기록과 안내방송에 쓰입니다.", 17, UiKit.TEXT_DIM)
 	note.position = Vector2(44, 748)
 	_name_panel.add_child(note)
 
@@ -283,7 +319,7 @@ func _build_name_panel() -> void:
 # =========================================================================================
 func _build_chapter_panel() -> void:
 	_chapter_panel = PanelContainer.new()
-	_chapter_panel.add_theme_stylebox_override("panel", UiKit.boxm(Color(0.047, 0.058, 0.075, 0.97), Vector4(40, 34, 40, 34), UiKit.LINE, 1))
+	_chapter_panel.add_theme_stylebox_override("panel", UiKit.sign_panel())
 	UiKit.center(_chapter_panel, Vector2(720, 700))
 	_chapter_panel.visible = false
 	add_child(_chapter_panel)
@@ -292,7 +328,9 @@ func _build_chapter_panel() -> void:
 	_chapter_panel.add_child(v)
 	v.add_child(UiKit.caption("CHAPTER SELECT", UiKit.SIGNAL, 17))
 	v.add_child(UiKit.label("챕터 선택", 34, UiKit.TEXT, "sans", 900))
-	var d := UiKit.label("프로토타입 검토용. 선택한 근무부터 시작합니다 (사진·단서 없이).", 16, UiKit.TEXT_DIM)
+	var d := UiKit.label("선택한 근무부터 다시 시작합니다. 이전 근무의 사진과 단서는 넘어가지 않습니다.", 17, UiKit.TEXT_DIM)
+	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	d.custom_minimum_size = Vector2(640, 0)
 	v.add_child(d)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 8)
@@ -307,6 +345,8 @@ func _build_chapter_panel() -> void:
 			UiKit.SIGNAL, 640, 58)
 		r.font_size = 22
 		v.add_child(r)
+		_chapter_rows.append(r)
+	SignRow.link(_chapter_rows)
 	var gap2 := Control.new()
 	gap2.custom_minimum_size = Vector2(0, 10)
 	v.add_child(gap2)
@@ -342,6 +382,14 @@ func _on_chapters() -> void:
 	_main.visible = false
 	_chapter_panel.visible = true
 	UiFx.pop_in(_chapter_panel, 0.24, 0.96)
+	SignRow.select_first(_chapter_rows)
+
+
+func _on_credits() -> void:
+	_main.visible = false
+	var cv := CreditsView.new()
+	add_child(cv)
+	cv.closed.connect(_show_main)
 
 
 func _on_settings() -> void:
@@ -391,8 +439,8 @@ class FidsMini extends Control:
 		draw_rect(r, Color(0.016, 0.02, 0.027, 0.92))
 		draw_rect(r, Color("1a2028"), false, 8.0)
 		var disp := UiKit.font("display", 700)
-		var mono := UiKit.font("mono", 400)
-		var monob := UiKit.font("mono", 700)
+		var mono := UiKit.font("display", 400)
+		var monob := UiKit.font("display", 700)
 		draw_string(disp, Vector2(28, 46), "DEPARTURES · 출발", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, AMBER)
 		draw_string(disp, Vector2(28, 46), "TEST MODE", HORIZONTAL_ALIGNMENT_RIGHT, size.x - 56, 22, AMBER)
 		draw_line(Vector2(28, 60), Vector2(size.x - 28, 60), Color(AMBER, 0.25), 1.0)

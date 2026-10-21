@@ -9,6 +9,8 @@ var _board_tiles: FlapBoard
 var _lines: Label
 var _env: Environment
 var _skip := false
+var _report_shown := false
+var _credits_view: CreditsView
 
 
 func _ready() -> void:
@@ -33,6 +35,7 @@ func _ready() -> void:
 	v.add_child(_title)
 	_board_tiles = FlapBoard.new()
 	_board_tiles.font_size = 120
+	_board_tiles.housing = true
 	_board_tiles.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_board_tiles.visible = false
 	v.add_child(_board_tiles)
@@ -57,6 +60,10 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
 		_skip = true
+	elif _report_shown and event.is_action_pressed("ui_accept") and not is_instance_valid(_credits_view):
+		get_viewport().set_input_as_handled()
+		_credits_view = CreditsView.new()
+		_layer.add_child(_credits_view)
 
 
 func _wait(t: float) -> void:
@@ -311,7 +318,9 @@ func _build_credits(ending_name: String) -> void:
 	_title.visible = false
 	_lines.visible = false
 	var st := Game.stats
-	var seen := Game.endings_seen()
+	var seen: Array = Game.endings_seen().duplicate()
+	if Game.ending_id != "" and not seen.has(Game.ending_id):
+		seen.append(Game.ending_id)     # the ending just reached counts, whatever the save says
 	var root := VBoxContainer.new()
 	UiKit.full_rect(root)
 	root.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -365,8 +374,8 @@ func _build_credits(ending_name: String) -> void:
 	foot.alignment = BoxContainer.ALIGNMENT_CENTER
 	foot.add_theme_constant_override("separation", 28)
 	root.add_child(foot)
-	foot.add_child(UiKit.label("프로토타입 — 기획 김훈철 외 · Godot 4.7", 16, UiKit.TEXT_MUTE))
-	foot.add_child(UiKit.key_hints([["ESC", "메인 메뉴"]], 15, UiKit.TEXT_DIM))
+	foot.add_child(UiKit.key_hints([["ENTER", "크레딧 · 라이선스"], ["ESC", "메인 메뉴"]], UiKit.MIN_TEXT, UiKit.TEXT_DIM))
+	_report_shown = true
 	for c in [en, stats, found, foot]:
 		(c as CanvasItem).modulate.a = 0.0
 		UiFx.fade(c, 1.0, 0.5, board.settle_time() + 0.2)

@@ -98,7 +98,7 @@ func _process(delta: float) -> void:
 func _set_status(text: String, color: Color) -> void:
 	_status_text = text
 	_status_color = color
-	status_label.text = text
+	Geo.set_text(status_label, text)
 	status_label.modulate = color
 
 
@@ -110,7 +110,7 @@ func _on_check() -> void:
 	checked = true
 	running = true
 	var door_state := "OPEN" if door.is_open else "LOCKED"
-	podium_label.text = "GATE %s\nDOOR: %s" % [number, door_state]
+	Geo.set_text(podium_label, "GATE %s\nDOOR: %s" % [number, door_state])
 	podium_label.modulate = Color(1.0, 0.4, 0.3) if door.is_open else Color(0.5, 1.0, 0.6)
 	Snd.play_at("beep_ok", focus_position(), -10.0)
 	changed.emit()
@@ -121,7 +121,7 @@ func _on_lock() -> void:
 	if door.is_open:
 		door.close()
 		_wind_off()
-	podium_label.text = "GATE %s\nDOOR: LOCKED" % number
+	Geo.set_text(podium_label, "GATE %s\nDOOR: LOCKED" % number)
 	podium_label.modulate = Color(0.5, 1.0, 0.6)
 	Snd.play_at("door_heavy", global_position + Vector3(0, 1.2, 0), -6.0, 1.0, 8.0)
 
@@ -192,13 +192,13 @@ func passenger_position() -> Vector3:
 
 
 func _on_power_lost() -> void:
-	status_label.text = ""
-	podium_label.text = ""
+	Geo.set_text(status_label, "")
+	Geo.set_text(podium_label, "")
 
 
 func _on_power_restored() -> void:
-	status_label.text = _status_text
-	podium_label.text = "GATE %s\nSTANDBY" % number
+	Geo.set_text(status_label, _status_text)
+	Geo.set_text(podium_label, "GATE %s\nSTANDBY" % number)
 
 
 func is_observable() -> bool:

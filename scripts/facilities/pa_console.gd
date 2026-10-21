@@ -28,7 +28,7 @@ func build() -> void:
 	face.position = Vector3(0, 0.1, 0.05)
 	face.rotation.x = -1.1
 	Geo.box(face, Vector3(0, 0, -0.02), Vector3(0.86, 0.36, 0.04), Mats.get_mat("plastic_grey"), false)
-	Geo.label(face, "PA-01  안내방송", Vector3(-0.22, 0.13, 0.002), 0.0, 22, Color(0.95, 0.85, 0.3), 0.0024)
+	Geo.label(face, "PA-01  안내방송", Vector3(-0.22, 0.13, 0.002), 0.0, 22, Color(0.95, 0.85, 0.3), 0.0024, false, "print")
 	Props.button(face, Vector3(-0.25, -0.04, 0), 0.0, "button_green", "테스트 방송", "테스트 방송 송출", _on_test)
 	Props.button(face, Vector3(-0.05, -0.04, 0), 0.0, "button_red", "송출 중지", "방송 송출 중지", _on_stop)
 	# LCD + VU meter
@@ -103,13 +103,13 @@ func _on_stop() -> void:
 
 func _on_pa_started(_tag: String) -> void:
 	_onair.material_override = Mats.get_mat("lamp_red")
-	_lcd.text = "ON AIR"
+	Geo.set_text(_lcd, "ON AIR")
 	_lcd.modulate = Color(1.0, 0.35, 0.3)
 
 
 func _on_pa_finished(cancelled: bool) -> void:
 	_onair.material_override = Mats.get_mat("screen_off")
-	_lcd.text = "STOPPED" if cancelled else "READY"
+	Geo.set_text(_lcd, "STOPPED" if cancelled else "READY")
 	_lcd.modulate = Color(0.35, 1.0, 0.5)
 	if cancelled:
 		heard = true
@@ -123,11 +123,11 @@ func is_observable() -> bool:
 func _on_power_lost() -> void:
 	if Snd.pa_busy:
 		Snd.pa_stop()
-	_lcd.text = ""
+	Geo.set_text(_lcd, "")
 
 
 func _on_power_restored() -> void:
-	_lcd.text = "READY"
+	Geo.set_text(_lcd, "READY")
 
 
 func reset_inspection() -> void:

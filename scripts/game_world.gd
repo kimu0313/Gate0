@@ -37,6 +37,11 @@ func _ready() -> void:
 		add_child(tour)
 		ui.fade_to(0.0, 0.01)
 		return
+	if OS.get_cmdline_user_args().has("--uigallery"):
+		var gal = load("res://scripts/debug/ui_gallery.gd").new()
+		gal.world = self
+		add_child(gal)
+		return
 	if OS.get_cmdline_user_args().has("--autotest"):
 		var at = load("res://scripts/debug/autotest.gd").new()
 		at.world = self

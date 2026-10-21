@@ -10,7 +10,7 @@ var switches := {}    # key -> ToggleSwitch
 func build(entries: Array, title := "시설 전원 배전반  BREAKER") -> void:
 	var w := 0.2 * entries.size() + 0.35
 	var holder := Props.panel_box(self, Vector3.ZERO, 0.0, Vector2(w, 0.75), title)
-	Geo.label(holder, "※ 차단 시 해당 시설 즉시 정지", Vector3(0, -0.31, 0.006), 0.0, 18, Color(0.85, 0.85, 0.85), 0.0022)
+	Geo.label(holder, "※ 차단 시 해당 시설 즉시 정지", Vector3(0, -0.31, 0.006), 0.0, 18, Color(0.85, 0.85, 0.85), 0.0022, false, "print")
 	for i in entries.size():
 		var e: Array = entries[i]
 		var key: String = e[0]

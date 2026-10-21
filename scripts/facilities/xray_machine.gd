@@ -35,13 +35,13 @@ func build() -> void:
 		for i in 5:
 			Geo.box(self, Vector3(-0.3 + i * 0.15, 1.15, z), Vector3(0.14, 0.7, 0.01), Mats.get_mat("rubber"), false)
 	Geo.box(self, Vector3(0.56, 1.3, 0.6), Vector3(0.01, 0.2, 0.5), Mats.get_mat("lamp_amber"), false)
-	Geo.label(self, "X-RAY 01", Vector3(0.56, 1.0, 0.0), PI / 2, 44, Color(0.9, 0.9, 0.9), 0.004)
+	Geo.label(self, "X-RAY 01", Vector3(0.56, 1.0, 0.0), PI / 2, 44, Color(0.9, 0.9, 0.9), 0.004, false, "print")
 	# tray with test bag
 	_tray = Node3D.new()
 	add_child(_tray)
 	Geo.box(_tray, Vector3(0, 0.82, 0), Vector3(0.6, 0.06, 0.8), Mats.std(Color(0.35, 0.36, 0.4), 0.5), false)
 	Geo.box(_tray, Vector3(0, 0.98, 0), Vector3(0.45, 0.26, 0.6), Mats.std(Color(0.12, 0.13, 0.15), 0.6), false)
-	Geo.label(_tray, "TEST", Vector3(0, 1.115, 0), 0.0, 24, Color(0.95, 0.8, 0.1), 0.003).rotation.x = -PI / 2
+	Geo.label(_tray, "TEST", Vector3(0, 1.115, 0), 0.0, 24, Color(0.95, 0.8, 0.1), 0.003, false, "print").rotation.x = -PI / 2
 	_set_tray(0.0)
 	# operator desk + monitor (local +X side)
 	Geo.box(self, Vector3(1.5, 0.4, 0.0), Vector3(0.7, 0.8, 1.0), Mats.get_mat("metal_dark"), true)

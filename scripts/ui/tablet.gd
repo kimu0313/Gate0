@@ -751,6 +751,7 @@ func _build_boarding_pass() -> void:
 	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_detail.add_child(card)
 	var warn := UiKit.label("탑승구가 곧 닫힙니다.", 24, UiKit.ALERT, "sans", 700)
+	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail.add_child(warn)
 	# the pass "prints": fades in a beat after the screen flips to BOARDING INFORMATION
 	card.modulate.a = 0.0

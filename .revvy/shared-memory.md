@@ -29,4 +29,5 @@ off.
 - 2026-10-21: `-- --ending-scene exit|board|announce <dir>` on scenes/ending.tscn plays one ending directly and saves title/banner/credits shots. Launch autotest bots with a normal (not minimized) window — minimized instances exit early.
 
 ## Status
+- 2026-10-21: Windows export checked with official 4.7.1 templates and a temporary preset (the repo still has no export_presets.cfg): exe icon is the yellow 0 app icon, bundled fonts and assets/ui art render in the exported build. UI gallery also checked at 2560x1080 and 1280x800 — layouts anchor correctly, nothing clipped.
 - 2026-10-21: All 6 phases + 3 endings written; Day 1 verified by autotest bot up to the FIDS photo goal. Remaining: full autotest pass Day1→Night3 (bot re-shoots photos while radio talks — make it wait for task completion), visual pass on day lighting/menu/endings, tuning.

@@ -48,6 +48,12 @@ func _ready() -> void:
 		add_child(at)
 		ui.fade_to(0.0, 0.01)
 		return
+	if OS.get_cmdline_user_args().has("--punchtest"):
+		var pt = load("res://scripts/debug/punch_test.gd").new()
+		pt.world = self
+		add_child(pt)
+		ui.fade_to(0.0, 0.01)
+		return
 	_begin()
 
 

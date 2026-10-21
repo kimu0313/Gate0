@@ -252,8 +252,10 @@ func until_done(task: Task) -> void:
 		await task_finished
 
 
-func all_required_done() -> bool:
+func all_required_done(except: Task = null) -> bool:
 	for task in tasks:
+		if task == except:
+			continue
 		if not task.optional and task.state != "done":
 			return false
 	return true

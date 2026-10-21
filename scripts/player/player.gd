@@ -5,8 +5,8 @@ extends CharacterBody3D
 
 signal interact_target_changed(prompt: String)
 
-const WALK_SPEED := 3.1
-const SPRINT_SPEED := 5.4
+const WALK_SPEED := 2.2
+const SPRINT_SPEED := 4.4
 const ACCEL := 11.0
 const GRAVITY := 18.0
 const EYE_HEIGHT := 1.62
@@ -196,7 +196,7 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor() and hspeed > 0.4:
 		_bob_t += delta * hspeed * 2.3
 		_step_dist += hspeed * delta
-		var stride := 1.55 if sprinting else 1.25
+		var stride := 1.8 if sprinting else 1.5
 		if _step_dist >= stride * 0.5:
 			_step_dist = 0.0
 			_footstep(sprinting)
@@ -211,7 +211,7 @@ func _physics_process(delta: float) -> void:
 	var shake_off := Vector3(sin(_shake_t * 1.3) * sh * 0.05, cos(_shake_t * 1.7) * sh * 0.05, 0)
 	head.position = Vector3(0, EYE_HEIGHT, 0) + bob + shake_off
 	head.rotation.z = sin(_bob_t * 0.5) * (0.006 if not sprinting else 0.012) + sin(_shake_t) * sh * 0.03
-	var target_fov: float = Game.settings.fov * (0.7 if camera_mode else 1.0) + (4.0 if sprinting and hspeed > 4.0 else 0.0)
+	var target_fov: float = Game.settings.fov * (0.7 if camera_mode else 1.0) + (4.0 if sprinting and hspeed > 3.4 else 0.0)
 	camera.fov = lerpf(camera.fov, target_fov, delta * 6.0)
 	# flashlight sway (lags slightly behind the view)
 	if flashlight_on:

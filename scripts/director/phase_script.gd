@@ -15,8 +15,9 @@ func run() -> void:
 
 
 ## Called when the player punches the time clock. Return true if the phase may end now.
+## The active work order at that point is the clock-out goal itself, so it is not counted.
 func can_punch_out() -> bool:
-	return d.all_required_done()
+	return d.all_required_done(d.current)
 
 
 func title_lines() -> Array:

@@ -46,7 +46,15 @@ func _ready() -> void:
 
 
 func log_line(s: String) -> void:
-	print(_log_prefix, Game.clock_text(), "  ", s)
+	var line := "%s%s  %s" % [_log_prefix, Game.clock_text(), s]
+	print(line)
+	# stdout is buffered when redirected; mirror to a file that is flushed per line
+	var path := out_dir + "/bot_log.txt"
+	var f := FileAccess.open(path, FileAccess.READ_WRITE if FileAccess.file_exists(path) else FileAccess.WRITE)
+	if f:
+		f.seek_end()
+		f.store_line(line)
+		f.close()
 
 
 func shot(tag: String) -> void:
@@ -153,11 +161,10 @@ func _do_goal(task: Task) -> void:
 		d._on_punch()
 		await wait(0.3)
 		if not got[0]:
-			# known game issue (left unfixed on purpose): the clock-out goal counts itself as unfinished.
-			# The bot only steps past it so the rest of the flow can be exercised.
-			log_line("  harness: clock-out refused by the known game issue -> emitting punched")
-			d.punched.disconnect(mark)
-			d.punched.emit()
+			log_line("  !! clock-out refused (regression: the time clock must end the phase)")
+			await shot("clock_out_refused")
+			get_tree().quit(3)
+			return
 		await _after_punch()
 	elif "중간 보고" in title:
 		await goto(Vector3(-20.8, 0.05, 1.55), Vector3(-21.78, 1.25, 1.55))

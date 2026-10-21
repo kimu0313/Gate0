@@ -117,7 +117,7 @@ func _text(title: String, lines: String, color := Color(0.95, 0.95, 0.95)) -> vo
 		_board_tiles.text_color = color
 		_board_tiles.modulate.a = 1.0
 		_board_tiles.show_text(title, 0.2, 0.07, 5)
-	_lines.text = UiKit.keep_all(lines)
+	_lines.text = UiKit.keep_all(UiKit.t(lines))
 	_lines.modulate.a = 0.0
 	var tw := create_tween()
 	tw.tween_interval(_board_tiles.settle_time() + 0.4 if title != "" else 0.2)
@@ -366,7 +366,7 @@ func _build_credits(ending_name: String) -> void:
 	found.alignment = BoxContainer.ALIGNMENT_CENTER
 	found.add_theme_constant_override("separation", 12)
 	root.add_child(found)
-	found.add_child(UiKit.caption("ENDINGS · 발견한 엔딩  %d / 3" % seen.size(), UiKit.TEXT_DIM, 16))
+	found.add_child(UiKit.caption(UiKit.t("ENDINGS · 발견한 엔딩  %d / 3") % seen.size(), UiKit.TEXT_DIM, 16))
 	for e in [["A", "board"], ["B", "exit"], ["C", "announce"]]:
 		var got: bool = seen.has(e[1])
 		found.add_child(UiKit.chip(e[0], UiKit.INK_0 if got else UiKit.TEXT_MUTE, UiKit.SIGNAL if got else Color(1, 1, 1, 0.06), "", 18))

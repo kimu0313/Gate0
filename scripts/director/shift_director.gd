@@ -216,7 +216,7 @@ func _activate(task: Task) -> void:
 				_prepare_anomaly(f, task.anomaly)
 				f.set_anomaly(task.anomaly)
 	Snd.play("ui_alert" if task.urgent else "ui_notify", -6.0)
-	notify(("⚠ 긴급 지시: " if task.urgent else "새 점검 지시: ") + task.title, "alert" if task.urgent else "task")
+	notify(tr("⚠ 긴급 지시: " if task.urgent else "새 점검 지시: ") + tr(task.title), "alert" if task.urgent else "task")
 	objective(task.title)
 	Events.tasks_changed.emit()
 
@@ -305,7 +305,7 @@ func can_report(task: Task) -> String:
 		var hint := ""
 		if f and not f.is_observable():
 			hint = " (시설을 가동하거나 확인 버튼을 누르십시오)"
-		return "현장에서 시설을 직접 관찰해야 보고할 수 있습니다." + hint
+		return tr("현장에서 시설을 직접 관찰해야 보고할 수 있습니다.") + tr(hint)
 	return ""
 
 
@@ -326,8 +326,8 @@ func report(task: Task, claim_anomaly: bool) -> void:
 			var def := AnomalyDB.get_def(task.anomaly)
 			task.state = "responding"
 			task.deadline = float(def.get("timer", 120.0))
-			notify("이상 판정 접수. 근무 수칙에 따라 대응하십시오. (제한 %d초)" % int(task.deadline), "alert")
-			objective("수칙에 따라 대응: " + (f.title if f else task.title))
+			notify(tr("이상 판정 접수. 근무 수칙에 따라 대응하십시오. (제한 %d초)") % int(task.deadline), "alert")
+			objective(tr("수칙에 따라 대응: ") + tr(f.title if f else task.title))
 			Snd.play("ui_alert", -6.0)
 			Events.tasks_changed.emit()
 	else:
@@ -689,7 +689,7 @@ func ev_namecall(lethal := false) -> void:
 	event_tension = 1.0
 	var name_text := Game.player_name
 	Snd.pa_announce(["name_call"], {"wrong": true, "pitch": 0.94, "no_end": true,
-		"subs": ["%s 승객님. %s 승객님. 영번 게이트로 오시기 바랍니다. 기다리고 있습니다." % [name_text, name_text]]})
+		"subs": [tr("%s 승객님. %s 승객님. 영번 게이트로 오시기 바랍니다. 기다리고 있습니다.") % [name_text, name_text]]})
 	await get_tree().process_frame
 	var moved := 0.0
 	while Snd.pa_busy:
@@ -778,7 +778,7 @@ func _violation(reason: String, lethal: bool) -> void:
 		kill(reason)
 		return
 	Game.add_erosion(15.0)
-	notify("수칙 위반: " + reason, "bad")
+	notify(tr("수칙 위반: ") + tr(reason), "bad")
 	_scare_glimpse(4.0)
 
 
@@ -815,7 +815,7 @@ func _on_punch() -> void:
 		if left.is_empty():
 			notify("지금은 기록할 수 없습니다.", "info")
 		else:
-			notify("남은 업무가 있습니다: " + left[0].title, "info")
+			notify(tr("남은 업무가 있습니다: ") + tr(left[0].title), "info")
 		return
 	punched.emit()
 
@@ -917,7 +917,7 @@ func _on_syslog() -> void:
 	if Game.phase == "night" and Game.cycle >= 3:
 		Game.add_clue("syslog")
 		var c: Dictionary = RulesDB.CLUES.syslog
-		await ui.read_doc(c.title, str(c.body) % Game.player_name, "mono")
+		await ui.read_doc(c.title, tr(str(c.body)) % Game.player_name, "mono")
 	else:
 		Snd.play("beep_error", -6.0)
 		notify("SYSTEM LOG — 로그인 필요 (시설운영팀 관리자 계정)", "info")

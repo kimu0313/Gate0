@@ -91,4 +91,4 @@ func _remove_anomaly(anomaly_id: String) -> void:
 
 func describe_state() -> String:
 	var on := zones_on()
-	return "점등 구역: %d" % on.size()
+	return tr("점등 구역: %d") % on.size()

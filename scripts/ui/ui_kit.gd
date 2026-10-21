@@ -230,9 +230,30 @@ static func keep_all(s: String) -> String:
 	return _keep_all_re.sub(s, "$1" + String.chr(0x2060), true)
 
 
+## Text in the player's language (Settings › 화면 › 언어). The Korean source text is the key; the
+## translations live in assets/i18n/*.po. Text that is assembled at runtime must translate its template
+## first (t("…%d…") % n), because the assembled string is not a key.
+static func t(s: String, ctx := "") -> String:
+	if s == "":
+		return s
+	if ctx != "":
+		# a context only overrides where one is given ("stamp": 확인 → CHECKED, not OK)
+		var c := String(TranslationServer.translate(s, ctx))
+		if c != s:
+			return c
+	return String(TranslationServer.translate(s))
+
+
+## True when a bilingual pair says the same thing in the current language ("정상"/"NORMAL" in English),
+## so the secondary line can be dropped.
+static func same(a: String, b: String) -> bool:
+	return t(a).to_upper() == t(b).to_upper()
+
+
 static func label(text: String, size := 20, color := TEXT, kind := "sans", weight := 400) -> Label:
 	var l := Label.new()
-	l.text = keep_all(text)
+	l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	l.text = keep_all(t(text))
 	l.add_theme_font_override("font", font(kind, weight))
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
@@ -276,7 +297,8 @@ static func rich(text: String, size := 20, color := TEXT, kind := "sans") -> Ric
 	r.bbcode_enabled = true
 	r.fit_content = true
 	r.scroll_active = false
-	r.text = keep_all(text)
+	r.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	r.text = keep_all(t(text))
 	r.add_theme_font_override("normal_font", font(kind, 400))
 	r.add_theme_font_override("bold_font", font(kind, 700))
 	r.add_theme_font_size_override("normal_font_size", size)
@@ -289,7 +311,8 @@ static func rich(text: String, size := 20, color := TEXT, kind := "sans") -> Ric
 ## Secondary button (dark panel, accent outline on hover). `accent` also tints the pressed text.
 static func button(text: String, size := 20, cb := Callable(), accent := SIGNAL) -> Button:
 	var b := Button.new()
-	b.text = text
+	b.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	b.text = t(text)
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_override("font", font("sans", 700))
 	b.add_theme_font_size_override("font_size", size)
@@ -448,6 +471,11 @@ static func spacer(h := true) -> Control:
 const _CORRUPT := {
 	"점검": "탑승", "보고": "탑승", "지시": "안내", "시설": "승객", "확인": "탑승", "근무": "탑승", "직원": "승객",
 	"MAINTENANCE": "B0ARDING", "ORDER": "B0ARDING", "TASKS": "1NF0RMATI0N",
+	# the same slip in English
+	"Inspect": "Board", "inspect": "board", "Inspection": "Boarding", "inspection": "boarding",
+	"Report": "Board", "report": "board", "Facility": "Passenger", "facility": "passenger",
+	"Staff": "Passenger", "staff": "passenger", "Shift": "Flight", "shift": "flight",
+	"CONFIRMED": "B0ARDED", "SYSTEM": "B0ARDING", "Order": "Boarding",
 }
 
 
@@ -463,9 +491,9 @@ static func corrupt(s: String, amount := 1.0) -> String:
 ## Erosion state color + label used by the tablet meter and status cards.
 static func erosion_state(e: float) -> Array:
 	if e >= 75.0:
-		return [ALERT, "위험"]
+		return [ALERT, t("위험")]
 	if e >= 50.0:
-		return [WARN, "불안정"]
+		return [WARN, t("불안정")]
 	if e >= 25.0:
-		return [SIGNAL, "주의"]
-	return [CLEAR, "안정"]
+		return [SIGNAL, t("주의")]
+	return [CLEAR, t("안정")]

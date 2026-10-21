@@ -12,7 +12,13 @@ var angle_deg := -8.0
 
 static func make(stamp_lines: Array, ink_color: Color, stamp_shape := "rect", art_id := "", px := Vector2(420, 190)) -> StampMark:
 	var s := StampMark.new()
-	s.lines = stamp_lines
+	# translated; a bilingual pair that reads the same in this language ("정상"/"NORMAL") keeps one line
+	var out: Array = []
+	for l in stamp_lines:
+		var tl := UiKit.t(str(l), "stamp")
+		if out.is_empty() or tl.to_upper() != str(out[out.size() - 1]).to_upper():
+			out.append(tl)
+	s.lines = out
 	s.ink = ink_color
 	s.shape = stamp_shape
 	s.art = art_id
@@ -55,11 +61,26 @@ func _draw_round_text(half: Vector2) -> void:
 	var f := UiKit.font("serif", 700)
 	var r := minf(half.x, half.y)
 	var n := lines.size()
-	var longest := 1
-	for l in lines:
-		longest = maxi(longest, str(l).length())
-	var fs := int(minf(r * (0.3 if n <= 2 else 0.22), r * 1.25 / longest))
-	var y0 := -fs * (n - 1) * 0.6 + fs * 0.35
+	var base := r * (0.3 if n <= 2 else 0.22)
+	var y0 := -base * (n - 1) * 0.6 + base * 0.35
+	# one size for every line, the largest that keeps each line inside the inner ring at its height
+	# (measured, not counted: a Latin line is far narrower per character than Hangul)
+	var fs := base
 	for i in n:
-		var sz := fs if i != n / 2 or n <= 2 else int(fs * 1.25)
-		draw_string(f, Vector2(-r, y0 + i * fs * 1.2), str(lines[i]), HORIZONTAL_ALIGNMENT_CENTER, r * 2.0, sz, ink)
+		var w := f.get_string_size(str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 100).x / 100.0
+		fs = minf(fs, _ring_room(r, y0 + i * base * 1.2 - base * 0.35) / maxf(w, 0.01))
+	y0 = -fs * (n - 1) * 0.6 + fs * 0.35
+	for i in n:
+		var sz := int(fs) if i != n / 2 or n <= 2 else int(fs * 1.25)
+		var y := y0 + i * fs * 1.2
+		var w := f.get_string_size(str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
+		if w > _ring_room(r, y - sz * 0.35):
+			sz = int(sz * _ring_room(r, y - sz * 0.35) / w)
+			w = f.get_string_size(str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
+		draw_string(f, Vector2(-w * 0.5, y), str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, sz, ink)
+
+
+## Width a line centred at height y can use inside the stamp's inner ring (outer radius r).
+static func _ring_room(r: float, y: float) -> float:
+	var ri := r * 0.68
+	return 1.8 * sqrt(maxf(ri * ri - y * y, 1.0))

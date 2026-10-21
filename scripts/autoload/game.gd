@@ -32,6 +32,7 @@ var settings := {
 	"reduce_motion": false,     # calmer UI: no shakes, flickers or HUD glitch jitter
 	"crosshair": true,
 	"keys": {},                 # action -> physical keycode (rebound primary key)
+	"language": "",             # "ko" | "en"; empty = follow the OS on first launch
 }
 
 ## Primary + alternate keys and mouse buttons per action; the first key of the actions listed in
@@ -180,6 +181,8 @@ func load_settings() -> void:
 		# older settings files had a fullscreen bool
 		if cfg.has_section_key("settings", "fullscreen") and not cfg.has_section_key("settings", "window_mode"):
 			settings.window_mode = "fullscreen" if cfg.get_value("settings", "fullscreen") else "windowed"
+	if str(settings.language) == "":
+		settings.language = "ko" if OS.get_locale_language() == "ko" else "en"
 	get_tree().node_added.connect(func(n: Node):
 		if n is WorldEnvironment:
 			_apply_brightness.call_deferred(n))
@@ -222,6 +225,10 @@ func apply_settings() -> void:
 	_register_input()
 	for we in get_tree().root.find_children("*", "WorldEnvironment", true, false):
 		_apply_brightness(we)
+	# `-- --lang en|ko` overrides for captures without touching the saved choice
+	var args := OS.get_cmdline_user_args()
+	var li := args.find("--lang")
+	TranslationServer.set_locale(args[li + 1] if li >= 0 and li + 1 < args.size() else str(settings.language))
 
 
 ## Brightness setting on a world's environment (post-tonemap multiplier; the UI is unaffected).

@@ -4,6 +4,7 @@ extends PanelContainer
 ## quality, brightness), 오디오, 자막·접근성 (subtitles, calmer UI, crosshair).
 
 signal back
+signal language_changed
 
 const TABS := [["controls", "조작", "CONTROLS"], ["display", "화면", "DISPLAY"], ["audio", "오디오", "AUDIO"],
 	["access", "자막 · 접근성", "ACCESSIBILITY"]]
@@ -78,13 +79,22 @@ func _build() -> void:
 	row.add_child(hint)
 	row.add_child(UiKit.spacer())
 	var reset := UiKit.button("기본값으로 되돌리기", 18, func():
+		var lang: String = Game.settings.language
 		Game.reset_settings()
-		var tab := _current
-		_build()
-		_show_tab(tab, false))
+		Game.settings.language = lang     # a reset never switches the language under the player
+		Game.apply_settings()
+		Game.save_settings()
+		_rebuild())
 	reset.custom_minimum_size = Vector2(0, 56)
 	row.add_child(reset)
 	_show_tab(_current, false)
+
+
+## Rebuilds the panel in place (language change), keeping the open tab.
+func _rebuild() -> void:
+	var tab := _current
+	_build()
+	_show_tab(tab, false)
 
 
 # =========================================================================================
@@ -105,7 +115,7 @@ func _build_tabs(parent: Control) -> void:
 		b.focus_mode = Control.FOCUS_NONE
 		for st in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
 			b.add_theme_stylebox_override(st, UiKit.boxm(Color(0, 0, 0, 0), Vector4(18, 0, 18, 0)))
-		b.text = t[1]
+		b.text = UiKit.t(t[1])
 		b.add_theme_font_size_override("font_size", 20)
 		b.add_theme_color_override("font_color", UiKit.TEXT_DIM)
 		b.add_theme_color_override("font_hover_color", UiKit.TEXT)
@@ -173,6 +183,9 @@ func _build_controls(p: VBoxContainer) -> void:
 
 
 func _build_display(p: VBoxContainer) -> void:
+	_section(p, "LANGUAGE · 언어")
+	# option names stay in their own language so either can be found
+	_choice(p, "언어 · Language", "language", [["ko", "한국어"], ["en", "English"]], false)
 	_section(p, "WINDOW · 창")
 	_choice(p, "화면 모드", "window_mode", [["windowed", "창 모드"], ["borderless", "테두리 없는 전체 화면"], ["fullscreen", "전체 화면"]])
 	_toggle(p, "수직 동기화 (VSync)", "vsync")
@@ -290,7 +303,7 @@ func _toggle(parent: Control, text: String, key: String, sub := "") -> void:
 
 
 ## ‹ value › stepper over a fixed list of [value, label].
-func _choice(parent: Control, text: String, key: String, options: Array) -> void:
+func _choice(parent: Control, text: String, key: String, options: Array, translate := true) -> void:
 	var row := _row(parent, text)
 	row.add_child(UiKit.spacer())
 	var box := HBoxContainer.new()
@@ -308,9 +321,12 @@ func _choice(parent: Control, text: String, key: String, options: Array) -> void
 	var step := func(d: int):
 		state.i = wrapi(state.i + d, 0, options.size())
 		Game.settings[key] = options[state.i][0]
-		val.text = UiKit.keep_all(options[state.i][1])
+		val.text = UiKit.keep_all(UiKit.t(options[state.i][1]) if translate else options[state.i][1])
 		Snd.play("ui_click", -14.0, 1.1)
 		_commit()
+		if key == "language":
+			language_changed.emit()
+			_rebuild.call_deferred()
 	var prev := UiKit.button("‹", 22, step.bind(-1))
 	prev.custom_minimum_size = Vector2(46, 44)
 	var next := UiKit.button("›", 22, step.bind(1))
@@ -318,7 +334,7 @@ func _choice(parent: Control, text: String, key: String, options: Array) -> void
 	box.add_child(prev)
 	box.add_child(val)
 	box.add_child(next)
-	val.text = UiKit.keep_all(options[idx][1])
+	val.text = UiKit.keep_all(UiKit.t(options[idx][1]) if translate else options[idx][1])
 
 
 func _key_row(parent: Control, action: String, text: String) -> void:
@@ -346,7 +362,7 @@ func _refresh_keys() -> void:
 	for action in _key_buttons:
 		var b: Button = _key_buttons[action]
 		if action == _capturing:
-			b.text = "키를 누르십시오…"
+			b.text = UiKit.t("키를 누르십시오…")
 			b.add_theme_color_override("font_color", UiKit.SIGNAL)
 		else:
 			b.text = Game.key_label(action)
@@ -418,4 +434,4 @@ class BrightnessPreview extends Control:
 			draw_string(f, p + Vector2(0, 66), "0", HORIZONTAL_ALIGNMENT_CENTER, tile.x, 64, Color(0.004, 0.004, 0.006))
 		var tx := x0 + 3 * (tile.x + gap) - 20.0
 		var sans := UiKit.font("sans", 500)
-		draw_multiline_string(sans, Vector2(tx, size.y * 0.5 - 14), "왼쪽 표시가 겨우 보일 정도로\n밝기를 맞추십시오.", HORIZONTAL_ALIGNMENT_LEFT, size.x - tx - 20.0, 19, 2, UiKit.TEXT_DIM)
+		draw_multiline_string(sans, Vector2(tx, size.y * 0.5 - 14), UiKit.t("왼쪽 표시가 겨우 보일 정도로\n밝기를 맞추십시오."), HORIZONTAL_ALIGNMENT_LEFT, size.x - tx - 20.0, 19, 3, UiKit.TEXT_DIM)

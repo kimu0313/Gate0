@@ -20,8 +20,9 @@ static var _last_tick := 0
 
 static func make(txt: String, size := 20, color := Color("e8eaed"), kind := "sans", weight := 400) -> FlapLabel:
 	var l := FlapLabel.new()
-	l.text = txt
-	l._target = txt
+	l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	l.text = UiKit.t(txt)
+	l._target = l.text
 	l.add_theme_font_override("font", UiKit.font(kind, weight))
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
@@ -35,6 +36,7 @@ func _ready() -> void:
 
 ## Changes the text with the split-flap animation (or instantly).
 func flap_to(new_text: String, animate := true, delay := 0.0) -> void:
+	new_text = UiKit.t(new_text)
 	if new_text == _target and (_anim or text == new_text):
 		return
 	_from = text if not _anim else _target

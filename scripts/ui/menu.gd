@@ -20,6 +20,7 @@ var _fids_board: FidsBoard
 var _intro_started := false
 var _hold_intro := false
 static var _boot_shown := false    # the launch notice shows once per run, not on every return to the menu
+static var _reopen_settings := false
 
 
 func _ready() -> void:
@@ -44,6 +45,9 @@ func _ready() -> void:
 		var g = load("res://scripts/debug/ui_gallery.gd").new()
 		g.menu = self
 		add_child(g)
+	if _reopen_settings:
+		_reopen_settings = false
+		_on_settings.call_deferred()
 
 
 func _build_backdrop() -> void:
@@ -170,9 +174,8 @@ func _build_menu_rows(col: VBoxContainer) -> void:
 	_foot.offset_bottom = -46
 	_foot.add_theme_constant_override("separation", 22)
 	_main.add_child(_foot)
-	_foot.add_child(UiKit.caption("PROTOTYPE", UiKit.TEXT_MUTE, 17))
 	_foot.add_child(UiKit.label("1인칭 리미널 호러", 16, UiKit.TEXT_DIM))
-	_foot.add_child(UiKit.label("엔딩 %d / 3" % Game.endings_seen().size(), 16, UiKit.TEXT_DIM))
+	_foot.add_child(UiKit.label(UiKit.t("엔딩 %d / 3") % Game.endings_seen().size(), 16, UiKit.TEXT_DIM))
 	_foot.add_child(UiKit.spacer())
 	var hp := UiIcon.make("headphones", 22, UiKit.TEXT_DIM)
 	hp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -187,6 +190,10 @@ func _build_menu_rows(col: VBoxContainer) -> void:
 	_settings.back.connect(func():
 		_settings.visible = false
 		_show_main())
+	# the menu is built in one language: rebuild it, coming straight back to the settings
+	_settings.language_changed.connect(func():
+		_reopen_settings = true
+		get_tree().reload_current_scene.call_deferred())
 	for c in [_title_box, _tagline, _fids, _foot] + _rows:
 		(c as CanvasItem).modulate.a = 0.0
 
@@ -280,7 +287,7 @@ func _build_name_panel() -> void:
 	fields.add_child(UiKit.caption("성명 · NAME", UiKit.STAMP_RED, 14))
 	_name_edit = LineEdit.new()
 	_name_edit.max_length = 8
-	_name_edit.placeholder_text = "이름을 입력하십시오"
+	_name_edit.placeholder_text = UiKit.t("이름을 입력하십시오")
 	_name_edit.add_theme_font_override("font", UiKit.font("sans", 900))
 	_name_edit.add_theme_font_size_override("font_size", 34)
 	_name_edit.add_theme_color_override("font_color", UiKit.PAPER_INK)
@@ -441,7 +448,7 @@ class FidsMini extends Control:
 		var disp := UiKit.font("display", 700)
 		var mono := UiKit.font("display", 400)
 		var monob := UiKit.font("display", 700)
-		draw_string(disp, Vector2(28, 46), "DEPARTURES · 출발", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, AMBER)
+		draw_string(disp, Vector2(28, 46), UiKit.t("DEPARTURES · 출발"), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, AMBER)
 		draw_string(disp, Vector2(28, 46), "TEST MODE", HORIZONTAL_ALIGNMENT_RIGHT, size.x - 56, 22, AMBER)
 		draw_line(Vector2(28, 60), Vector2(size.x - 28, 60), Color(AMBER, 0.25), 1.0)
 		var cols := [28.0, 160.0, size.x - 230.0, size.x - 150.0]

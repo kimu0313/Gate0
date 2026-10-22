@@ -1,8 +1,8 @@
 shader_type spatial;
 // Large wall cladding panels in world space (works on X- and Z-facing walls).
 
-uniform vec3 color : source_color = vec3(0.62, 0.60, 0.56);
-uniform vec3 seam_color : source_color = vec3(0.28, 0.27, 0.26);
+uniform vec3 color : source_color = vec3(0.78, 0.75, 0.68);
+uniform vec3 seam_color : source_color = vec3(0.42, 0.40, 0.37);
 uniform float panel_w = 1.5;
 uniform float panel_h = 2.4;
 uniform float seam = 0.008;

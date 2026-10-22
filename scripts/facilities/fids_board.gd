@@ -55,6 +55,7 @@ func build(width := 8.0, height := 3.2, with_controls := true) -> void:
 	add_child(quad)
 	quad.position = Vector3(0, 0, -0.015)
 	var glow := Geo.omni(self, Vector3(0, -height * 0.3, 1.4), Color(1.0, 0.75, 0.4), 0.5, 7.0)
+	glow.light_specular = 0.0   # spill on the floor only, no hotspot on the board's own glass
 	glow.light_volumetric_fog_energy = 0.8
 	focus = quad
 	_hum = Snd.make_loop("machine_hum_loop", self, -18.0, 3.0, 12.0)

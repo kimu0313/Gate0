@@ -1,6 +1,10 @@
 class_name LightZone
 extends Node3D
-## One switchable lighting zone: ceiling panels (shared emissive material) + omni lights + hum.
+## One switchable lighting zone: ceiling panels (shared emissive material) + area lights + hum.
+
+const AREA_GAIN := 1.2         # area light energy per unit of the panel's old omni energy
+const GI_DIRECT := 0.3         # share of the bounce omni's light that also lands directly
+const NO_GI_DIRECT := 0.6      # without SDFGI the omni stands in for the bounce with direct light
 
 var zone_name := ""
 var display_name := ""
@@ -25,7 +29,7 @@ var red_area: Area3D
 var red_index := -1
 ## Overall brightness multiplier: each judgment mistake dims the whole terminal one step.
 var intensity := 1.0
-var _panel_light := {}      # panel -> its omni light (if any)
+var _panel_light := {}      # panel -> its lights [area, fill omni] (if any)
 var _dark_panel: MeshInstance3D
 var _dark_mat: StandardMaterial3D
 
@@ -47,10 +51,20 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 		color := Color(0.88, 0.93, 1.0), shadow := false) -> MeshInstance3D:
 	var mi := Geo.box(self, pos, Vector3(size.x, 0.06, size.y), panel_mat, false)
 	panels.append(mi)
+	# fixture housing: a pale rim around the diffuser so it reads as a troffer, not a cut-out
+	Geo.box(self, pos + Vector3(0, 0.02, 0), Vector3(size.x + 0.1, 0.05, size.y + 0.1), Mats.get_mat("plastic_white"), false)
 	if with_light:
-		var l := Geo.omni(self, pos + Vector3(0, -0.6, 0), color, light_energy, light_range, shadow)
-		add_light(l)
-		_panel_light[mi] = l
+		var area := Geo.area_light(self, pos + Vector3(0, -0.04, 0), size, color, light_energy * AREA_GAIN, light_range, shadow)
+		add_light(area)
+		# area lights do not feed SDFGI yet: a dim omni with boosted indirect energy carries the bounce.
+		# Without GI (low quality) it lights the ceiling and walls directly instead.
+		var share := GI_DIRECT if Atmosphere.gi_enabled else NO_GI_DIRECT
+		var gi := Geo.omni(self, pos + Vector3(0, -0.6, 0), color, light_energy * share, light_range)
+		gi.light_indirect_energy = 1.0 / share
+		gi.light_specular = 0.0
+		gi.light_volumetric_fog_energy = 0.0
+		add_light(gi)
+		_panel_light[mi] = [area, gi]
 	return mi
 
 
@@ -128,8 +142,7 @@ func set_dark(enabled: bool, index := -1) -> Vector3:
 		return _dark_panel.global_position
 	if _dark_panel:
 		_dark_panel.material_override = panel_mat
-		var l: Light3D = _panel_light.get(_dark_panel)
-		if l:
+		for l: Light3D in _panel_light.get(_dark_panel, []):
 			l.visible = _level > 0.01
 	_dark_panel = null
 	return Vector3.ZERO
@@ -180,8 +193,9 @@ func _apply(k: float) -> void:
 	for l in lights:
 		l.light_energy = _base_energy[l] * k
 		l.visible = k > 0.01
-	if _dark_panel and _panel_light.has(_dark_panel):
-		(_panel_light[_dark_panel] as Light3D).visible = false
+	if _dark_panel:
+		for l: Light3D in _panel_light.get(_dark_panel, []):
+			l.visible = false
 	for h in _hums:
 		var want := k > 0.2
 		if want and not h.playing and is_inside_tree():

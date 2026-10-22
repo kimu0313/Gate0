@@ -342,6 +342,22 @@ static func omni(parent: Node, pos: Vector3, color: Color, energy: float, light_
 	return l
 
 
+## Rectangular ceiling fixture (fluorescent troffer): lights straight down from a size.x × size.y
+## rectangle, so glossy floors show its long soft reflection instead of a point hotspot.
+static func area_light(parent: Node, pos: Vector3, size: Vector2, color: Color, energy: float, light_range: float, shadow := false) -> AreaLight3D:
+	var l := AreaLight3D.new()
+	l.light_color = color
+	l.light_energy = energy
+	l.area_size = size
+	l.area_range = light_range
+	l.shadow_enabled = shadow
+	l.light_volumetric_fog_energy = 0.6
+	parent.add_child(l)
+	l.position = pos
+	l.rotation.x = -PI / 2
+	return l
+
+
 static func spot(parent: Node, pos: Vector3, target: Vector3, color: Color, energy: float, light_range: float, angle := 40.0, shadow := false) -> SpotLight3D:
 	var l := SpotLight3D.new()
 	l.light_color = color

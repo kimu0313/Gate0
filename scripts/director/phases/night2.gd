@@ -43,6 +43,7 @@ func _staff_leave() -> void:
 func _name_bag_call(_slot: Dictionary) -> Task:
 	await d.radio("수하물 쪽 벨트 돌아가는 소리 나는데, 확인 좀 해 주세요.")
 	var belt: BaggageBelt = d.t.facility("baggage")
+	d.t.breaker.restore_for(belt)   # it runs by itself — even if its circuit was cut for an earlier response
 	belt.reset_for_inspection()
 	belt.set_anomaly("bag_name")
 	belt.start(false)

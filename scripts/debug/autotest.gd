@@ -1,6 +1,6 @@
 extends Node
 ## Debug bot: `godot --path . res://scenes/game.tscn -- --day 1 --autotest <outdir> [--ending exit|board|announce]
-## [--mistakes|--wrong]`. Plays the dawn shifts by itself (teleporting, operating facilities, reporting, applying
+## [--mistakes|--wrong] [--leave-power-off]`. Plays the dawn shifts by itself (teleporting, operating facilities, reporting, applying
 ## rulebook fixes, obeying emergency rules), prints a log and saves screenshots. Carries on across scene changes.
 ## The DAY 3 ending comes from the judgment record; `--ending` seeds the record on DAY 3 so each one can be reached.
 
@@ -301,8 +301,9 @@ func _apply_fix(f: Facility, a: String) -> void:
 		"power_off":
 			await goto(Vector3(-25.2, 0.05, -4.6), Vector3(-25.2, 1.5, -5.8))
 			t.breaker.switches[fix[1]]._on_used()
-			await wait(1.0)
-			t.breaker.switches[fix[1]]._on_used()
+			if not OS.get_cmdline_user_args().has("--leave-power-off"):   # like a player who never switches it back on
+				await wait(1.0)
+				t.breaker.switches[fix[1]]._on_used()
 		"pa_stop":
 			(f as PaConsole)._on_test()
 			await wait(2.0)

@@ -27,8 +27,9 @@ func setup() -> void:
 	place_documents()
 	_reader = CardReader.create(d.t, Vector3(4.7, 1.25, -27.78), 0.0)
 	_reader.swiped.connect(_on_wing_reader)
-	var lane := Geo.area(d.t, Vector3(2.0, 1.0, -21.0), Vector3(1.4, 2.0, 1.0))
-	lane.body_entered.connect(_on_passenger_lane)
+	for x in [2.0, -8.0]:   # either walk-through detector is a passenger lane
+		var lane := Geo.area(d.t, Vector3(x, 1.0, -21.0), Vector3(1.4, 2.0, 1.0))
+		lane.body_entered.connect(_on_passenger_lane)
 	d.t.triggers.emergency_out.body_entered.connect(func(b: Node3D):
 		if b.is_in_group("player") and finale and ending == "exit":
 			d.start_ending("exit"))
@@ -99,6 +100,7 @@ func _all_at_once(_slot: Dictionary) -> Array:
 	var made: Array = []
 	for e in [["pa", "pa_auto"], ["walkway", "auto_run"], [gate_id, "gate_open"]]:
 		var f := d.t.facility(e[0])
+		d.t.breaker.restore_for(f)
 		f.set_anomaly(e[1])
 		if e[1] == "gate_open":
 			Snd.play_at("door_heavy", f.focus_position(), -4.0, 0.8, 30.0)

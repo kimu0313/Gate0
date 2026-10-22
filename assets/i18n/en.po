@@ -4062,3 +4062,9 @@ msgstr "DAY 2 — Baggage · Security · Your Bag"
 
 msgid "DAY 3 — 탑승 게이트 · GATE 0"
 msgstr "DAY 3 — Boarding Gates · GATE 0"
+
+msgid "%s 전원이 복구되었습니다. (배전반)"
+msgstr "%s power has been restored. (Breaker panel)"
+
+msgid " (시설관리실 배전반에서 전원을 다시 올리십시오)"
+msgstr " (Switch its power back on at the Facility Office breaker panel)"

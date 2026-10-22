@@ -251,6 +251,9 @@ func _activate(task: Task, quiet := false) -> void:
 	if task.kind == "inspect":
 		var f := t.facility(task.facility_id)
 		if f:
+			# a circuit the player cut for an earlier response comes back with the new order (no dead end)
+			if not f.powered and running_event == "" and t.breaker.restore_for(f):
+				notify(tr("%s 전원이 복구되었습니다. (배전반)") % tr(f.title), "info")
 			if f is PaConsole and task.anomaly != "pa_auto":
 				(f as PaConsole).reset_inspection()
 			if f is BoardingGate and not quiet:
@@ -363,7 +366,9 @@ func can_report(task: Task) -> String:
 	if not task.observed:
 		var f := t.facility(task.facility_id)
 		var hint := ""
-		if f and not f.is_observable():
+		if f and not f.powered:
+			hint = " (시설관리실 배전반에서 전원을 다시 올리십시오)"
+		elif f and not f.is_observable():
 			hint = " (시설을 가동하거나 확인 버튼을 누르십시오)"
 		return tr("현장에서 시설을 직접 관찰해야 보고할 수 있습니다.") + tr(hint)
 	return ""
@@ -1269,6 +1274,7 @@ func _autonomous_start(slot: Dictionary) -> void:
 	var f := t.facility(slot.fac)
 	if f == null:
 		return
+	t.breaker.restore_for(f)   # a facility that starts by itself needs its circuit, even one the player cut earlier
 	match slot.anomaly:
 		"gate_open":
 			Snd.play_at("door_heavy", f.focus_position(), -4.0, 0.8, 20.0)

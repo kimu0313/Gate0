@@ -19,6 +19,7 @@ var urgent := false
 var optional := false
 var reported_as := ""      # normal | anomaly
 var locked := ""           # non-empty = reporting blocked with this message
+var slot := 0              # inspection number within the night (1..10), 0 = not an inspection
 const OBSERVE_TIME := 2.5
 
 

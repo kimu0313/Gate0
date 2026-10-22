@@ -2,6 +2,11 @@ class_name ShiftDirector
 extends Node
 ## Runs a work phase: tasks, observation, judgment reports, anomaly responses, lethal rules,
 ## global rule events (blackout, name call, 3 AM), erosion pressure, deaths and phase transitions.
+##
+## Judgment rules (concept doc · 판정 결과 규칙): a missed anomaly, a false alarm, a response timeout or a
+## broken emergency rule each add one 판정 실수. Three in one night = game over (the night restarts).
+## A wrong response (a lethal action) is an immediate game over. Every mistake dims the terminal one
+## step and adds noise to the PA; the morning report reveals what was missed.
 
 signal task_finished(task: Task)
 signal punched
@@ -9,6 +14,20 @@ signal radio_free
 signal action_seen(action: String, target: String)
 signal office_denied
 signal main_power_pulled
+signal arrival_announced
+
+const MAX_MISTAKES := 3
+const DIM_STEPS := [1.0, 0.7, 0.48]
+## Correct detections make the radio a little stranger each time (1–2 lines a night).
+const RADIO_ODD := [
+	"…방금 누구랑 통화하셨어요? 무전에 다른 목소리가 섞여 들렸어요.",
+	"이상하네요. 제 쪽 기록엔 그 시설, 아까부터 혼자 가동 중이었다는데요.",
+	"…거기 혼자 맞죠? 방금 발소리가 두 개로 들렸어요.",
+	"보고하실 때마다 제 화면의 승객 수가 하나씩 줄어요. 무슨 뜻인지 모르겠네요.",
+	"제가 아까 무전 드렸다고요? …저 방금 자리에 돌아왔는데요.",
+	"당신 목소리가 방금 터미널 방송으로 나왔어요. 콘솔 만지셨어요?",
+	"41명이요. 화면에 41명이 대기 중이라고 떠요. 아무도 없는데.",
+]
 
 var world: Node
 var t: Terminal
@@ -29,7 +48,16 @@ var erosion_start := 0.0
 var ambient_enabled := true
 var escape_mode := false
 var office_locked := false
+var office_mode := "staff"      # staff | denied | passenger
 var main_power_enabled := false
+var mistakes := 0
+var inspections_done := 0
+var inspections_total := 0
+var missed_list: Array = []     # [[facility title, one-line reveal], ...]
+var _radio_odd_tonight := 0
+var _pa_noise: AudioStreamPlayer
+var _pa_still_total := 0.0
+var _pa_still_moved := 0.0
 
 var _clock_accum := 0.0
 var _radio_busy := false
@@ -52,6 +80,9 @@ func setup(world_node: Node) -> void:
 	_radio_chatter = AudioStreamPlayer.new()
 	_radio_chatter.bus = "Radio"
 	add_child(_radio_chatter)
+	_pa_noise = AudioStreamPlayer.new()
+	_pa_noise.bus = "PA"
+	add_child(_pa_noise)
 	Events.player_action.connect(_on_player_action)
 	Snd.pa_started.connect(_on_pa_started)
 	Snd.pa_finished.connect(_on_pa_finished)
@@ -73,12 +104,19 @@ func start() -> void:
 # =========================================================================================
 # helpers for phase scripts
 # =========================================================================================
+## Once the shift scene is gone (ending / menu), phase coroutines still waiting are parked for good.
 func wait(seconds: float) -> void:
+	if not is_inside_tree():
+		await tree_entered
+		return
 	await get_tree().create_timer(seconds, false).timeout
 
 
 func until(cond: Callable, poll := 0.1) -> void:
 	while not cond.call():
+		if not is_inside_tree():
+			await tree_entered
+			return
 		await get_tree().create_timer(poll, false).timeout
 
 
@@ -150,6 +188,7 @@ func inspect(fac_id: String, title: String, detail: String, anomaly := "", opts 
 	task.facility_id = fac_id
 	task.anomaly = anomaly
 	task.urgent = opts.get("urgent", false)
+	task.slot = int(opts.get("slot", 0))
 	var f := t.facility(fac_id)
 	task.location = f.zone if f else ""
 	_add_task(task)
@@ -208,15 +247,25 @@ func _activate(task: Task) -> void:
 	if task.kind == "inspect":
 		var f := t.facility(task.facility_id)
 		if f:
-			if f is PaConsole:
+			if f is PaConsole and task.anomaly != "pa_auto":
 				(f as PaConsole).reset_inspection()
 			if f is BoardingGate:
 				(f as BoardingGate).checked = false
+				# gate lights are off in the default night plan; an inspection lights the gate area so p.8 ② can be followed
+				if not t.zones["gates"].is_on:
+					t.set_zone_light("gates", true)
+			if f is BaggageBelt and not task.urgent:
+				(f as BaggageBelt).reset_for_inspection()
+			if f is XrayMachine and not task.urgent:
+				(f as XrayMachine).reset_for_inspection()
 			if task.anomaly != "" and f.anomaly != task.anomaly:
 				_prepare_anomaly(f, task.anomaly)
 				f.set_anomaly(task.anomaly)
 	Snd.play("ui_alert" if task.urgent else "ui_notify", -6.0)
-	notify(tr("⚠ 긴급 지시: " if task.urgent else "새 점검 지시: ") + tr(task.title), "alert" if task.urgent else "task")
+	var head := tr("⚠ 긴급 지시: " if task.urgent else "새 점검 지시: ")
+	if task.slot > 0:
+		head = tr("점검 %d / %d · ") % [task.slot, inspections_total] + head
+	notify(head + tr(task.title), "alert" if task.urgent else "task")
 	objective(task.title)
 	Events.tasks_changed.emit()
 
@@ -226,7 +275,8 @@ func _prepare_anomaly(f: Facility, anomaly_id: String) -> void:
 		var lp := f as LightPanel
 		var candidates := []
 		for zn in ["hall", "baggage"]:
-			if lp.zones[zn].is_on:
+			var open: bool = zn == "hall" or (t.shutters.has(zn) and t.shutters[zn].is_open)
+			if lp.zones[zn].is_on and open:
 				candidates.append(zn)
 		if candidates.is_empty():
 			candidates = ["hall"]
@@ -334,37 +384,77 @@ func report(task: Task, claim_anomaly: bool) -> void:
 			Events.tasks_changed.emit()
 	else:
 		if task.anomaly == "":
-			Game.add_erosion(-2.0)
-			notify("정상 판정 접수.", "good")
+			Game.add_erosion(-1.0)
+			_confirm_feedback(f)
 			_complete(task, "correct")
 		elif task.fix_done:
-			Game.add_erosion(4.0)
 			notify("판정 기록 불일치 — 대응은 확인되었습니다.", "info")
 			_complete(task, "cleared")
 		else:
 			_missed(task, f)
 
 
+## Normal reported as anomaly: time lost, and one 판정 실수. No answer is given until the morning.
 func _false_alarm(task: Task) -> void:
-	Game.add_erosion(7.0)
 	Game.clock_minutes += 20
-	notify("관제 확인 결과: 정상. 오판으로 기록됩니다. (시간 손실)", "bad")
+	notify("판정 접수.", "info")
+	missed_list.append([_fac_title(task), "정상이었지만 [이상]으로 보고했습니다. (오판)"])
 	_complete(task, "false_alarm")
-	radio_async(["확인해 봤는데 정상이에요. 시간만 버렸네요.", "그거 정상이에요. 너무 예민해지지 마요.", "정상이라는데요. 다음 거 봐요."][randi() % 3])
-	# needless exposure: something wakes up elsewhere
-	if Game.phase == "night":
-		get_tree().create_timer(randf_range(6.0, 14.0), false).timeout.connect(func(): _ambient_scare(true))
+	add_mistake()
 
 
 func _missed(task: Task, f: Facility) -> void:
 	var def := AnomalyDB.get_def(task.anomaly)
-	Game.add_erosion(18.0)
 	Game.add_clue("miss_" + task.anomaly)
 	notify("판정 접수.", "info")
+	missed_list.append([_fac_title(task), str(def.get("miss", ""))])
 	if f:
 		f.clear_anomaly()
 	_complete(task, "missed")
+	add_mistake()
 	_airport_reacts()
+
+
+func _fac_title(task: Task) -> String:
+	var f := t.facility(task.facility_id) if task else null
+	return f.title if f else (task.title if task else "")
+
+
+## Correct judgment: the tablet's "확인 완료" chime and the facility settles.
+func _confirm_feedback(f: Facility) -> void:
+	Snd.play("beep_ok", -4.0, 1.15)
+	notify("확인 완료.", "good")
+	if f:
+		Snd.play_at("power_up", f.focus_position(), -18.0, 1.4, 6.0)
+
+
+## One 판정 실수: the airport gets darker and the PA noisier. Three in a night = game over.
+func add_mistake() -> void:
+	if dead or ending_started:
+		return
+	mistakes += 1
+	Game.stat("mistakes")
+	Game.add_erosion(12.0)
+	Events.tasks_changed.emit()
+	for z in t.zones.values():
+		(z as LightZone).trigger_dip(0.6)
+		(z as LightZone).intensity = DIM_STEPS[clampi(mistakes, 0, DIM_STEPS.size() - 1)]
+	Snd.play("glitch", -6.0, 0.85, "SFX")
+	Snd.play("flicker_zap", -8.0, 0.9, "SFX")
+	ui.postfx.pulse_glitch(0.45)
+	p.add_shake(0.15)
+	_update_pa_noise()
+	if mistakes >= MAX_MISTAKES:
+		await wait(1.2)
+		kill("판정 실수가 3회 쌓였습니다. 근무는 무효 처리되었고 — 공항은 당신을 승객으로 분류했습니다.")
+
+
+func _update_pa_noise() -> void:
+	if mistakes <= 0:
+		_pa_noise.stop()
+		return
+	_pa_noise.stream = Snd.stream("radio_static_loop")
+	_pa_noise.volume_db = -30.0 + mistakes * 6.0
 
 
 ## The terminal answers a missed anomaly: something, somewhere, checks in.
@@ -380,11 +470,13 @@ func _airport_reacts() -> void:
 
 func _fail_response(task: Task) -> void:
 	var f := t.facility(task.facility_id)
-	Game.add_erosion(15.0)
+	var def := AnomalyDB.get_def(task.anomaly)
 	notify("대응 시간 초과 — 대응 실패로 기록됩니다.", "bad")
+	missed_list.append([_fac_title(task), str(def.get("miss", "")) + " " + tr("(대응 실패)")])
 	if f:
 		f.clear_anomaly()
 	_complete(task, "failed")
+	add_mistake()
 	_scare_glimpse()
 
 
@@ -437,6 +529,7 @@ func _resolve(f: Facility) -> void:
 		if task.state == "responding":
 			notify("이상 현상 해제 — 대응 완료.", "good")
 			_complete(task, "cleared")
+			_radio_reaction()
 		else:
 			notify("시설 상태가 정상으로 돌아왔다…", "good")
 			Events.tasks_changed.emit()
@@ -532,6 +625,19 @@ func _update_continuous_rules(delta: float) -> void:
 				_on_player_action("face_away_from_passenger", gate.id)
 		else:
 			_away_time = 0.0
+	# PA noise only while something is on air
+	if _pa_noise.stream and mistakes > 0:
+		if Snd.pa_busy and not _pa_noise.playing:
+			_pa_noise.play()
+		elif not Snd.pa_busy and _pa_noise.playing:
+			_pa_noise.stop()
+	# a sentence after the standard text: do not move until it ends (rule p.4 ③)
+	if Snd.pa_busy and Snd.pa_tag == "test":
+		var pa_x := t.facility("pa")
+		if pa_x and pa_x.anomaly == "pa_extra":
+			_pa_still_total += delta
+			if p.move_vel.length() > 0.6:
+				_pa_still_moved += delta
 	# slow PA voice: face away from the gates (north = -Z) until it ends
 	if Snd.pa_busy and Snd.pa_tag == "test":
 		var pa := t.facility("pa")
@@ -544,16 +650,22 @@ func _update_continuous_rules(delta: float) -> void:
 func _on_pa_started(_tag: String) -> void:
 	_pa_slow_total = 0.0
 	_pa_slow_away = 0.0
+	_pa_still_total = 0.0
+	_pa_still_moved = 0.0
 
 
 func _on_pa_finished(cancelled: bool) -> void:
 	var pa := t.facility("pa") if t else null
+	if pa and pa.anomaly == "pa_extra" and not cancelled and _pa_still_total > 2.0:
+		if _pa_still_moved < 0.4:
+			_on_player_action("pa_still_survived", "pa")
+		else:
+			notify("방송이 끝났다. 누군가 당신이 움직이는 걸 본 것 같다…", "bad")
 	if pa and pa.anomaly == "pa_slow" and not cancelled and _pa_slow_total > 2.0:
 		if _pa_slow_away / _pa_slow_total >= 0.6:
 			_on_player_action("pa_slow_survived", "pa")
 		else:
 			notify("방송이 끝났다. 무언가 등 뒤에서 멀어졌다…", "bad")
-			Game.add_erosion(6.0)
 
 
 func _update_pressure(delta: float) -> void:
@@ -779,8 +891,9 @@ func _violation(reason: String, lethal: bool) -> void:
 	if lethal:
 		kill(reason)
 		return
-	Game.add_erosion(15.0)
 	notify(tr("수칙 위반: ") + tr(reason), "bad")
+	missed_list.append([tr("비상 수칙 p.9"), reason])
+	add_mistake()
 	_scare_glimpse(4.0)
 
 
@@ -829,11 +942,19 @@ func end_phase() -> void:
 		await ui.fade_to(1.0, 1.2)
 		Game.start_phase(Game.cycle, "night")
 	else:
+		await script_obj.end_cut()
 		await ui.fade_to(1.0, 1.2)
 		Snd.stop_all_world()
 		var summary := night_log.duplicate()
 		summary["erosion_before"] = erosion_start
 		summary["erosion_after"] = Game.erosion
+		summary["mistakes"] = mistakes
+		summary["inspections"] = inspections_done
+		summary["missed_list"] = missed_list.duplicate()
+		var good := int(night_log.get("correct", 0)) + int(night_log.get("cleared", 0))
+		summary["accuracy"] = roundi(100.0 * good / maxf(1.0, float(inspections_done)))
+		Game.stat("inspections", inspections_done)
+		Game.stat("judged_right", good)
 		await ui.show_report(summary)
 		Game.erosion *= 0.8
 		Game.start_phase(Game.cycle + 1, "day")
@@ -900,7 +1021,12 @@ func _on_office_reader(r: CardReader) -> void:
 		r.show_result(false, "DENIED" if not Game.flag("denied_twice") else "PASSENGER")
 		office_denied.emit()
 		return
-	r.show_result(true, "STAFF OK")
+	if office_mode == "passenger" or Game.flag("passenger"):
+		# the terminal no longer knows an inspector — it lets a passenger through
+		r.show_result(true, "PASSENGER")
+		Snd.play_at("pa_chime_wrong", r.global_position, -18.0, 1.3, 3.0)
+	else:
+		r.show_result(true, "STAFF OK")
 	_open_door_briefly(t.doors.office)
 
 
@@ -916,7 +1042,7 @@ func _on_keypad_code(code: String) -> void:
 
 
 func _on_syslog() -> void:
-	if Game.phase == "night" and Game.cycle >= 3:
+	if Game.phase == "night" and Game.cycle >= 4:
 		Game.add_clue("syslog")
 		var c: Dictionary = RulesDB.CLUES.syslog
 		await ui.read_doc(c.title, tr(str(c.body)) % Game.player_name, "mono")
@@ -928,7 +1054,11 @@ func _on_syslog() -> void:
 func _on_main_power() -> void:
 	if not main_power_enabled:
 		Snd.play_at("switch_heavy", t.main_power.global_position, -6.0, 0.7)
-		notify("주 전원 레버가 잠금 장치에 걸려 있다. 지금은 움직이지 않는다.", "info")
+		if Game.flag("lever_refused"):
+			Snd.play("pa_chime_wrong", -14.0, 0.8, "PA")
+			notify("레버가 꿈쩍도 하지 않는다. 화면에 한 줄: PASSENGER — NO OPERATION", "bad")
+		else:
+			notify("주 전원 레버가 잠금 장치에 걸려 있다. 지금은 움직이지 않는다.", "info")
 		return
 	main_power_enabled = false
 	main_power_pulled.emit()
@@ -950,7 +1080,7 @@ func spawn_doc(clue_id: String, pos: Vector3, rot_y := 0.0, prompt := "문서 �
 	pk.picked.connect(func(_p):
 		Game.add_clue(clue_id)
 		var c: Dictionary = RulesDB.CLUES[clue_id]
-		var font_kind := "serif" if clue_id.begins_with("log") else ("hand" if clue_id == "memo_worker" else "sans")
+		var font_kind := "serif" if clue_id.begins_with("log") or clue_id == "newspaper" else ("hand" if clue_id in ["memo_worker", "timecard"] else "sans")
 		ui.read_doc(c.title, c.body, font_kind))
 	return pk
 
@@ -962,23 +1092,70 @@ func until_action(action: String, target := "") -> void:
 			return
 
 
-func plan_anomalies(kinds: Array, count: int) -> Dictionary:
-	var pool := kinds.duplicate()
-	pool.shuffle()
-	var out := {}
-	for k in kinds:
-		out[k] = ""
-	for i in mini(count, pool.size()):
-		out[pool[i]] = AnomalyDB.pick(pool[i], Game.cycle)
-	return out
-
-
+## Zones open one per day: D1 체크인 · D2 +수하물 · D3 +보안검색·통로 · D4 +탑승 게이트 · D5 전 구역.
 func set_shutters_for_cycle(c: int) -> void:
 	if c >= 2:
+		t.shutters.baggage.open(true)
+	if c >= 3:
 		t.shutters.security.open(true)
 		t.shutters.corridor.open(true)
-	if c >= 3:
+	if c >= 4:
 		t.shutters.gates.open(true)
+
+
+## Runs a night's 10 inspections (NightPlan.build). `beats` = {inspection number: Callable} awaited after
+## that inspection (story beats, emergency rules). `custom` = {inspection number: Callable(slot) -> Task}
+## for scripted inspections (the callable creates the slot's task and returns it).
+func run_inspections(plan: Array, beats := {}, custom := {}) -> void:
+	inspections_total = plan.size()
+	for i in plan.size():
+		if dead or ending_started:
+			return
+		var slot: Dictionary = plan[i]
+		var n := i + 1
+		var task: Task
+		if custom.has(n):
+			task = await custom[n].call(slot)
+		else:
+			if slot.get("auto", false):
+				await _autonomous_start(slot)
+			task = inspect(slot.fac, slot.title, slot.detail, slot.anomaly, {"urgent": slot.get("auto", false), "slot": n})
+		if task.slot == 0:
+			task.slot = n
+		await until_done(task)
+		if dead or ending_started:
+			return
+		inspections_done += 1
+		Game.clock_minutes += 22
+		Events.clock_changed.emit(Game.clock_minutes)
+		if beats.has(n):
+			await beats[n].call()
+
+
+## Before inspection 6 a facility the player did not touch starts by itself.
+func _autonomous_start(slot: Dictionary) -> void:
+	var f := t.facility(slot.fac)
+	if f == null:
+		return
+	match slot.anomaly:
+		"gate_open":
+			Snd.play_at("door_heavy", f.focus_position(), -4.0, 0.8, 20.0)
+		"xray_figure":
+			(f as XrayMachine).auto_scan()
+	event_tension = minf(1.0, event_tension + 0.4)
+	await wait(1.5)
+
+
+## Correct detections make the radio stranger — at most two lines a night.
+func _radio_reaction() -> void:
+	if _radio_odd_tonight >= 2 or Game.phase != "night" or office_mode == "passenger":
+		return
+	var n := int(Game.stats.get("cleared", 0))
+	if n < 2 or randf() > 0.55:
+		return
+	_radio_odd_tonight += 1
+	var idx := clampi(n - 2 + (Game.cycle - 1), 0, RADIO_ODD.size() - 1)
+	get_tree().create_timer(2.5, false).timeout.connect(func(): radio_async(RADIO_ODD[idx]))
 
 
 func jump_clock(minutes: int) -> void:

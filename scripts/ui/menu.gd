@@ -70,6 +70,7 @@ func _build_backdrop() -> void:
 	t.build()
 	for zn in t.zones.keys():
 		t.set_zone_light(zn, zn in ["corridor", "gates", "hall"], true)
+	t.shutters.baggage.open(true)
 	t.shutters.security.open(true)
 	t.shutters.corridor.open(true)
 	t.shutters.gates.open(true)
@@ -175,7 +176,7 @@ func _build_menu_rows(col: VBoxContainer) -> void:
 	_foot.add_theme_constant_override("separation", 22)
 	_main.add_child(_foot)
 	_foot.add_child(UiKit.label("1인칭 리미널 호러", 16, UiKit.TEXT_DIM))
-	_foot.add_child(UiKit.label(UiKit.t("엔딩 %d / 3") % Game.endings_seen().size(), 16, UiKit.TEXT_DIM))
+	_foot.add_child(UiKit.label(UiKit.t("엔딩 %d / 4") % Game.endings_seen().size(), 16, UiKit.TEXT_DIM))
 	_foot.add_child(UiKit.spacer())
 	var hp := UiIcon.make("headphones", 22, UiKit.TEXT_DIM)
 	hp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -327,7 +328,7 @@ func _build_name_panel() -> void:
 func _build_chapter_panel() -> void:
 	_chapter_panel = PanelContainer.new()
 	_chapter_panel.add_theme_stylebox_override("panel", UiKit.sign_panel())
-	UiKit.center(_chapter_panel, Vector2(720, 700))
+	UiKit.center(_chapter_panel, Vector2(960, 580))
 	_chapter_panel.visible = false
 	add_child(_chapter_panel)
 	var v := VBoxContainer.new()
@@ -337,21 +338,28 @@ func _build_chapter_panel() -> void:
 	v.add_child(UiKit.label("챕터 선택", 34, UiKit.TEXT, "sans", 900))
 	var d := UiKit.label("선택한 근무부터 다시 시작합니다. 이전 근무의 사진과 단서는 넘어가지 않습니다.", 17, UiKit.TEXT_DIM)
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.custom_minimum_size = Vector2(640, 0)
+	d.custom_minimum_size = Vector2(880, 0)
 	v.add_child(d)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 8)
 	v.add_child(gap)
 	var items := [
-		[1, "day", "D1", "DAY 1 — 정상 기록"], [1, "night", "N1", "NIGHT 1 — 수동 점검"],
-		[2, "day", "D2", "DAY 2 — 구역 확장"], [2, "night", "N2", "NIGHT 2 — 자율 가동"],
-		[3, "day", "D3", "DAY 3 — 어긋난 낮"], [3, "night", "N3", "NIGHT 3 — 0번 게이트"],
+		[1, "day", "D1", "DAY 1 — 정상 기록"], [1, "night", "N1", "NIGHT 1 — 체크인 점검"],
+		[2, "day", "D2", "DAY 2 — 수하물 구역"], [2, "night", "N2", "NIGHT 2 — 당신의 가방"],
+		[3, "day", "D3", "DAY 3 — 전임자의 일지"], [3, "night", "N3", "NIGHT 3 — 첫 가짜 수칙"],
+		[4, "day", "D4", "DAY 4 — 낮의 이상현상"], [4, "night", "N4", "NIGHT 4 — 승객 재분류"],
+		[5, "day", "D5", "DAY 5 — 무너진 경계"], [5, "night", "N5", "NIGHT 5 — 0번 게이트"],
 	]
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 6)
+	v.add_child(grid)
 	for it in items:
 		var r := SignRow.make(it[2], it[3], _start_chapter.bind(it[0], it[1]), "09:00" if it[1] == "day" else "23:00",
-			UiKit.SIGNAL, 640, 58)
-		r.font_size = 22
-		v.add_child(r)
+			UiKit.SIGNAL, 432, 56)
+		r.font_size = 20
+		grid.add_child(r)
 		_chapter_rows.append(r)
 	SignRow.link(_chapter_rows)
 	var gap2 := Control.new()

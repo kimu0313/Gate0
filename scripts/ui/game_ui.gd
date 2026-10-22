@@ -7,6 +7,8 @@ signal doc_closed
 signal report_closed
 signal keypad_closed
 
+const STAMP_SIZE := 140.0   # morning-report 시설운영팀 stamp
+
 var player: Player
 var director: ShiftDirector
 var postfx: PostFx
@@ -867,6 +869,23 @@ func show_report(summary: Dictionary) -> void:
 	rule.custom_minimum_size = Vector2(0, 3)
 	v.add_child(rule)
 	v.add_child(UiKit.label("서해국제공항 시설운영팀 · 야간 시설 점검 결과", UiKit.MIN_TEXT, Color("5a564e")))
+	# accuracy and judgment mistakes (concept doc: 실력이 보이는 지표)
+	var acc := int(summary.get("accuracy", -1))
+	if acc >= 0:
+		var ah := HBoxContainer.new()
+		v.add_child(ah)
+		var al := UiKit.label("판정 정확도", 22, ink, "sans", 900)
+		al.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		al.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		ah.add_child(al)
+		ah.add_child(UiKit.label("%d%%" % acc, 34, Color("0f7a62") if acc >= 70 else UiKit.STAMP_RED, "display", 700))
+		var mh := HBoxContainer.new()
+		v.add_child(mh)
+		var ml := UiKit.label("판정 실수", 18, ink)
+		ml.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mh.add_child(ml)
+		var mn := int(summary.get("mistakes", 0))
+		mh.add_child(UiKit.label("%d / 3" % mn, 20, UiKit.STAMP_RED if mn > 0 else Color("0f7a62"), "display", 700))
 	var rows := [
 		["정상 판정", summary.get("correct", 0), Color("0f7a62")],
 		["이상 해제", summary.get("cleared", 0), Color("0f7a62")],
@@ -877,7 +896,7 @@ func show_report(summary: Dictionary) -> void:
 	var counters := []
 	for row in rows:
 		var h := HBoxContainer.new()
-		h.custom_minimum_size = Vector2(0, 46)
+		h.custom_minimum_size = Vector2(0, 34 if acc >= 0 else 46)
 		v.add_child(h)
 		var l := UiKit.label(row[0], 20, ink)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -920,9 +939,27 @@ func show_report(summary: Dictionary) -> void:
 		line = "※ 밤사이 누군가 탑승 수속을 마쳤다는 기록이 남아 있습니다. 승객 명단에는 아무도 없습니다."
 	if e1 >= 60.0:
 		line = "※ 시스템 로그: 직원 계정 1건의 분류가 '확인 필요'로 변경되었습니다."
-	var nl := UiKit.label(line, 16, Color("3b3934"))
+	# what was missed tonight, revealed now (concept doc: 사후 정답 공개)
+	var misses: Array = summary.get("missed_list", [])
+	if not misses.is_empty():
+		var parts := [UiKit.t("놓친 이상현상 · 사후 공개")]
+		for i in mini(misses.size(), 4):
+			parts.append("· %s — %s" % [UiKit.t(str(misses[i][0])), UiKit.t(str(misses[i][1]))])
+		if misses.size() > 4:
+			parts.append(UiKit.t("외 %d건") % (misses.size() - 4))
+		line = "\n".join(parts)
+	var nl := UiKit.label(line, 15 if not misses.is_empty() else 16, Color("3b3934"))
 	nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(nl)
+	nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# the remark wraps short of the right column, where the stamp lands
+	var nh := HBoxContainer.new()
+	nh.add_theme_constant_override("separation", 0)
+	v.add_child(nh)
+	nh.add_child(nl)
+	var stamp_gap := Control.new()
+	stamp_gap.custom_minimum_size = Vector2(STAMP_SIZE - 16.0, 0)
+	stamp_gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	nh.add_child(stamp_gap)
 	v.add_child(UiKit.spacer(false))
 	var b := UiKit.primary("다음 근무로  →", 22, func(): report_closed.emit(), ink, UiKit.PAPER)
 	b.custom_minimum_size = Vector2(0, 64)
@@ -937,9 +974,9 @@ func show_report(summary: Dictionary) -> void:
 		tr.position = Vector2(300 - 59, -104)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		sheet.add_child(tr)
-	var stamp := StampMark.make(["시설운영팀", "확인"], Color(UiKit.STAMP_RED, 0.85), "round", "stamp_seal_ring", Vector2(150, 150))
+	var stamp := StampMark.make(["시설운영팀", "확인"], Color(UiKit.STAMP_RED, 0.85), "round", "stamp_seal_ring", Vector2(STAMP_SIZE, STAMP_SIZE))
 	stamp.angle_deg = 14.0
-	stamp.position = Vector2(392, 636)
+	stamp.position = Vector2(392, 636)   # placed beside the remark once the layout is known
 	stamp.modulate.a = 0.0
 	sheet.add_child(stamp)
 	# sequence: sheet drops in, numbers count, erosion bar moves, remark types, stamp lands, button appears
@@ -967,6 +1004,10 @@ func show_report(summary: Dictionary) -> void:
 		UiFx.typewrite(nl, clampf(line.length() * 0.025, 0.4, 1.4)))
 	tw.tween_interval(clampf(line.length() * 0.025, 0.4, 1.4) + 0.2)
 	tw.tween_callback(func():
+		var to_sheet := sheet.get_global_transform().affine_inverse()
+		var top := (to_sheet * nh.global_position).y
+		var bottom := (to_sheet * b.global_position).y - 6.0
+		stamp.position = Vector2(sheet.size.x - 40.0 - STAMP_SIZE, clampf(top - 4.0, 0.0, bottom - STAMP_SIZE))
 		UiFx.slam(stamp, 0.28)
 		get_tree().create_timer(0.1).timeout.connect(func():
 			Snd.play("clock_punch", -2.0, 1.0)

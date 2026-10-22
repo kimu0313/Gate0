@@ -105,6 +105,12 @@ func _run_world() -> void:
 	d.set_process(false)
 	var task := d.inspect("fids", "FIDS 출발 전광판 점검", "전광판 제어함에서 [b][표시 테스트][/b]를 눌러 출발 목록을 확인하십시오. 낮에 촬영한 정상 목록과 비교하고, 다른 행이 있는지 관찰하십시오.")
 	d.goal("조명 분전반 LP-1 점검", "체크인 홀 서측 벽의 분전반에서 각 구역 조명을 확인하십시오.", "hall")
+	if Game.phase == "night":
+		# a night in progress: inspection 4 of 10, one judgment mistake so far
+		d.inspections_total = NightPlan.SLOTS
+		d.inspections_done = 3
+		d.mistakes = 1
+		task.slot = 4
 	await _wait(0.5)
 	Events.notify.emit("관찰 완료 — [Tab] 태블릿에서 정상/이상을 보고하십시오.", "info")
 	Events.notify.emit("근무 수칙 바인더 획득 — [B]로 펼치기", "good")
@@ -255,7 +261,10 @@ func _run_world() -> void:
 	await _wait(0.3)
 	# morning report
 	await ui.fade_to(1.0, 0.2)
-	ui.show_report({"correct": 4, "cleared": 2, "missed": 1, "false_alarm": 0, "failed": 0, "erosion_before": 22.0, "erosion_after": 40.0})
+	ui.show_report({"correct": 5, "cleared": 3, "missed": 1, "false_alarm": 1, "failed": 0, "erosion_before": 22.0, "erosion_after": 40.0,
+		"mistakes": 2, "inspections": 10, "accuracy": 80, "missed_list": [
+			["수하물 수취대 B-03", AnomalyDB.get_def("bag_extra").get("miss", "")],
+			["조명 분전반", "정상이었지만 [이상]으로 보고했습니다. (오판)"]]})
 	await _wait(1.4)
 	await _shot("80_report_mid")
 	await _wait(4.2)

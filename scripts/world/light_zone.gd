@@ -27,6 +27,11 @@ var _red_panel: MeshInstance3D
 var _red_light: OmniLight3D
 var red_area: Area3D
 var red_index := -1
+## Overall brightness multiplier: each judgment mistake dims the whole terminal one step.
+var intensity := 1.0
+var _panel_light := {}      # panel -> its lights [area, fill omni] (if any)
+var _dark_panel: MeshInstance3D
+var _dark_mat: StandardMaterial3D
 
 
 func setup(zname: String, dname: String, color := Color(0.9, 0.95, 1.0), energy := 3.2) -> void:
@@ -49,7 +54,8 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 	# fixture housing: a pale rim around the diffuser so it reads as a troffer, not a cut-out
 	Geo.box(self, pos + Vector3(0, 0.02, 0), Vector3(size.x + 0.1, 0.05, size.y + 0.1), Mats.get_mat("plastic_white"), false)
 	if with_light:
-		add_light(Geo.area_light(self, pos + Vector3(0, -0.04, 0), size, color, light_energy * AREA_GAIN, light_range, shadow))
+		var area := Geo.area_light(self, pos + Vector3(0, -0.04, 0), size, color, light_energy * AREA_GAIN, light_range, shadow)
+		add_light(area)
 		# area lights do not feed SDFGI yet: a dim omni with boosted indirect energy carries the bounce.
 		# Without GI (low quality) it lights the ceiling and walls directly instead.
 		var share := GI_DIRECT if Atmosphere.gi_enabled else NO_GI_DIRECT
@@ -58,6 +64,7 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 		gi.light_specular = 0.0
 		gi.light_volumetric_fog_energy = 0.0
 		add_light(gi)
+		_panel_light[mi] = [area, gi]
 	return mi
 
 
@@ -122,6 +129,29 @@ func set_red(enabled: bool, index := -1) -> Vector3:
 		return Vector3.ZERO
 
 
+## One panel (and its light) stays dark while the zone is on (anomaly light_dark). Returns its position.
+func set_dark(enabled: bool, index := -1) -> Vector3:
+	if enabled:
+		if panels.is_empty():
+			return Vector3.ZERO
+		var lit := panels.filter(func(m): return _panel_light.has(m))
+		var pool: Array = lit if not lit.is_empty() else panels
+		_dark_panel = pool[index if index >= 0 and index < pool.size() else randi() % pool.size()]
+		_dark_mat = Mats.std(Color(0.18, 0.18, 0.2), 0.6)
+		_dark_panel.material_override = _dark_mat
+		return _dark_panel.global_position
+	if _dark_panel:
+		_dark_panel.material_override = panel_mat
+		for l: Light3D in _panel_light.get(_dark_panel, []):
+			l.visible = _level > 0.01
+	_dark_panel = null
+	return Vector3.ZERO
+
+
+func has_dark() -> bool:
+	return _dark_panel != null
+
+
 func has_red() -> bool:
 	return _red_panel != null
 
@@ -158,10 +188,14 @@ func _pattern(t: float) -> float:
 
 
 func _apply(k: float) -> void:
+	k *= intensity
 	panel_mat.emission_energy_multiplier = panel_energy * k
 	for l in lights:
 		l.light_energy = _base_energy[l] * k
 		l.visible = k > 0.01
+	if _dark_panel:
+		for l: Light3D in _panel_light.get(_dark_panel, []):
+			l.visible = false
 	for h in _hums:
 		var want := k > 0.2
 		if want and not h.playing and is_inside_tree():

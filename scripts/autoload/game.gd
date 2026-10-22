@@ -4,7 +4,7 @@ extends Node
 const SAVE_PATH := "user://save.json"
 const SETTINGS_PATH := "user://settings.cfg"
 const PHOTO_DIR := "user://photos"
-const MAX_CYCLE := 3
+const MAX_CYCLE := 5
 const PHOTOS_PER_DAY := 6
 
 const SCENE_MENU := "res://scenes/menu.tscn"
@@ -60,7 +60,7 @@ const REBINDABLE := [["move_forward", "앞으로 이동"], ["move_back", "뒤로
 
 # --- session state ---------------------------------------------------------------
 var player_name := "점검원"
-var cycle := 1             # 1..3 : Day N -> Night N
+var cycle := 1             # 1..5 : Day N -> Night N (10/18 … 10/22, opening on 10/23)
 var phase := "day"         # "day" | "night"
 var erosion := 0.0         # 0..100
 var clock_minutes := 9 * 60
@@ -101,14 +101,17 @@ func _debug_args() -> void:
 
 
 ## Binder contents a player would have when starting directly at (cycle, phase).
+## Schedule: D1 p0–p4,p9 · D2 +p5 · D3 +p6,p7 · D4 +p8 · D5 +p10 (each handed out at the day's fax).
 func prepare_chapter(c: int, ph: String) -> void:
 	binder_pages = []
 	if c > 1 or ph == "night":
-		binder_pages.append_array(["p0", "p1", "p2", "p3", "p4", "p5", "p9"])
-	if (c == 2 and ph == "night") or c >= 3:
-		binder_pages.append_array(["p6", "p7"])
-	if c >= 3 and ph == "night":
-		binder_pages.append("p8")
+		binder_pages.append_array(["p0", "p1", "p2", "p3", "p4", "p9"])
+	var fax := {2: ["p5"], 3: ["p6", "p7"], 4: ["p8"], 5: ["p10"]}
+	for day in fax.keys():
+		if c > day or (c == day and ph == "night"):
+			binder_pages.append_array(fax[day])
+	if c >= 5:
+		set_flag("passenger")
 	set_flag("prologue_seen")
 
 
@@ -127,6 +130,7 @@ func reset_session() -> void:
 	stats = {
 		"correct": 0, "missed": 0, "false_alarm": 0, "cleared": 0,
 		"failed": 0, "deaths": 0, "fake_followed": 0, "photos": 0,
+		"mistakes": 0, "inspections": 0, "judged_right": 0,
 	}
 
 

@@ -53,6 +53,8 @@ func _ready() -> void:
 			_board()
 		"exit":
 			_exit()
+		"return":
+			_return()
 		_:
 			_announce()
 
@@ -79,9 +81,11 @@ func _debug_shot(tag: String) -> void:
 	var es := args.find("--ending-scene")
 	if es < 0 or es + 2 >= args.size():
 		return
+	print("ending shot: ", tag)
+	if DisplayServer.get_name() == "headless":
+		return
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("%s/ending_%s_%s.png" % [args[es + 2], Game.ending_id, tag])
-	print("ending shot: ", tag)
 
 
 func _fade_to(a: float, t: float) -> void:
@@ -247,7 +251,55 @@ func _exit() -> void:
 	_text("", "당신은 빠져나왔다.\n\n…아마도, 당신만.")
 	Snd.play("ending_tone", -6.0, 0.9, "Music")
 	await _wait(8.0)
-	_credits("엔딩 B — 출구")
+	_credits("엔딩 B — 정상 개장")
+
+
+# --- D: RETURN ----------------------------------------------------------------------------------
+## Someone finally announced the arrival. At dawn, carousel B-03 brings 41 bags from 1987.
+func _return() -> void:
+	_env_setup(Color(0.02, 0.025, 0.04), Color(0.35, 0.3, 0.32), 0.35, 0.012)
+	Geo.box(self, Vector3(35, -0.05, 2), Vector3(40, 0.1, 30), Mats.get_mat("floor"), false)
+	Geo.box(self, Vector3(46, 3, 2), Vector3(0.4, 6, 30), Mats.get_mat("wall"), false)
+	Geo.box(self, Vector3(35, 3, -12), Vector3(30, 6, 0.4), Mats.get_mat("wall"), false)
+	var dawn := DirectionalLight3D.new()
+	dawn.rotation = Vector3(deg_to_rad(-8), deg_to_rad(-70), 0)
+	dawn.light_color = Color(1.0, 0.62, 0.38)
+	dawn.light_energy = 1.4
+	dawn.shadow_enabled = true
+	add_child(dawn)
+	for p in [Vector3(30, 4.5, -4), Vector3(40, 4.5, 6)]:
+		var l := Geo.omni(self, p, Color(0.85, 0.9, 1.0), 1.0, 14.0)
+		l.light_volumetric_fog_energy = 1.2
+	var belt := BaggageBelt.new()
+	add_child(belt)
+	belt.position = Vector3(35, 0, 2.5)
+	belt.build()
+	var board := FidsBoard.new()
+	add_child(board)
+	board.position = Vector3(35, 3.6, -11.7)
+	board.build(6.0, 2.4, false)
+	board.set_story("final", ["SH 000", "ARRIVED"])
+	_cam.position = Vector3(25.5, 1.6, 6.5)
+	_cam.rotation = Vector3(-0.08, deg_to_rad(-62), 0)
+	Snd.set_ambience("amb_day_loop", -10.0, 2.0)
+	belt.fill("pax", 9)
+	await _fade_to(0.0, 2.5)
+	belt.start(false)
+	belt.spawn_queue.clear()   # no TEST bags tonight
+	for i in 14:
+		belt.spawn_queue.append("pax")
+	var ct := create_tween()
+	ct.tween_property(_cam, "position", Vector3(27.5, 1.7, 3.0), 22.0).set_trans(Tween.TRANS_SINE)
+	ct.parallel().tween_property(_cam, "rotation", Vector3(-0.1, deg_to_rad(-80), 0), 22.0)
+	await _wait(6.0)
+	_debug_shot("carousel")
+	await _wait(12.0)
+	await _fade_to(1.0, 2.0)
+	_text("RETURN", "그날 새벽, 수하물 수취대 B-03에 가방 41개가 도착했다.\n이름표의 출발지는 서해비행장, 도착지는 집.\n\n개장일 아침, 전광판에서 SH 000은 사라져 있었다.", UiKit.CLEAR)
+	get_tree().create_timer(3.5).timeout.connect(func(): _debug_shot("title"))
+	Snd.play("ending_tone", -6.0, 1.0, "Music")
+	await _wait(10.0)
+	_credits("엔딩 D — 귀환")
 
 
 # --- C: ANNOUNCE --------------------------------------------------------------------------------
@@ -301,8 +353,8 @@ func _credits(ending_name: String) -> void:
 	if ai >= 0:
 		print("[ending] ", Game.ending_id, " credits shown")
 		await get_tree().create_timer(1.0).timeout
-		await RenderingServer.frame_post_draw
-		if ai + 1 < args.size():
+		if ai + 1 < args.size() and DisplayServer.get_name() != "headless":   # no frames are drawn headless
+			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png("%s/ending_%s.png" % [args[ai + 1], Game.ending_id])
 		get_tree().quit()
 		return
@@ -366,8 +418,8 @@ func _build_credits(ending_name: String) -> void:
 	found.alignment = BoxContainer.ALIGNMENT_CENTER
 	found.add_theme_constant_override("separation", 12)
 	root.add_child(found)
-	found.add_child(UiKit.caption(UiKit.t("ENDINGS · 발견한 엔딩  %d / 3") % seen.size(), UiKit.TEXT_DIM, 16))
-	for e in [["A", "board"], ["B", "exit"], ["C", "announce"]]:
+	found.add_child(UiKit.caption(UiKit.t("ENDINGS · 발견한 엔딩  %d / 4") % seen.size(), UiKit.TEXT_DIM, 16))
+	for e in [["A", "board"], ["B", "exit"], ["C", "announce"], ["D", "return"]]:
 		var got: bool = seen.has(e[1])
 		found.add_child(UiKit.chip(e[0], UiKit.INK_0 if got else UiKit.TEXT_MUTE, UiKit.SIGNAL if got else Color(1, 1, 1, 0.06), "", 18))
 	var foot := HBoxContainer.new()

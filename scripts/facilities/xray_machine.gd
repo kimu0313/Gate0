@@ -95,11 +95,12 @@ func _set_tray(t: float) -> void:
 
 
 func _process(delta: float) -> void:
-	if absf(_tray_t - _tray_target) > 0.001:
+	# exact compare: move_toward lands on the target, an epsilon could strand the tray just short of it (scan never ends)
+	if _tray_t != _tray_target:
 		_set_tray(move_toward(_tray_t, _tray_target, delta * 0.45))
 		if not _belt.playing:
 			_belt.play()
-		if is_equal_approx(_tray_t, 1.0) and _tray_target == 1.0:
+		if _tray_t == 1.0 and _tray_target == 1.0:
 			_belt.stop()
 			_reveal()
 	elif _belt.playing and not running:
@@ -186,6 +187,26 @@ func _remove_anomaly(_a: String) -> void:
 	screen.stare = 0.0
 	if scanned:
 		screen.content = "bag"
+
+
+## A new work order starts with the tray back at the entry and a blank screen.
+func reset_for_inspection() -> void:
+	_tray_target = 0.0
+	_set_tray(0.0)
+	scanned = false
+	running = false
+	screen.content = ""
+	_stare_time = 0.0
+	screen.stare = 0.0
+
+
+## The machine scans the test bag by itself (autonomous inspection).
+func auto_scan() -> void:
+	if not powered:
+		return
+	reset_for_inspection()
+	start(false)
+	_tray_target = 1.0
 
 
 func is_observable() -> bool:

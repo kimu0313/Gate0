@@ -1,10 +1,10 @@
 shader_type spatial;
 // Acoustic ceiling tiles grid.
 
-uniform vec3 color : source_color = vec3(0.42, 0.42, 0.43);
-uniform vec3 grid_color : source_color = vec3(0.22, 0.22, 0.23);
+uniform vec3 color : source_color = vec3(0.72, 0.72, 0.71);
+uniform vec3 grid_color : source_color = vec3(0.58, 0.58, 0.58);
 uniform float tile = 0.6;
-uniform float line = 0.02;
+uniform float line = 0.012;
 
 varying vec3 wpos;
 

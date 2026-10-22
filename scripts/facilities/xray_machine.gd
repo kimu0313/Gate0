@@ -73,6 +73,7 @@ func build() -> void:
 	quad.position = Vector3(0, 0.42, -0.005)
 	focus = quad
 	var glow := Geo.omni(monitor_node, Vector3(0, 0.45, 0.5), Color(0.5, 0.7, 1.0), 0.25, 3.0)
+	glow.light_specular = 0.0
 	glow.light_volumetric_fog_energy = 0.4
 	# control buttons on the desk front edge
 	var panel := Node3D.new()

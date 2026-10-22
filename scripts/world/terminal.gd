@@ -49,6 +49,7 @@ var outside_lights: Array[Light3D] = []
 var exit_signs: Array[MeshInstance3D] = []
 var arrivals: FidsBoard
 var emergency_light_root: Node3D
+var _ceilings: Array = []  # [Rect2, y] of every ceiling, for _ceiling_details()
 
 
 func build() -> void:
@@ -62,6 +63,7 @@ func build() -> void:
 	_build_service_rooms()
 	_build_outside()
 	_build_facility_systems()
+	_ceiling_details()
 	_define_spawns()
 	var fitted := Geo.fit_labels(self, OS.get_cmdline_user_args().has("--tour"))
 	if OS.get_cmdline_user_args().has("--tour"):
@@ -95,6 +97,63 @@ func _floor(rect: Rect2, mat_name: String) -> void:
 func _ceiling(rect: Rect2, y: float, mat_name := "ceiling") -> void:
 	Geo.box(self, Vector3(rect.position.x + rect.size.x * 0.5, y + 0.1, rect.position.y + rect.size.y * 0.5),
 		Vector3(rect.size.x + 0.4, 0.2, rect.size.y + 0.4), Mats.get_mat(mat_name), false)
+	_ceilings.append([rect, y])
+
+
+## Ceiling furniture (sprinkler heads, square air diffusers) on every ceiling, kept clear of the
+## light fixtures. Runs after all zones are built so it can see where the panels went.
+func _ceiling_details() -> void:
+	var avoid: Array[AABB] = []
+	for zn in zones:
+		for p in (zones[zn] as LightZone).panels:
+			avoid.append(AABB(p.position - (p.mesh as BoxMesh).size * 0.5, (p.mesh as BoxMesh).size).grow(0.7))
+	var sprinklers: Array[Transform3D] = []
+	var diffusers: Array[Transform3D] = []
+	for c in _ceilings:
+		var rect: Rect2 = c[0]
+		var y: float = c[1]
+		var x := rect.position.x + 1.5
+		while x < rect.end.x - 0.5:
+			var zz := rect.position.y + 1.5
+			while zz < rect.end.y - 0.5:
+				var at := Vector3(x, y, zz)
+				var clear := true
+				for a in avoid:
+					if a.has_point(at - Vector3(0, 0.05, 0)):
+						clear = false
+						break
+				if clear:
+					var diffuser := int(roundf(x / 3.0) + roundf(zz / 3.0)) % 3 == 0
+					(diffusers if diffuser else sprinklers).append(Transform3D(Basis(), at))
+				zz += 3.0
+			x += 3.0
+	var sm := CylinderMesh.new()
+	sm.top_radius = 0.03
+	sm.bottom_radius = 0.045
+	sm.height = 0.05
+	sm.radial_segments = 10
+	_multi(sm, Mats.get_mat("metal"), sprinklers, Vector3(0, -0.025, 0))
+	var dm := BoxMesh.new()
+	dm.size = Vector3(0.6, 0.03, 0.6)
+	_multi(dm, Mats.get_mat("plastic_white"), diffusers, Vector3(0, -0.012, 0))
+	var vm := BoxMesh.new()
+	vm.size = Vector3(0.36, 0.01, 0.36)
+	_multi(vm, Mats.get_mat("plastic_grey"), diffusers, Vector3(0, -0.03, 0))
+
+
+func _multi(mesh: Mesh, mat: Material, xforms: Array[Transform3D], offset: Vector3) -> void:
+	if xforms.is_empty():
+		return
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = xforms.size()
+	for i in xforms.size():
+		mm.set_instance_transform(i, xforms[i].translated(offset))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.material_override = mat
+	add_child(mmi)
 
 
 # --------------------------------------------------------------------------------------------
@@ -380,7 +439,7 @@ func _build_corridor() -> void:
 	_floor(r, "floor")
 	_ceiling(r, 4.5)
 	var wm := Mats.get_mat("wall")
-	Geo.wall(self, Vector2(-5, -76), Vector2(-5, -28), 4.5, wm)
+	Geo.wall(self, Vector2(-5, -76), Vector2(-5, -28), 4.5, Mats.get_mat("wall_tile"))
 	# east windows
 	var frame := Mats.get_mat("steel_frame")
 	Geo.box(self, Vector3(5, 0.4, -52), Vector3(0.4, 0.8, 48), wm)
@@ -447,9 +506,10 @@ func _build_gates() -> void:
 	plaque.name = "Gate0Hint"
 	# lights
 	var z: LightZone = zones.gates
-	for x in [-14.0, 0.0, 14.0]:
+	# continuous linear slot lights, as in a real gate lounge
+	for x in [-18.0, -6.0, 6.0, 18.0]:
 		for zz in [-81.0, -88.0, -95.0]:
-			z.add_panel(Vector3(x, 5.42, zz), Vector2(4.6, 0.9), true, 1.9, 14.0)
+			z.add_panel(Vector3(x, 5.42, zz), Vector2(10.0, 0.35), true, 2.0, 14.0)
 	z.add_hum(Vector3(0, 5, -88), -20.0)
 	# central seating facing the windows
 	for x in [-9.0, 9.0]:

@@ -44,13 +44,92 @@ func _run() -> void:
 	var terminal: Terminal = world.terminal
 	for zn in terminal.zones.keys():
 		terminal.set_zone_light(zn, true, true)
+	# `--shots a,b` captures only those viewpoints; `--lights-off` keeps the zones dark
+	var args := OS.get_cmdline_user_args()
+	var only := PackedStringArray()
+	if args.find("--shots") >= 0 and args.find("--shots") + 1 < args.size():
+		only = args[args.find("--shots") + 1].split(",")
+	if args.has("--no-hud"):
+		world.ui.hud.visible = false
+	if args.has("--lights-off"):
+		for zn in terminal.zones.keys():
+			terminal.set_zone_light(zn, false, true)
+	# `--settle s`: seconds to wait per viewpoint (GI needs longer to converge than the default)
+	var wait := float(args[args.find("--settle") + 1]) if args.find("--settle") >= 0 else 0.9
+	await get_tree().create_timer(wait).timeout
 	for s in shots:
+		if not only.is_empty() and not (s[0] in only):
+			continue
 		player.teleport(Transform3D(Basis(), s[1]))
 		await get_tree().process_frame
 		player.look_at_point(s[2], 0.01)
-		await get_tree().create_timer(0.9).timeout
+		await get_tree().create_timer(wait).timeout
 		await RenderingServer.frame_post_draw
 		var img := get_viewport().get_texture().get_image()
 		img.save_png("%s/%s_%s.png" % [out_dir, Game.phase, s[0]])
 		print("tour shot: ", s[0])
+		if args.has("--bench"):
+			await _bench(s[0])
+		if args.has("--ablate"):
+			await _ablate(s[0])
 	get_tree().quit()
+
+
+## `--ablate`: GPU cost of each rendering feature, measured by switching it off and back on right
+## away (3 rounds, mean of full − off), so a GPU shared with other work skews both sides alike.
+func _ablate(shot_name: String) -> void:
+	var env: Environment = world.atmosphere.env
+	for zn in world.terminal.zones:
+		world.terminal.zones[zn].set_process(false)   # keep LightZone from re-showing lights
+	var feats := {
+		"sdfgi": func(on: bool): env.sdfgi_enabled = on and Atmosphere.gi_enabled,
+		"ssil": func(on: bool): env.ssil_enabled = on,
+		"ssr": func(on: bool): env.ssr_enabled = on,
+		"ssao": func(on: bool): env.ssao_enabled = on,
+		"vol fog": func(on: bool): env.volumetric_fog_enabled = on,
+		"glow": func(on: bool): env.glow_enabled = on,
+		"area lights": func(on: bool): _show_lights(func(l): return l is AreaLight3D, on),
+		"omni lights": func(on: bool): _show_lights(func(l): return l is OmniLight3D, on),
+	}
+	var cost := {}
+	for r in 3:
+		for k in feats:
+			var full := await _gpu_ms(30)
+			(feats[k] as Callable).call(false)
+			var off := await _gpu_ms(30)
+			(feats[k] as Callable).call(true)
+			cost[k] = cost.get(k, 0.0) + (full - off) / 3.0
+	for k in feats:
+		print("ablate %s %-12s %+.2fms" % [shot_name, k, cost[k]])
+
+
+func _show_lights(pred: Callable, on: bool) -> void:
+	for zn in world.terminal.zones:
+		for l in (world.terminal.zones[zn] as LightZone).lights:
+			if pred.call(l):
+				l.visible = on
+
+
+func _gpu_ms(frames: int) -> float:
+	var vp := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	for i in 8:
+		await RenderingServer.frame_post_draw
+	var gpu := 0.0
+	for i in frames:
+		await RenderingServer.frame_post_draw
+		gpu += RenderingServer.viewport_get_measured_render_time_gpu(vp)
+	return gpu / frames
+
+
+## `--bench`: average GPU / CPU render time of the main viewport over 60 frames at this viewpoint.
+func _bench(shot_name: String) -> void:
+	var vp := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	var gpu := 0.0
+	var cpu := 0.0
+	for i in 60:
+		await RenderingServer.frame_post_draw
+		gpu += RenderingServer.viewport_get_measured_render_time_gpu(vp)
+		cpu += RenderingServer.viewport_get_measured_render_time_cpu(vp)
+	print("bench %s gpu=%.2fms cpu=%.2fms" % [shot_name, gpu / 60.0, cpu / 60.0])

@@ -1,8 +1,8 @@
 shader_type spatial;
 // Gate-lounge carpet: dark patterned fibres, fully rough.
 
-uniform vec3 base_color : source_color = vec3(0.12, 0.125, 0.145);
-uniform vec3 pattern_color : source_color = vec3(0.17, 0.155, 0.18);
+uniform vec3 base_color : source_color = vec3(0.19, 0.2, 0.23);
+uniform vec3 pattern_color : source_color = vec3(0.25, 0.23, 0.26);
 uniform float pattern_scale = 0.8;
 
 varying vec3 wpos;

@@ -7,6 +7,7 @@ var env: Environment
 var sun: DirectionalLight3D
 var sky_mat: ProceduralSkyMaterial
 var preset := "night"
+static var gi_enabled := false   # SDFGI on for this phase (LightZone splits its light by this)
 
 
 func setup(p: String) -> void:
@@ -44,6 +45,14 @@ func setup(p: String) -> void:
 	env.volumetric_fog_detail_spread = 2.0
 	env.volumetric_fog_ambient_inject = 0.0
 	env.volumetric_fog_sky_affect = 0.0
+	# light bounce for the day presets (SDFGI); at night LightZone fakes the bounce with its fill omnis
+	env.sdfgi_use_occlusion = true
+	env.sdfgi_bounce_feedback = 0.5
+	env.sdfgi_cascades = 4
+	env.sdfgi_min_cell_size = 0.25
+	env.ssil_enabled = high
+	env.ssil_radius = 4.0
+	env.ssil_intensity = 0.8
 	match p:
 		"day":
 			_day(high, false)
@@ -51,6 +60,7 @@ func setup(p: String) -> void:
 			_day(high, true)
 		_:
 			_night(high)
+	gi_enabled = env.sdfgi_enabled
 
 
 func _night(high: bool) -> void:
@@ -71,7 +81,9 @@ func _night(high: bool) -> void:
 	env.adjustment_saturation = 0.8
 	env.volumetric_fog_density = 0.016
 	env.volumetric_fog_albedo = Color(0.8, 0.85, 0.92)
-	env.sdfgi_enabled = false
+	env.sdfgi_enabled = false   # too costly for what it adds at night (see LightZone.NO_GI_DIRECT)
+	# film-photo night: teal shadows, faintly green fluorescent highlights (GDD lounge reference)
+	env.adjustment_color_correction = grade_lut(Vector3(-0.03, 0.012, 0.024), Vector3(-0.006, 0.014, -0.006))
 	sun.light_color = Color(0.55, 0.65, 1.0)
 	sun.light_energy = 0.12
 	sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(155), 0)
@@ -88,7 +100,7 @@ func _day(high: bool, wrong: bool) -> void:
 	env.ambient_light_energy = 0.75 if not wrong else 0.55
 	env.ambient_light_sky_contribution = 1.0
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env.tonemap_exposure = 1.0
+	env.tonemap_exposure = 1.12
 	env.glow_intensity = 0.4
 	env.glow_bloom = 0.03
 	env.adjustment_contrast = 1.03
@@ -96,12 +108,30 @@ func _day(high: bool, wrong: bool) -> void:
 	env.volumetric_fog_density = 0.003 if not wrong else 0.009
 	env.volumetric_fog_albedo = Color(1, 1, 1)
 	env.sdfgi_enabled = high
-	env.sdfgi_use_occlusion = true
-	env.sdfgi_bounce_feedback = 0.4
-	env.sdfgi_cascades = 4
-	env.sdfgi_min_cell_size = 0.25
-	env.sdfgi_energy = 0.9
+	env.sdfgi_energy = 1.25
+	env.adjustment_color_correction = grade_lut(Vector3(-0.008, 0.0, 0.012), Vector3(0.02, 0.01, -0.012))
 	sun.light_color = Color(1.0, 0.95, 0.86) if not wrong else Color(0.95, 0.85, 0.8)
 	sun.light_energy = 2.4 if not wrong else 1.1
 	sun.rotation = Vector3(deg_to_rad(-48), deg_to_rad(-25), 0)
 	sun.light_volumetric_fog_energy = 1.0
+
+
+## Colour grade as a 3D LUT (sRGB in → sRGB out): darks lean toward `shadow`, brights toward `high`.
+## Offsets are small RGB shifts, faded by luminance so mid-greys and pure white stay put.
+static func grade_lut(shadow: Vector3, high: Vector3) -> ImageTexture3D:
+	const N := 17
+	var slices: Array[Image] = []
+	for bi in N:
+		var img := Image.create(N, N, false, Image.FORMAT_RGB8)
+		for gi in N:
+			for ri in N:
+				var c := Vector3(ri, gi, bi) / float(N - 1)
+				var l := c.dot(Vector3(0.2126, 0.7152, 0.0722))
+				var ws := pow(1.0 - l, 2.0) * smoothstep(0.0, 0.12, l)
+				var wh := l * l * (1.0 - smoothstep(0.85, 1.0, l))
+				c = (c + shadow * ws + high * wh).clamp(Vector3.ZERO, Vector3.ONE)
+				img.set_pixel(ri, gi, Color(c.x, c.y, c.z))
+		slices.append(img)
+	var tex := ImageTexture3D.new()
+	tex.create(Image.FORMAT_RGB8, N, N, N, false, slices)
+	return tex

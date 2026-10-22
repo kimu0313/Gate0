@@ -1,12 +1,12 @@
 shader_type spatial;
 // Polished terminal floor: world-space tiles with terrazzo speckles and low roughness for SSR reflections.
 
-uniform vec3 color_a : source_color = vec3(0.30, 0.31, 0.33);
-uniform vec3 color_b : source_color = vec3(0.25, 0.26, 0.28);
-uniform vec3 grout_color : source_color = vec3(0.13, 0.13, 0.14);
-uniform vec3 accent_color : source_color = vec3(0.16, 0.20, 0.30);
+uniform vec3 color_a : source_color = vec3(0.56, 0.55, 0.52);
+uniform vec3 color_b : source_color = vec3(0.50, 0.49, 0.47);
+uniform vec3 grout_color : source_color = vec3(0.38, 0.38, 0.37);
+uniform vec3 accent_color : source_color = vec3(0.12, 0.17, 0.32);
 uniform float tile_size = 1.2;
-uniform float grout = 0.012;
+uniform float grout = 0.006;
 uniform float roughness_base = 0.10;
 uniform float roughness_var = 0.18;
 uniform float accent_band = 0.0; // 1 = draw accent stripes every 7 tiles
@@ -33,17 +33,20 @@ void fragment() {
 	vec2 uv = wpos.xz / tile_size;
 	vec2 cell = floor(uv);
 	vec2 f = fract(uv);
-	float gw = grout / tile_size;
-	float g = max(max(step(f.x, gw), step(1.0 - gw, f.x)), max(step(f.y, gw), step(1.0 - gw, f.y)));
+	// joints: anti-aliased thin lines (hard steps shimmer and read as a CG grid at a distance)
+	vec2 e = min(f, 1.0 - f);
+	vec2 fw = fwidth(uv);
+	vec2 gl = 1.0 - smoothstep(vec2(grout / tile_size) - fw, vec2(grout / tile_size) + fw, e);
+	float g = max(gl.x, gl.y) * clamp(1.5 - max(fw.x, fw.y) * 6.0, 0.25, 1.0);
 	float h = hash(cell);
 	float n = noise(wpos.xz * 0.35) * 0.6 + noise(wpos.xz * 2.3) * 0.4;
 	vec3 col = mix(color_a, color_b, h * 0.8);
 	if (accent_band > 0.5 && mod(cell.x, 7.0) < 1.0) {
 		col = mix(col, accent_color, 0.85);
 	}
-	col *= 0.88 + 0.24 * n;
-	float sp = step(0.982, hash(floor(wpos.xz * 45.0)));
-	col = mix(col, col * 1.7 + vec3(0.03), sp * 0.6);
+	col *= 0.93 + 0.14 * n;
+	float sp = step(0.988, hash(floor(wpos.xz * 45.0)));
+	col = mix(col, col * 1.35 + vec3(0.02), sp * 0.5);
 	col = mix(col, grout_color, g);
 	ALBEDO = col;
 	float smudge = noise(wpos.xz * 0.6 + 13.0);

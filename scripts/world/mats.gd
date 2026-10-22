@@ -47,7 +47,7 @@ static func _make(mat_name: String) -> Material:
 			return shader_mat("res://shaders/floor_tile.gdshader", {"accent_band": 1.0})
 		"floor_office":
 			return shader_mat("res://shaders/floor_tile.gdshader", {
-				"color_a": Color(0.36, 0.36, 0.34), "color_b": Color(0.33, 0.33, 0.31),
+				"color_a": Color(0.5, 0.49, 0.46), "color_b": Color(0.46, 0.45, 0.42),
 				"tile_size": 0.6, "roughness_base": 0.35, "roughness_var": 0.2})
 		"floor_service":
 			return shader_mat("res://shaders/floor_tile.gdshader", {
@@ -62,22 +62,27 @@ static func _make(mat_name: String) -> Material:
 			return shader_mat("res://shaders/wall_panel.gdshader")
 		"wall_office":
 			return shader_mat("res://shaders/wall_panel.gdshader", {
-				"color": Color(0.55, 0.56, 0.55), "panel_w": 1.2, "panel_h": 3.2})
+				"color": Color(0.7, 0.7, 0.67), "panel_w": 1.2, "panel_h": 3.2})
+		"wall_tile":
+			# glazed white wall tile of the boarding corridor (the 8번 출구 passage look)
+			return shader_mat("res://shaders/wall_panel.gdshader", {
+				"color": Color(0.86, 0.86, 0.84), "seam_color": Color(0.55, 0.55, 0.53), "panel_w": 0.3,
+				"panel_h": 0.15, "seam": 0.004, "roughness": 0.16})
 		"wall_service":
 			return shader_mat("res://shaders/wall_panel.gdshader", {
 				"color": Color(0.34, 0.35, 0.34), "panel_w": 3.0, "panel_h": 1.0, "roughness": 0.85})
 		"ceiling":
 			return shader_mat("res://shaders/ceiling.gdshader")
 		"ceiling_dark":
-			return shader_mat("res://shaders/ceiling.gdshader", {"color": Color(0.2, 0.2, 0.21), "tile": 1.2})
+			return shader_mat("res://shaders/ceiling.gdshader", {"color": Color(0.36, 0.36, 0.36), "grid_color": Color(0.22, 0.22, 0.22), "tile": 1.2})
 		"metal":
 			return std(Color(0.55, 0.57, 0.6), 0.32, 0.85)
 		"metal_dark":
-			return std(Color(0.14, 0.145, 0.15), 0.4, 0.7)
+			return std(Color(0.2, 0.205, 0.215), 0.45, 0.3)
 		"steel_frame":
-			return std(Color(0.3, 0.31, 0.33), 0.35, 0.8)
+			return std(Color(0.36, 0.37, 0.39), 0.35, 0.55)
 		"plastic_dark":
-			return std(Color(0.05, 0.05, 0.06), 0.5)
+			return std(Color(0.11, 0.11, 0.12), 0.5)
 		"plastic_grey":
 			return std(Color(0.32, 0.33, 0.34), 0.5)
 		"plastic_white":
@@ -85,13 +90,13 @@ static func _make(mat_name: String) -> Material:
 		"counter":
 			return std(Color(0.78, 0.78, 0.75), 0.25)
 		"counter_front":
-			return std(Color(0.06, 0.08, 0.14), 0.35)
+			return std(Color(0.14, 0.18, 0.28), 0.35)
 		"wood":
 			return std(Color(0.36, 0.26, 0.18), 0.6)
 		"rubber":
-			return std(Color(0.03, 0.03, 0.03), 0.9)
+			return std(Color(0.07, 0.07, 0.07), 0.9)
 		"seat":
-			return std(Color(0.075, 0.08, 0.09), 0.38)
+			return std(Color(0.16, 0.17, 0.19), 0.38)
 		"seat_frame":
 			return std(Color(0.42, 0.43, 0.45), 0.3, 0.9)
 		"sign_back":

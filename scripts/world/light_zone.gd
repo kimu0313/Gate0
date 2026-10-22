@@ -1,6 +1,10 @@
 class_name LightZone
 extends Node3D
-## One switchable lighting zone: ceiling panels (shared emissive material) + omni lights + hum.
+## One switchable lighting zone: ceiling panels (shared emissive material) + area lights + hum.
+
+const AREA_GAIN := 1.2         # area light energy per unit of the panel's old omni energy
+const GI_DIRECT := 0.3         # share of the bounce omni's light that also lands directly
+const NO_GI_DIRECT := 0.6      # without SDFGI the omni stands in for the bounce with direct light
 
 var zone_name := ""
 var display_name := ""
@@ -42,9 +46,18 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 		color := Color(0.88, 0.93, 1.0), shadow := false) -> MeshInstance3D:
 	var mi := Geo.box(self, pos, Vector3(size.x, 0.06, size.y), panel_mat, false)
 	panels.append(mi)
+	# fixture housing: a pale rim around the diffuser so it reads as a troffer, not a cut-out
+	Geo.box(self, pos + Vector3(0, 0.02, 0), Vector3(size.x + 0.1, 0.05, size.y + 0.1), Mats.get_mat("plastic_white"), false)
 	if with_light:
-		var l := Geo.omni(self, pos + Vector3(0, -0.6, 0), color, light_energy, light_range, shadow)
-		add_light(l)
+		add_light(Geo.area_light(self, pos + Vector3(0, -0.04, 0), size, color, light_energy * AREA_GAIN, light_range, shadow))
+		# area lights do not feed SDFGI yet: a dim omni with boosted indirect energy carries the bounce.
+		# Without GI (low quality) it lights the ceiling and walls directly instead.
+		var share := GI_DIRECT if Atmosphere.gi_enabled else NO_GI_DIRECT
+		var gi := Geo.omni(self, pos + Vector3(0, -0.6, 0), color, light_energy * share, light_range)
+		gi.light_indirect_energy = 1.0 / share
+		gi.light_specular = 0.0
+		gi.light_volumetric_fog_energy = 0.0
+		add_light(gi)
 	return mi
 
 

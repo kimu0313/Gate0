@@ -53,8 +53,6 @@ func _ready() -> void:
 			_board()
 		"exit":
 			_exit()
-		"return":
-			_return()
 		_:
 			_announce()
 
@@ -143,14 +141,20 @@ func _board() -> void:
 		if i % 2 == 0:
 			var l := Geo.omni(self, Vector3(0, 2.4, z), Color(1.0, 0.85, 0.6), 0.6, 4.5)
 			l.light_volumetric_fog_energy = 2.0
-	# the door at the end opens onto a warm home entrance
-	var door := Geo.box(self, Vector3(0, 1.1, -54.0), Vector3(1.0, 2.2, 0.08), Mats.std(Color(0.3, 0.22, 0.15), 0.6), false)
-	var home_light := Geo.omni(self, Vector3(0, 2.0, -56.5), Color(1.0, 0.75, 0.45), 0.0, 8.0)
-	Geo.box(self, Vector3(0, -0.05, -57.5), Vector3(3.0, 0.1, 6.0), Mats.get_mat("wood"), false)
-	Geo.box(self, Vector3(-1.2, 0.4, -57.0), Vector3(0.5, 0.8, 1.6), Mats.get_mat("wood"), false)
-	for i in 3:
-		Geo.box(self, Vector3(-1.2, 0.86, -56.6 - i * 0.4), Vector3(0.25, 0.1, 0.3), Mats.std(Color(0.1, 0.1, 0.12), 0.6), false)
-	Geo.box(self, Vector3(0, 1.4, -60.3), Vector3(3.0, 2.8, 0.1), Mats.get_mat("wall_office"), false)
+	# the aircraft door at the end opens onto a dim cabin: rows of empty seats, one of them yours
+	var door := Geo.box(self, Vector3(0, 1.1, -54.0), Vector3(1.0, 2.2, 0.08), Mats.get_mat("plane_body"), false)
+	var cabin_light := Geo.omni(self, Vector3(0, 2.0, -60.0), Color(1.0, 0.82, 0.6), 0.0, 10.0)
+	Geo.box(self, Vector3(0, -0.05, -61.0), Vector3(4.0, 0.1, 14.0), Mats.get_mat("carpet_red"), false)
+	Geo.box(self, Vector3(0, 2.3, -61.0), Vector3(4.0, 0.1, 14.0), Mats.get_mat("ceiling_dark"), false)
+	for sx in [-2.0, 2.0]:
+		Geo.box(self, Vector3(sx, 1.15, -61.0), Vector3(0.1, 2.3, 14.0), Mats.get_mat("plane_body"), false)
+		Geo.box(self, Vector3(sx * 0.82, 1.95, -61.0), Vector3(0.6, 0.35, 14.0), Mats.get_mat("plane_body"), false)   # overhead bins
+	var seat_mat := Mats.std(Color(0.16, 0.2, 0.32), 0.85)
+	for row in 6:
+		for sx in [-1.45, -0.95, 0.95, 1.45]:
+			var z := -56.5 - row * 1.6
+			Geo.box(self, Vector3(sx, 0.42, z), Vector3(0.46, 0.12, 0.48), seat_mat, false)
+			Geo.box(self, Vector3(sx, 0.85, z + 0.24), Vector3(0.46, 0.8, 0.1), seat_mat, false)   # seats face the nose (-z)
 	_cam.position = Vector3(0, 1.6, 2.0)
 	await _fade_to(0.0, 2.0)
 	var tw := create_tween()
@@ -159,15 +163,22 @@ func _board() -> void:
 	await _wait(25.0)
 	var dt := create_tween()
 	dt.tween_property(door, "position:x", -1.0, 1.6)
-	dt.parallel().tween_property(home_light, "light_energy", 2.5, 2.0)
+	dt.parallel().tween_property(cabin_light, "light_energy", 1.6, 2.0)
 	Snd.play("door_heavy", -4.0, 0.9, "SFX")
-	await _wait(3.0)
+	await _wait(2.0)
+	# walk in and sit down in row three, aisle seat
+	var sit := create_tween()
+	sit.tween_property(_cam, "position", Vector3(0, 1.6, -59.0), 3.0).set_trans(Tween.TRANS_SINE)
+	sit.tween_property(_cam, "position", Vector3(0.95, 1.1, -59.62), 1.4).set_trans(Tween.TRANS_SINE)
+	sit.parallel().tween_property(_cam, "rotation", Vector3(-0.05, 0.0, 0.0), 1.4)
+	await _wait(4.6)
+	_debug_shot("cabin")
+	Snd.play("door_heavy", -2.0, 0.7, "SFX")
+	await _wait(1.0)
+	await Snd.pa_announce(["pa_boarded_ko"], {"subs": [], "no_end": true})
 	await _fade_to(1.0, 2.0)
 	Snd.set_ambience("", 1.0, 2.0)
-	Snd.play("door_heavy", -2.0, 0.7, "SFX")
-	await _wait(2.0)
-	await Snd.pa_announce(["pa_arrived_ko"], {"subs": [], "no_end": true})
-	_text("ARRIVED", "목적지: 집\n\n문이 닫혔다.\n정말 집으로 돌아온 걸까.", UiKit.SIGNAL)
+	_text("BOARDED", "탑승이 완료되었습니다.\n\n목적지: 집.\n좌석은 처음부터 당신 이름으로 예약되어 있었다.", UiKit.SIGNAL_TEXT)
 	get_tree().create_timer(3.0).timeout.connect(func(): _debug_shot("title"))
 	Snd.play("ending_tone", -6.0, 1.0, "Music")
 	await _wait(9.0)
@@ -211,14 +222,13 @@ func _exit() -> void:
 	banner.position = Vector3(0, 9.6, -9.7)
 	Geo.box(banner, Vector3.ZERO, Vector3(20, 2.2, 0.05), Mats.std(Color(0.08, 0.2, 0.45), 0.8), false)
 	Geo.label(banner, "GRAND OPENING — TODAY", Vector3(0, 0.35, 0.04), 0.0, 120, Color(1, 1, 1), 0.012, false, "print")
-	Geo.label(banner, "서해국제공항 오늘 정식 개장", Vector3(0, -0.55, 0.04), 0.0, 80, Color(1.0, 0.85, 0.3), 0.012, false, "print")
+	Geo.label(banner, "서해국제공항 오늘 정식 개장", Vector3(0, -0.55, 0.04), 0.0, 80, Color(0.78, 0.86, 1.0), 0.012, false, "print")
 	Geo.fit_labels(banner)
 	# FIDS seen through the glass
 	var fids := FidsBoard.new()
 	add_child(fids)
 	fids.position = Vector3(3, 4.5, -14)
 	fids.build(6.0, 2.4, false)
-	fids.set_story("final", ["FLIGHT 000", "BOARDING"])
 	# people walking in
 	var people: Array[Node3D] = []
 	for i in 14:
@@ -244,62 +254,17 @@ func _exit() -> void:
 	var ct := create_tween()
 	ct.tween_property(_cam, "position", Vector3(2.0, 3.5, -4.0), 16.0).set_trans(Tween.TRANS_SINE)
 	ct.parallel().tween_property(_cam, "rotation", Vector3(0.08, 0.0, 0.0), 16.0)
-	await _wait(14.0)
+	await _wait(12.0)
+	fids.set_story("final", ["FLIGHT 000", "BOARDING"])
 	Snd.pa_announce(["pa_flight0_boarding_en"], {"subs": [], "no_end": true, "wrong": true})
-	await _wait(5.0)
+	await _wait(0.7)
+	fids.set_story("")
+	await _wait(4.3)
 	await _fade_to(1.0, 0.2)
 	_text("", "당신은 빠져나왔다.\n\n…아마도, 당신만.")
 	Snd.play("ending_tone", -6.0, 0.9, "Music")
 	await _wait(8.0)
 	_credits("엔딩 B — 정상 개장")
-
-
-# --- D: RETURN ----------------------------------------------------------------------------------
-## Someone finally announced the arrival. At dawn, carousel B-03 brings 41 bags from 1987.
-func _return() -> void:
-	_env_setup(Color(0.02, 0.025, 0.04), Color(0.35, 0.3, 0.32), 0.35, 0.012)
-	Geo.box(self, Vector3(35, -0.05, 2), Vector3(40, 0.1, 30), Mats.get_mat("floor"), false)
-	Geo.box(self, Vector3(46, 3, 2), Vector3(0.4, 6, 30), Mats.get_mat("wall"), false)
-	Geo.box(self, Vector3(35, 3, -12), Vector3(30, 6, 0.4), Mats.get_mat("wall"), false)
-	var dawn := DirectionalLight3D.new()
-	dawn.rotation = Vector3(deg_to_rad(-8), deg_to_rad(-70), 0)
-	dawn.light_color = Color(1.0, 0.62, 0.38)
-	dawn.light_energy = 1.4
-	dawn.shadow_enabled = true
-	add_child(dawn)
-	for p in [Vector3(30, 4.5, -4), Vector3(40, 4.5, 6)]:
-		var l := Geo.omni(self, p, Color(0.85, 0.9, 1.0), 1.0, 14.0)
-		l.light_volumetric_fog_energy = 1.2
-	var belt := BaggageBelt.new()
-	add_child(belt)
-	belt.position = Vector3(35, 0, 2.5)
-	belt.build()
-	var board := FidsBoard.new()
-	add_child(board)
-	board.position = Vector3(35, 3.6, -11.7)
-	board.build(6.0, 2.4, false)
-	board.set_story("final", ["SH 000", "ARRIVED"])
-	_cam.position = Vector3(25.5, 1.6, 6.5)
-	_cam.rotation = Vector3(-0.08, deg_to_rad(-62), 0)
-	Snd.set_ambience("amb_day_loop", -10.0, 2.0)
-	belt.fill("pax", 9)
-	await _fade_to(0.0, 2.5)
-	belt.start(false)
-	belt.spawn_queue.clear()   # no TEST bags tonight
-	for i in 14:
-		belt.spawn_queue.append("pax")
-	var ct := create_tween()
-	ct.tween_property(_cam, "position", Vector3(27.5, 1.7, 3.0), 22.0).set_trans(Tween.TRANS_SINE)
-	ct.parallel().tween_property(_cam, "rotation", Vector3(-0.1, deg_to_rad(-80), 0), 22.0)
-	await _wait(6.0)
-	_debug_shot("carousel")
-	await _wait(12.0)
-	await _fade_to(1.0, 2.0)
-	_text("RETURN", "그날 새벽, 수하물 수취대 B-03에 가방 41개가 도착했다.\n이름표의 출발지는 서해비행장, 도착지는 집.\n\n개장일 아침, 전광판에서 SH 000은 사라져 있었다.", UiKit.CLEAR)
-	get_tree().create_timer(3.5).timeout.connect(func(): _debug_shot("title"))
-	Snd.play("ending_tone", -6.0, 1.0, "Music")
-	await _wait(10.0)
-	_credits("엔딩 D — 귀환")
 
 
 # --- C: ANNOUNCE --------------------------------------------------------------------------------
@@ -392,7 +357,7 @@ func _build_credits(ending_name: String) -> void:
 	line.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	root.add_child(line)
 	create_tween().tween_property(line, "custom_minimum_size:x", 620.0, 0.6).set_delay(board.settle_time()).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	var en := UiKit.label(ending_name, 30, UiKit.SIGNAL, "sans", 700)
+	var en := UiKit.label(ending_name, 30, UiKit.SIGNAL_TEXT, "sans", 700)
 	en.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(en)
 	var stats := HBoxContainer.new()
@@ -400,7 +365,7 @@ func _build_credits(ending_name: String) -> void:
 	stats.add_theme_constant_override("separation", 56)
 	root.add_child(stats)
 	var rows := [["정확 판정", "correct", UiKit.CLEAR], ["이상 해제", "cleared", UiKit.CLEAR], ["놓침", "missed", UiKit.ALERT],
-		["오판", "false_alarm", UiKit.SIGNAL], ["사망", "deaths", UiKit.ALERT]]
+		["오판", "false_alarm", UiKit.SIGNAL_TEXT], ["사망", "deaths", UiKit.ALERT]]
 	for i in rows.size():
 		var r: Array = rows[i]
 		var n := int(st.get(r[1], 0))
@@ -418,10 +383,10 @@ func _build_credits(ending_name: String) -> void:
 	found.alignment = BoxContainer.ALIGNMENT_CENTER
 	found.add_theme_constant_override("separation", 12)
 	root.add_child(found)
-	found.add_child(UiKit.caption(UiKit.t("ENDINGS · 발견한 엔딩  %d / 4") % seen.size(), UiKit.TEXT_DIM, 16))
-	for e in [["A", "board"], ["B", "exit"], ["C", "announce"], ["D", "return"]]:
+	found.add_child(UiKit.caption(UiKit.t("ENDINGS · 발견한 엔딩  %d / 3") % seen.size(), UiKit.TEXT_DIM, 16))
+	for e in [["A", "board"], ["B", "exit"], ["C", "announce"]]:
 		var got: bool = seen.has(e[1])
-		found.add_child(UiKit.chip(e[0], UiKit.INK_0 if got else UiKit.TEXT_MUTE, UiKit.SIGNAL if got else Color(1, 1, 1, 0.06), "", 18))
+		found.add_child(UiKit.chip(e[0], UiKit.SIGNAL_INK if got else UiKit.TEXT_MUTE, UiKit.SIGNAL if got else Color(1, 1, 1, 0.06), "", 18))
 	var foot := HBoxContainer.new()
 	foot.alignment = BoxContainer.ALIGNMENT_CENTER
 	foot.add_theme_constant_override("separation", 28)

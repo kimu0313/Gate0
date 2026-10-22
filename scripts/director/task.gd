@@ -19,7 +19,8 @@ var urgent := false
 var optional := false
 var reported_as := ""      # normal | anomaly
 var locked := ""           # non-empty = reporting blocked with this message
-var slot := 0              # inspection number within the night (1..10), 0 = not an inspection
+var slot := 0              # inspection number within the shift (1..14), 0 = not an inspection
+var group := ""            # orders that started together; the player picks which one to look at first
 const OBSERVE_TIME := 2.5
 
 

@@ -64,19 +64,19 @@ func _draw() -> void:
 	for i in strips:
 		var y := tr.position.y + tr.size.y * 0.6 * i / strips
 		draw_rect(Rect2(tr.position.x, y, tr.size.x, tr.size.y * 0.6 / strips + 1.0), Color(1, 1, 1, 0.16 * (1.0 - float(i) / strips)))
-	draw_rect(Rect2(tr.position.x, tr.end.y - 5.0, tr.size.x, 5.0), Color("c98f00"))
-	draw_rect(tr, Color("b07d00"), false, 2.0)
+	draw_rect(Rect2(tr.position.x, tr.end.y - 5.0, tr.size.x, 5.0), UiKit.SIGNAL.darkened(0.35))
+	draw_rect(tr, UiKit.SIGNAL.darkened(0.5), false, 2.0)
 	# the 0, centred on both axes inside the tile
 	var zw := _font.get_string_size("0", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-	_draw_text("0", Vector2(tr.position.x + (tr.size.x - zw) * 0.5, baseline), UiKit.INK_0)
+	_draw_text("0", Vector2(tr.position.x + (tr.size.x - zw) * 0.5, baseline), UiKit.SIGNAL_INK)
 	# arrow on the same centre line
 	var ax: float = tr.end.x + L.gap * 1.3
 	var aw: float = L.arrow_w
 	var th := fs * 0.055
 	var ah := cap * 0.36
-	draw_line(Vector2(ax, cy), Vector2(ax + aw - th * 0.6, cy), UiKit.SIGNAL, th)
+	draw_line(Vector2(ax, cy), Vector2(ax + aw - th * 0.6, cy), UiKit.SIGNAL_TEXT, th)
 	draw_polyline(PackedVector2Array([Vector2(ax + aw - ah, cy - ah), Vector2(ax + aw, cy), Vector2(ax + aw - ah, cy + ah)]),
-		UiKit.SIGNAL, th, true)
+		UiKit.SIGNAL_TEXT, th, true)
 
 
 func _tracking() -> float:

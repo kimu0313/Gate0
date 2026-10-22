@@ -1,5 +1,5 @@
 extends Node3D
-## Root of a playable phase (Day N / Night N): builds the terminal, player, UI and the shift director.
+## Root of a playable dawn shift (DAY 1–3): builds the terminal, player, UI and the shift director.
 
 var atmosphere: Atmosphere
 var terminal: Terminal
@@ -9,11 +9,9 @@ var director: ShiftDirector
 
 
 func _ready() -> void:
-	var day := Game.phase == "day"
-	var preset := "night" if not day else ("day_wrong" if Game.cycle >= 5 else "day")
 	atmosphere = Atmosphere.new()
 	add_child(atmosphere)
-	atmosphere.setup(preset)
+	atmosphere.setup("night")
 	terminal = Terminal.new()
 	terminal.name = "Terminal"
 	add_child(terminal)
@@ -61,19 +59,19 @@ func _begin() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	player.controls_enabled = false
 	Snd.set_music("", 1.0)
-	Snd.set_ambience("amb_day_loop" if Game.phase == "day" else "amb_night_loop", -4.0 if Game.phase == "day" else 0.0, 3.0)
-	if Game.cycle == 1 and Game.phase == "day" and not Game.flag("prologue_seen"):
+	Snd.set_ambience("amb_night_loop", 0.0, 3.0)
+	if Game.cycle == 1 and not Game.flag("prologue_seen"):
 		Game.set_flag("prologue_seen")
 		await ui.typewriter([
-			"서해국제공항 정식 개장 사흘 전.",
+			"서해국제공항 정식 개장 이틀 전, 자정.",
 			"",
 			"구인 사이트의 단기 계약직 공고.",
-			"야간 수당 높음. 정규직 전환 조건.",
+			"새벽 시설 점검원 · 00:00 – 06:00 · 사흘 근무.",
 			"",
 			"지급품: 점검 태블릿, 무전기,",
 			"그리고 두꺼운 근무 수칙 바인더 한 권.",
 			"",
-			"\"어려울 건 없어요. 수칙만 지키면 됩니다.\"",
+			"\"어려울 건 없어요. 수칙만 지키시면 됩니다.\"",
 		])
 	var lines := director.script_obj.title_lines()
 	if lines.size() >= 2:
@@ -84,10 +82,7 @@ func _begin() -> void:
 	director.start()
 
 
+## 00:00 the evening staff are still clocking out: every zone is lit until 01:00 (ShiftDirector.ev_staff_leave).
 func _initial_lights() -> void:
-	var day := Game.phase == "day"
 	for zn in terminal.zones.keys():
-		var on := true
-		if not day and zn != "office" and zn != "service":
-			on = bool(Game.night_lights.get(zn, false))
-		terminal.set_zone_light(zn, on, true)
+		terminal.set_zone_light(zn, true, true)

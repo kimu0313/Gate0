@@ -1,7 +1,7 @@
 extends Node
 ## Debug: `godot --headless --path . res://scenes/game.tscn -- --day 1 --punchtest`
 ## Clocks out at the time clock in each phase and checks the game moves on:
-## DAY 1 → NIGHT 1 → morning report → DAY 2 (add `--to5` to go on to NIGHT 5). Exit code 0 = pass, 1 = fail.
+## DAY 1 → morning report → DAY 2 (add `--to3` to go on to DAY 3, whose shift ends at Gate 0). Exit 0 = pass, 1 = fail.
 
 var world: Node
 
@@ -9,11 +9,11 @@ var world: Node
 func _ready() -> void:
 	await get_tree().create_timer(0.5).timeout
 	var d: ShiftDirector = world.director
-	print("[punchtest] in %s %d" % [Game.phase, Game.cycle])
-	# `--to5`: keep clocking out through every day and night until NIGHT 5 (which ends in the finale, not the clock)
-	var goal_phase := ["night", 5] if OS.get_cmdline_user_args().has("--to5") else ["day", 2]
-	if Game.phase == goal_phase[0] and Game.cycle == goal_phase[1]:
-		print("[punchtest] PASS — reached %s %d" % [Game.phase.to_upper(), Game.cycle])
+	print("[punchtest] in DAY %d" % Game.cycle)
+	# `--to3`: keep clocking out through every shift until DAY 3 (which ends at Gate 0, not at the clock)
+	var goal_day := 3 if OS.get_cmdline_user_args().has("--to3") else 2
+	if Game.cycle == goal_day:
+		print("[punchtest] PASS — reached DAY %d" % Game.cycle)
 		get_tree().quit(0)
 		return
 	# the clock-out goal is the only open work order, exactly as at the end of a real shift
@@ -25,17 +25,16 @@ func _ready() -> void:
 	d.punched.connect(func(): got[0] = true, CONNECT_ONE_SHOT)
 	d._on_punch()
 	if not got[0]:
-		print("[punchtest] FAIL — clock-out refused in %s %d" % [Game.phase, Game.cycle])
+		print("[punchtest] FAIL — clock-out refused in DAY %d" % Game.cycle)
 		get_tree().quit(1)
 		return
-	print("[punchtest] clock-out accepted in %s %d" % [Game.phase, Game.cycle])
+	print("[punchtest] clock-out accepted in DAY %d" % Game.cycle)
 	d.complete_goal(g)
-	if Game.phase == "night":
-		# the morning report waits for its button (it appears after the night's end cut)
-		_close_report_when_shown()
+	# the morning report waits for its button (it appears after the shift's end cut)
+	_close_report_when_shown()
 	d.end_phase()
 	await get_tree().create_timer(40.0).timeout
-	print("[punchtest] FAIL — still in %s %d after clocking out" % [Game.phase, Game.cycle])
+	print("[punchtest] FAIL — still in DAY %d after clocking out" % Game.cycle)
 	get_tree().quit(1)
 
 

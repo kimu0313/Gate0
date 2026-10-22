@@ -23,9 +23,14 @@ $lines = [ordered]@{
 	"pa_test_anom_c_ko"        = @($KO, -1, "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 기다리고 있겠습니다.")
 	# 이상 변형: 표준 문안 뒤에 문장이 하나 더 붙는다 (수칙 p.4 ③ — 끝날 때까지 움직이지 말 것)
 	"pa_test_anom_d_ko"        = @($KO, -1, "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다. 지금 움직이시는 분, 거기 계신 거 다 보입니다.")
-	# 엔딩 D (귀환)
-	"pa_arrival_ko"            = @($KO, -3, "서해비행장을 출발한 영편이, 지금 도착했습니다. 마중 나오신 분들께서는, 일번 출구에서 기다려 주시기 바랍니다.")
-	"pa_arrival_en"            = @($EN, -2, "Flight zero from Seohae Airfield has now arrived. Those meeting passengers, please wait at exit one.")
+	# 03:00 정기 방송 (수칙 p.9 ③) — 이어서 단어 하나가 다른 문안(pa_test_anom_b_ko)이 나온다
+	"pa_regular_intro_ko"      = @($KO, -2, "현재 시각, 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.")
+	# 엔딩 A (탑승) — 좌석에 앉으면
+	"pa_boarded_ko"            = @($KO, -3, "탑승이 완료되었습니다.")
+	# 00:00–01:00 인수인계: 퇴근 준비 중인 저녁 근무자들 (멀리서 들리는 대화)
+	"staff_chat_1"             = @($KO, 1, "오늘도 고생 많았어요. 먼저 갈게요.")
+	"staff_chat_2"             = @($KO, 0, "카운터 정리는 내일 아침에 하죠.")
+	"staff_chat_3"             = @($KO, 1, "새벽 근무자 왔어요? 수고하세요.")
 	# 0편 관련
 	"pa_flight0_move_ko"       = @($KO, -2, "영편 승객께서는 출국장으로 이동해 주시기 바랍니다.")
 	"pa_flight0_move_en"       = @($EN, -2, "Passengers of flight zero, please proceed to the departure area.")

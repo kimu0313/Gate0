@@ -261,7 +261,7 @@ func _build_hall() -> void:
 	Geo.box(self, Vector3(0, 0.55, 6.4), Vector3(3.6, 1.1, 1.0), Mats.get_mat("counter_front"))
 	Geo.box(self, Vector3(0, 1.12, 6.45), Vector3(3.8, 0.05, 1.15), Mats.get_mat("counter"), false)
 	Geo.box(self, Vector3(0, 2.6, 5.9), Vector3(1.6, 0.5, 0.1), Mats.get_mat("sign_back"), false)
-	Geo.label(self, "i  안내 INFORMATION", Vector3(0, 2.6, 5.96), 0.0, 44, Color(1.0, 0.85, 0.2), 0.005)
+	Geo.label(self, "i  안내 INFORMATION", Vector3(0, 2.6, 5.96), 0.0, 44, Geo.SIGN_BLUE, 0.005)
 	Geo.cyl(self, Vector3(0, 4.0, 5.9), 0.02, 2.5, Mats.get_mat("steel_frame"))
 	# benches + bins + plants
 	for x in [-14.0, -5.0, 5.0, 14.0]:
@@ -274,7 +274,7 @@ func _build_hall() -> void:
 	signs["hall_departures"] = Props.hanging_sign(self, Vector3(0, 6.2, -11.0), 0.0, Vector2(7.0, 1.0), [
 		["↑  출국 · 보안검색", 60, Color(1, 1, 1), Vector2(-0.9, 0.18)],
 		["DEPARTURES · SECURITY", 40, Color(0.85, 0.88, 0.95), Vector2(-0.9, -0.24)],
-		["✈", 120, Color(1.0, 0.8, 0.15), Vector2(2.7, 0.0)],
+		["✈", 120, Geo.SIGN_BLUE, Vector2(2.7, 0.0)],
 	], 9.0)
 	signs["hall_baggage"] = Props.hanging_sign(self, Vector3(17.0, 5.6, 0.0), -PI / 2, Vector2(5.4, 0.9), [
 		["↑  수하물 수취  BAGGAGE CLAIM", 50, Color(1, 1, 1), Vector2(0, 0.0)],
@@ -288,7 +288,7 @@ func _build_hall() -> void:
 	banner.rotation.y = PI
 	Geo.box(banner, Vector3.ZERO, Vector3(12, 1.4, 0.05), Mats.std(Color(0.08, 0.2, 0.45), 0.8), false)
 	Geo.label(banner, "GRAND OPENING  2026. 10. 23", Vector3(0, 0.22, 0.03), 0.0, 80, Color(1, 1, 1), 0.008, false, "print")
-	Geo.label(banner, "서해국제공항 정식 개장", Vector3(0, -0.35, 0.03), 0.0, 56, Color(1.0, 0.85, 0.3), 0.008, false, "print")
+	Geo.label(banner, "서해국제공항 정식 개장", Vector3(0, -0.35, 0.03), 0.0, 56, Color(0.78, 0.86, 1.0), 0.008, false, "print")
 
 
 func _checkin_island(c: Vector3, letter: String) -> void:
@@ -303,7 +303,7 @@ func _checkin_island(c: Vector3, letter: String) -> void:
 		var x := c.x - 4.2 + i * 1.68
 		Props.monitor(self, Vector3(x, 1.2, c.z + 0.7), 0.0, Vector2(0.36, 0.22))
 		Geo.box(self, Vector3(x + 0.75, 0.12, c.z + 1.45), Vector3(0.6, 0.24, 0.6), Mats.get_mat("steel_frame"))
-		Geo.label(self, "%s%02d" % [letter, i + 1], Vector3(x, 1.75, c.z + 0.52), 0.0, 40, Color(1.0, 0.85, 0.3), 0.005)
+		Geo.label(self, "%s%02d" % [letter, i + 1], Vector3(x, 1.75, c.z + 0.52), 0.0, 40, Geo.SIGN_BLUE, 0.005)
 	for i in 6:
 		var px := c.x - 5.0 + i * 2.0
 		Geo.cyl(self, Vector3(px, 0.5, c.z + 3.2), 0.035, 1.0, Mats.get_mat("metal"))
@@ -389,7 +389,7 @@ func _build_baggage() -> void:
 	Geo.label(self, "수하물 보관실\nBAGGAGE STORAGE", Vector3(41, 2.85, -13.78), 0.0, 32, Color(0.9, 0.9, 0.9), 0.005, false, "print")
 	# maintenance door (keypad)
 	doors["maint"] = SlidingDoor.create(self, Vector3(46, 0, 9), PI / 2, 1.8, 2.4, false, false)
-	Geo.label(self, "정비 통로\nMAINTENANCE\n관계자 외 출입금지", Vector3(45.78, 2.9, 9), -PI / 2, 30, Color(1.0, 0.8, 0.2), 0.005, false, "print")
+	Geo.label(self, "정비 통로\nMAINTENANCE\n관계자 외 출입금지", Vector3(45.78, 2.9, 9), -PI / 2, 30, Geo.SIGN_BLUE, 0.005, false, "print")
 	var kp := Props.panel_box(self, Vector3(45.8, 1.3, 10.4), -PI / 2, Vector2(0.2, 0.28), "")
 	for i in 9:
 		Geo.box(kp, Vector3(-0.05 + (i % 3) * 0.05, 0.05 - (i / 3) * 0.05, 0.006), Vector3(0.035, 0.035, 0.01), Mats.get_mat("plastic_white"), false)
@@ -563,7 +563,7 @@ func _build_service_rooms() -> void:
 	var mp := Props.panel_box(self, Vector3(57.78, 1.4, 9), -PI / 2, Vector2(1.0, 1.2), "MAIN POWER  주 전원")
 	Geo.box(mp, Vector3(0, -0.1, 0.05), Vector3(0.12, 0.5, 0.08), Mats.get_mat("metal"), false).name = "Lever"
 	Geo.box(mp, Vector3(0, 0.18, 0.08), Vector3(0.3, 0.08, 0.12), Mats.get_mat("button_red"), false)
-	Geo.label(mp, "⚠ 터미널 전체 전원 차단", Vector3(0, -0.45, 0.006), 0.0, 26, Color(1.0, 0.85, 0.3), 0.003, false, "print")
+	Geo.label(mp, "⚠ 터미널 전체 전원 차단", Vector3(0, -0.45, 0.006), 0.0, 26, Geo.SIGN_BLUE, 0.003, false, "print")
 	main_power = Interactable.create(mp, Vector3(0, 0, 0.1), Vector3(0.8, 1.0, 0.2), "주 전원 레버", Callable())
 	main_power.press_sound = ""
 	# system log terminal

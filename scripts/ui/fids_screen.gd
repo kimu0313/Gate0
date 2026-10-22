@@ -2,7 +2,7 @@ class_name FidsScreen
 extends Control
 ## Draws the departure board into a SubViewport. Data-only: the FidsBoard facility feeds it rows.
 
-const AMBER := Color(1.0, 0.72, 0.22)
+const AMBER := Color(0.48, 0.66, 1.0)   # LED lettering in the signal blue (the name stays for the board code)
 const WHITE := Color(0.92, 0.94, 0.98)
 const GREY := Color(0.45, 0.48, 0.55)
 const GREEN := Color(0.3, 1.0, 0.45)
@@ -50,7 +50,7 @@ func _draw() -> void:
 	draw_string(sans, Vector2(30, 60), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 46, WHITE)
 	if badge != "":
 		var bx := w * 0.55
-		draw_rect(Rect2(bx, 20, 230, 48), Color(0.35, 0.25, 0.02))
+		draw_rect(Rect2(bx, 20, 230, 48), Color(0.07, 0.15, 0.42))
 		draw_string(mono, Vector2(bx, 56), badge, HORIZONTAL_ALIGNMENT_CENTER, 230, 30, AMBER)
 	draw_string(mono, Vector2(w - 230, 62), clock, HORIZONTAL_ALIGNMENT_RIGHT, 200, 50, AMBER)
 	# column titles

@@ -13,7 +13,9 @@ const TEXT := Color("e8eaed")
 const TEXT_DIM := Color("9aa3ae")
 const TEXT_MUTE := Color("7c8590")
 const BODY := Color("c5cad1")
-const SIGNAL := Color("ffc21a")     # orders, interaction, wayfinding
+const SIGNAL := Color("1e40af")     # deep blue: orders, interaction, wayfinding (fills, bars, selected rows)
+const SIGNAL_TEXT := Color("6e9cff") # the same signal blue for text, thin lines and icons on dark grounds
+const SIGNAL_INK := Color("f4f6fb")  # text and icons drawn on a SIGNAL fill
 const OPS := Color("6cc4ff")        # radio, system information
 const CLEAR := Color("3fd0b0")      # normal, done
 const ALERT := Color("ff4b3e")      # anomaly, danger
@@ -112,7 +114,7 @@ static func boxm(bg: Color, margins: Vector4, border := Color(0, 0, 0, 0), borde
 	return s
 
 
-## Modal panel in the sign style: dark plate with a signal-yellow top edge and a soft shadow
+## Modal panel in the sign style: dark plate with a signal-blue top edge and a soft shadow
 ## (chapter select, settings).
 static func sign_panel(pad := Vector4(40, 34, 40, 34), accent := SIGNAL) -> StyleBoxFlat:
 	var s := boxm(Color(0.047, 0.058, 0.075, 0.97), pad)
@@ -152,19 +154,19 @@ static func theme() -> Theme:
 	fill.content_margin_bottom = 3
 	t.set_stylebox("grabber_area", "HSlider", fill)
 	var fill_hi := fill.duplicate() as StyleBoxFlat
-	fill_hi.bg_color = Color("ffd660")
+	fill_hi.bg_color = SIGNAL.lightened(0.22)
 	t.set_stylebox("grabber_area_highlight", "HSlider", fill_hi)
 	t.set_icon("grabber", "HSlider", _tex("grabber", Vector2i(14, 26), func(img: Image):
 		img.fill(TEXT)
 		img.fill_rect(Rect2i(0, 22, 14, 4), TEXT_DIM)))
 	t.set_icon("grabber_highlight", "HSlider", _tex("grabber_hi", Vector2i(14, 26), func(img: Image):
 		img.fill(SIGNAL)
-		img.fill_rect(Rect2i(0, 22, 14, 4), Color("c98f00"))))
+		img.fill_rect(Rect2i(0, 22, 14, 4), SIGNAL.darkened(0.35))))
 	t.set_stylebox("focus", "HSlider", empty_box())
 	# toggles
 	t.set_icon("checked", "CheckButton", _tex("switch_on", Vector2i(56, 28), func(img: Image):
 		img.fill(SIGNAL)
-		img.fill_rect(Rect2i(30, 4, 22, 20), INK_0)))
+		img.fill_rect(Rect2i(30, 4, 22, 20), SIGNAL_INK)))
 	# OFF must read as "off", not "disabled": outlined track with a bright knob
 	t.set_icon("unchecked", "CheckButton", _tex("switch_off2", Vector2i(56, 28), func(img: Image):
 		img.fill(Color("6b7480"))
@@ -333,8 +335,10 @@ static func button(text: String, size := 20, cb := Callable(), accent := SIGNAL)
 	return b
 
 
-## Filled call-to-action button (accent background, dark text).
-static func primary(text: String, size := 22, cb := Callable(), accent := SIGNAL, fg := INK_0) -> Button:
+## Filled call-to-action button (accent background; text in `fg`, or whatever reads on the accent).
+static func primary(text: String, size := 22, cb := Callable(), accent := SIGNAL, fg := Color(0, 0, 0, 0)) -> Button:
+	if fg.a == 0.0:
+		fg = ink_on(accent)
 	var b := button(text, size, cb, accent)
 	b.add_theme_color_override("font_color", fg)
 	b.add_theme_color_override("font_hover_color", fg)
@@ -350,6 +354,11 @@ static func primary(text: String, size := 22, cb := Callable(), accent := SIGNAL
 static func _wire_sounds(b: BaseButton) -> void:
 	b.mouse_entered.connect(func(): if not b.disabled: Snd.play("ui_click", -16.0, 1.15))
 	b.pressed.connect(func(): Snd.play("ui_tap", -8.0))
+
+
+## Text/icon colour that reads on a filled background: dark ink on light fills, near-white on dark ones.
+static func ink_on(bg: Color) -> Color:
+	return INK_0 if bg.get_luminance() > 0.4 else SIGNAL_INK
 
 
 ## Keyboard key cap, e.g. [E] [TAB].
@@ -495,5 +504,5 @@ static func erosion_state(e: float) -> Array:
 	if e >= 50.0:
 		return [WARN, t("불안정")]
 	if e >= 25.0:
-		return [SIGNAL, t("주의")]
+		return [SIGNAL_TEXT, t("주의")]
 	return [CLEAR, t("안정")]

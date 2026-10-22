@@ -8,6 +8,7 @@ extends RefCounted
 ## lethal : [action, target] pairs that kill the player while the anomaly is active.
 ## timer  : seconds allowed to respond after reporting [이상].
 ## miss   : one line for the morning report when the anomaly was missed (사후 정답 공개).
+## fake   : the fake binder page whose instruction is the lethal action (counts as 가짜 수칙을 따름 → 탑승 엔딩).
 
 const DATA := {
 	# --- 조명 분전반 ----------------------------------------------------------------------
@@ -43,7 +44,7 @@ const DATA := {
 	"fids_changed": {
 		"facility": "fids", "name": "바뀐 행", "page": "p3",
 		"fix": [["reset", "fids"]], "lethal": [["power_off", "fids"]], "timer": 120.0,
-		"miss": "전광판의 한 행이 낮에 기록한 테스트 목록과 달랐습니다.",
+		"miss": "전광판의 한 행이 인수인계 때 본 테스트 목록과 달랐습니다.",
 		"death": "목록 이상인데 전광판 전원을 차단했습니다. (수칙 p.3: 전원을 차단하지 마십시오)",
 	},
 	"fids_clock": {
@@ -67,7 +68,7 @@ const DATA := {
 		"facility": "pa", "name": "늘어지는 목소리", "page": "p4",
 		"fix": [["pa_slow_survived", "pa"]], "lethal": [["pa_stop", "pa"]], "timer": 150.0,
 		"miss": "방송 목소리가 점점 느리고 낮아졌습니다.",
-		"death": "늘어지는 방송을 [송출 중지]로 끊었습니다. (수칙 p.4)",
+		"death": "늘어지는 방송을 [송출 중지]로 끊었습니다. (수칙 p.4)", "fake": "f4",
 	},
 	"pa_auto": {
 		"facility": "pa", "name": "혼자 나오는 방송", "page": "p4",
@@ -124,7 +125,13 @@ const DATA := {
 		"facility": "xray", "name": "판독 화면 속 사람", "page": "p7",
 		"fix": [["eyes_closed_near", "xray"]], "lethal": [["monitor_off", "xray"]], "timer": 120.0,
 		"miss": "X-ray 화면 속 가방 안에 웅크린 사람의 형체가 있었습니다.",
-		"death": "사람 형체가 보이는 X-ray 모니터를 껐습니다. (수칙 p.7)",
+		"death": "사람 형체가 보이는 X-ray 모니터를 껐습니다. (수칙 p.7)", "fake": "f7",
+	},
+	"xray_mybag": {
+		"facility": "xray", "name": "당신의 수하물", "page": "p7",
+		"fix": [["estop", "xray"]], "lethal": [["monitor_off", "xray"]], "timer": 120.0,
+		"miss": "X-ray 화면에 당신의 이름표가 붙은 가방이 승객 수하물로 찍혀 있었습니다.",
+		"death": "당신의 이름이 찍힌 X-ray 모니터를 껐습니다. (수칙 p.7)", "fake": "f7",
 	},
 	"xray_heart": {
 		"facility": "xray", "name": "뛰는 무언가", "page": "p7",
@@ -137,7 +144,7 @@ const DATA := {
 		"facility": "gate", "name": "열린 탑승구", "page": "p8",
 		"fix": [["close_gate", "$id"]], "lethal": [["enter_gate", "$id"]], "timer": 120.0,
 		"miss": "닫혀 있어야 할 탑승구가 열려 있었고, FLIGHT 000 탑승 중이라고 표시됐습니다.",
-		"death": "열린 탑승구 너머 탑승교로 들어갔습니다. (수칙 p.8)",
+		"death": "열린 탑승구 너머 탑승교로 들어갔습니다. (수칙 p.8)", "fake": "f8",
 	},
 	"gate_seats": {
 		"facility": "gate", "name": "돌아앉은 대기석", "page": "p8",
@@ -148,22 +155,25 @@ const DATA := {
 		"facility": "gate", "name": "한 명의 승객", "page": "p8",
 		"fix": [["face_away_from_passenger", "$id"]], "lethal": [["approach_passenger", "$id"]], "timer": 120.0,
 		"miss": "탑승구 대기석에 승객 한 명이 앉아 있었습니다.",
-		"death": "대기석의 승객에게 다가갔습니다. (수칙 p.8)",
+		"death": "대기석의 승객에게 다가갔습니다. (수칙 p.8)", "fake": "f8",
 	},
 }
 
-## Anomaly pools per facility and the first night they may appear in (Day/Night 1–5 schedule):
-## N1 체크인 (조명·FIDS·방송) → N2 +수하물 → N3 +보안검색·무빙워크 → N4 +탑승 게이트 → N5 전 구역.
-## Story/autonomous anomalies (fids_gate04, pa_auto, bag_name, auto_run) are placed by the night plans.
+## Anomaly pools per facility and the first day they may appear on (3-day schedule):
+## DAY 1 체크인 (조명·FIDS·방송) → DAY 2 +수하물·X-ray → DAY 3 +무빙워크·탑승 게이트.
+## Story/autonomous anomalies (fids_gate04, pa_auto, bag_name, xray_mybag, auto_run) are placed by the day plans.
 const POOLS := {
 	"lights": [["light_flicker", 1], ["light_dark", 1], ["light_red", 2]],
-	"fids": [["fids_extra", 1], ["fids_changed", 1], ["fids_clock", 2]],
-	"pa": [["pa_word", 1], ["pa_extra", 1], ["pa_slow", 3]],
-	"baggage": [["bag_extra", 2], ["bag_reverse", 2], ["bag_nostop", 3]],
-	"walkway": [["walk_reverse", 3], ["walk_fast", 4]],
-	"xray": [["xray_figure", 3], ["xray_heart", 4]],
-	"gate": [["gate_open", 4], ["gate_seats", 4], ["gate_passenger", 4]],
+	"fids": [["fids_extra", 1], ["fids_changed", 1], ["fids_clock", 1]],
+	"pa": [["pa_word", 1], ["pa_extra", 1], ["pa_slow", 2]],
+	"baggage": [["bag_extra", 2], ["bag_reverse", 2], ["bag_nostop", 2]],
+	"xray": [["xray_figure", 2], ["xray_heart", 2]],
+	"walkway": [["walk_reverse", 3], ["walk_fast", 3]],
+	"gate": [["gate_open", 3], ["gate_seats", 3], ["gate_passenger", 3]],
 }
+## Easy anomalies are obvious at a glance (early in the dawn); the rest need a careful comparison (late).
+const EASY := ["light_flicker", "light_dark", "light_red", "fids_clock", "bag_reverse", "bag_nostop", "xray_heart",
+	"walk_reverse", "gate_open"]
 
 
 static func get_def(id: String) -> Dictionary:
@@ -175,16 +185,20 @@ static func kind_of(fac_id: String) -> String:
 	return "gate" if fac_id.begins_with("gate") else fac_id
 
 
-## Picks an unused anomaly for this facility kind. `used` = anomaly ids already placed this night
-## (the same anomaly never appears twice in one night).
-static func pick(facility_kind: String, cycle: int, used: Array = []) -> String:
+## Picks an unused anomaly for this facility kind. `used` = anomaly ids already placed today
+## (the same anomaly never appears twice in one shift). `difficulty` "easy" | "hard" is a preference.
+static func pick(facility_kind: String, cycle: int, used: Array = [], difficulty := "") -> String:
 	var options := []
 	for e in POOLS.get(facility_kind, []):
 		if int(e[1]) <= cycle and not used.has(e[0]):
 			options.append(e[0])
 	if options.is_empty():
 		return ""
-	# prefer anomalies introduced tonight (every night brings something new)
+	if difficulty != "":
+		var fit := options.filter(func(a): return EASY.has(a) == (difficulty == "easy"))
+		if not fit.is_empty():
+			options = fit
+	# prefer anomalies introduced today (every shift brings something new)
 	var fresh := options.filter(func(a): return _cycle_of(facility_kind, a) == cycle)
 	if not fresh.is_empty() and randf() < 0.65:
 		return fresh[randi() % fresh.size()]

@@ -94,7 +94,7 @@ func _build_objective(root: Control) -> void:
 	var cc := CenterContainer.new()
 	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_obj_tile.add_child(cc)
-	_obj_icon = UiIcon.make("order", 34, UiKit.INK_0)
+	_obj_icon = UiIcon.make("order", 34, UiKit.SIGNAL_INK)
 	cc.add_child(_obj_icon)
 	_obj_body = PanelContainer.new()
 	_obj_body.add_theme_stylebox_override("panel", UiKit.boxm(UiKit.SHADE, Vector4(18, 11, 22, 13)))
@@ -103,7 +103,7 @@ func _build_objective(root: Control) -> void:
 	bv.add_theme_constant_override("separation", 2)
 	bv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_obj_body.add_child(bv)
-	_obj_caption = FlapLabel.make("CURRENT ORDER · 현재 지시", UiKit.MIN_TEXT, UiKit.SIGNAL, "display", 700)
+	_obj_caption = FlapLabel.make("CURRENT ORDER · 현재 지시", UiKit.MIN_TEXT, UiKit.SIGNAL_TEXT, "display", 700)
 	_obj_caption.tick_sound = false
 	bv.add_child(_obj_caption)
 	_objective = FlapLabel.make("", 27, UiKit.TEXT, "sans", 700)
@@ -140,16 +140,20 @@ func _build_objective(root: Control) -> void:
 
 
 func _refresh_phase_chip() -> void:
-	var day := Game.phase == "day"
-	_phase_chip.text = "%s %d" % ["DAY" if day else "NIGHT", Game.cycle]
-	var bg := UiKit.NAVY_TEXT if _boarding else (UiKit.SIGNAL if day else UiKit.TEXT)
+	_phase_chip.text = "DAY %d" % Game.cycle
+	var bg := UiKit.NAVY_TEXT if _boarding else UiKit.TEXT
 	_phase_chip.add_theme_color_override("font_color", UiKit.NAVY if _boarding else UiKit.INK_0)
 	_phase_box.add_theme_stylebox_override("panel", UiKit.boxm(bg, Vector4(8, 1, 8, 2)))
 
 
-## Signage accent: signal yellow, or boarding-pass cream once the terminal takes over (75%+).
+## Signage accent: signal blue, or boarding-pass cream once the terminal takes over (75%+).
 func _accent() -> Color:
 	return UiKit.NAVY_TEXT if _boarding else UiKit.SIGNAL
+
+
+## The accent for text and thin marks on the dark HUD (the deep blue fill is too dark to read there).
+func _accent_text() -> Color:
+	return UiKit.NAVY_TEXT if _boarding else UiKit.SIGNAL_TEXT
 
 
 func _build_notes(root: Control) -> void:
@@ -218,7 +222,7 @@ func _build_reticle(root: Control) -> void:
 	_reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_reticle.draw.connect(_draw_reticle)
 	root.add_child(_reticle)
-	_observe_label = UiKit.caption("", UiKit.SIGNAL, 16)
+	_observe_label = UiKit.caption("", UiKit.SIGNAL_TEXT, 16)
 	_observe_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_observe_label.set_anchors_preset(Control.PRESET_CENTER)
 	_observe_label.offset_left = -300
@@ -277,7 +281,7 @@ func _build_controls(root: Control) -> void:
 	var cc := CenterContainer.new()
 	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_keys_tile.add_child(cc)
-	_keys_icon = UiIcon.make("keyboard", 32, UiKit.INK_0)
+	_keys_icon = UiIcon.make("keyboard", 32, UiKit.SIGNAL_INK)
 	cc.add_child(_keys_icon)
 	var body := MarginContainer.new()
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -288,7 +292,7 @@ func _build_controls(root: Control) -> void:
 	v.add_theme_constant_override("separation", 8)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(v)
-	_keys_caption = UiKit.caption("CONTROLS · 조작 안내", UiKit.SIGNAL)
+	_keys_caption = UiKit.caption("CONTROLS · 조작 안내", UiKit.SIGNAL_TEXT)
 	v.add_child(_keys_caption)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
@@ -485,17 +489,17 @@ func _sync_boarding() -> void:
 func _set_boarding(on: bool) -> void:
 	_boarding = on
 	_obj_tile.add_theme_stylebox_override("panel", UiKit.box(UiKit.NAVY_TEXT if on else UiKit.SIGNAL, Color(0, 0, 0, 0), 0, 0, 0))
-	_obj_icon.set_icon("plane" if on else "order", UiKit.NAVY if on else UiKit.INK_0)
+	_obj_icon.set_icon("plane" if on else "order", UiKit.NAVY if on else UiKit.SIGNAL_INK)
 	_obj_body.add_theme_stylebox_override("panel", UiKit.boxm(Color(UiKit.NAVY, 0.92) if on else UiKit.SHADE, Vector4(18, 11, 22, 13)))
-	_obj_caption.add_theme_color_override("font_color", UiKit.NAVY_TEXT if on else UiKit.SIGNAL)
+	_obj_caption.add_theme_color_override("font_color", UiKit.NAVY_TEXT if on else UiKit.SIGNAL_TEXT)
 	_obj_caption.flap_to("BOARDING · 탑승 안내" if on else "CURRENT ORDER · 현재 지시")
 	# the rest of the signage goes over with it: control guide, phase chip, observation accents
 	_keys_tile.add_theme_stylebox_override("panel", UiKit.box(_accent(), Color(0, 0, 0, 0), 0, 0, 0))
-	_keys_icon.set_icon("keyboard", UiKit.NAVY if on else UiKit.INK_0)
+	_keys_icon.set_icon("keyboard", UiKit.NAVY if on else UiKit.SIGNAL_INK)
 	_keys_caption.text = UiKit.keep_all(UiKit.t("PASSENGER GUIDE · 승객 안내" if on else "CONTROLS · 조작 안내"))
-	_keys_caption.add_theme_color_override("font_color", Color("9fb3e0") if on else UiKit.SIGNAL)
+	_keys_caption.add_theme_color_override("font_color", Color("9fb3e0") if on else UiKit.SIGNAL_TEXT)
 	_keys.add_theme_stylebox_override("panel", UiKit.boxm(Color(UiKit.NAVY, 0.88) if on else Color(0.035, 0.043, 0.055, 0.8), Vector4.ZERO))
-	_observe_label.add_theme_color_override("font_color", _accent())
+	_observe_label.add_theme_color_override("font_color", _accent_text())
 	_refresh_phase_chip()
 
 
@@ -533,7 +537,7 @@ func set_inspect_progress(v: float) -> void:
 		var tw := _observe_label.create_tween()
 		tw.tween_interval(0.7)
 		tw.tween_property(_observe_label, "modulate:a", 0.0, 0.3)
-		tw.tween_callback(func(): _observe_label.add_theme_color_override("font_color", _accent()))
+		tw.tween_callback(func(): _observe_label.add_theme_color_override("font_color", _accent_text()))
 	elif _observe_label.modulate.a > 0.0 and _burst <= 0.0:
 		_observe_label.modulate.a = 0.0
 
@@ -636,7 +640,7 @@ func _draw_reticle() -> void:
 		r.draw_arc(Vector2.ZERO, 30.0, 0.0, TAU, 64, Color(1, 1, 1, 0.16), 4.0, true)
 		var p := clampf(_progress, 0.0, 1.0)
 		if p > 0.0:
-			r.draw_arc(Vector2.ZERO, 30.0, -PI * 0.5, -PI * 0.5 + TAU * p, 64, _accent(), 4.0, true)
+			r.draw_arc(Vector2.ZERO, 30.0, -PI * 0.5, -PI * 0.5 + TAU * p, 64, _accent_text(), 4.0, true)
 	if _burst > 0.0:
 		var b := _burst
 		r.draw_arc(Vector2.ZERO, 30.0 + (1.0 - b) * 46.0, 0.0, TAU, 64, Color(UiKit.CLEAR, b), 3.0 + b * 2.0, true)
@@ -671,8 +675,8 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 		"radio":
 			chip = UiKit.chip("RADIO · %s" % who, UiKit.OPS, Color("13283a"), "radio")
 		"pa":
-			# solid sign chip: yellow-on-olive was too low in contrast; the PA becomes a boarding call at 75%+
-			chip = UiKit.chip("PA · 안내방송", UiKit.NAVY if _boarding else UiKit.INK_0, _accent(), "speaker")
+			# solid sign chip (white on the signal blue); the PA becomes a boarding call at 75%+
+			chip = UiKit.chip("PA · 안내방송", UiKit.NAVY if _boarding else UiKit.SIGNAL_INK, _accent(), "speaker")
 		"self":
 			chip = UiKit.chip(who if who != "" else "나", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "")
 		_:
@@ -749,7 +753,7 @@ func add_note(text: String, kind: String) -> void:
 	var cc := CenterContainer.new()
 	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tile.add_child(cc)
-	cc.add_child(UiIcon.make(meta[1], 26, UiKit.NAVY if _boarding and accent == UiKit.NAVY_TEXT else UiKit.INK_0))
+	cc.add_child(UiIcon.make(meta[1], 26, UiKit.NAVY if _boarding and accent == UiKit.NAVY_TEXT else UiKit.ink_on(accent)))
 	var body := MarginContainer.new()
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for side in [["margin_left", 16], ["margin_top", 11], ["margin_right", 16], ["margin_bottom", 13]]:
@@ -759,7 +763,8 @@ func add_note(text: String, kind: String) -> void:
 	v.add_theme_constant_override("separation", 2)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(v)
-	v.add_child(UiKit.caption(caption, Color("9fb3e0") if _boarding and accent == UiKit.NAVY_TEXT else accent))
+	var accent_text := UiKit.SIGNAL_TEXT if accent == UiKit.SIGNAL else accent
+	v.add_child(UiKit.caption(caption, Color("9fb3e0") if _boarding and accent == UiKit.NAVY_TEXT else accent_text))
 	var l := UiKit.rich(UiKit.key_bbcode(text), 20, ink)
 	l.custom_minimum_size = Vector2(512, 0)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -767,7 +772,7 @@ func add_note(text: String, kind: String) -> void:
 	var rec := {"node": panel, "life": 5.0 if kind != "alert" else 7.0, "max": 5.0 if kind != "alert" else 7.0, "accent": accent}
 	panel.draw.connect(func():
 		var rem := clampf(rec.life / rec.max, 0.0, 1.0)
-		panel.draw_rect(Rect2(56, panel.size.y - 2, (panel.size.x - 56) * rem, 2), accent))
+		panel.draw_rect(Rect2(56, panel.size.y - 2, (panel.size.x - 56) * rem, 2), accent_text))
 	_notes_root.add_child(panel)
 	_notes.insert(0, rec)
 	panel.position = Vector2(640, 0)

@@ -51,7 +51,7 @@ func build(num: String, with_seats := true, with_bridge := true) -> void:
 	add_child(sign)
 	sign.position = Vector3(0, 3.45, 0.3)
 	Geo.box(sign, Vector3.ZERO, Vector3(2.6, 0.8, 0.12), Mats.get_mat("sign_back"), false)
-	Geo.label(sign, "GATE " + number, Vector3(-0.5, 0.1, 0.065), 0.0, 70, Color(1.0, 0.8, 0.15), 0.005)
+	Geo.label(sign, "GATE " + number, Vector3(-0.5, 0.1, 0.065), 0.0, 70, Geo.SIGN_BLUE, 0.005)
 	Geo.label(sign, "탑승구 " + number, Vector3(-0.5, -0.24, 0.065), 0.0, 36, Color(0.9, 0.9, 0.9), 0.005)
 	Geo.box(sign, Vector3(0.82, 0, 0.065), Vector3(0.85, 0.6, 0.01), Mats.get_mat("screen_off"), false)
 	status_label = Geo.label(sign, "CLOSED", Vector3(0.82, 0.0, 0.075), 0.0, 40, _status_color, 0.004, true)

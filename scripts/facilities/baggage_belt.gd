@@ -21,6 +21,7 @@ var spawn_queue: Array[String] = []
 var spawn_timer := 0.0
 var hatch_s := 0.0
 var bags_seen := 0
+var expect_bags := 3     # bags this run puts on the belt before it counts as observed (a lone suitcase = 1)
 var _motor: AudioStreamPlayer3D
 var _beacon: OmniLight3D
 var _beacon_mesh: MeshInstance3D
@@ -69,7 +70,7 @@ func build() -> void:
 	_beacon = Geo.omni(hatch, Vector3(0.3, 2.3, 0.5), Color(1.0, 0.55, 0.05), 0.0, 8.0)
 	# direction arrows painted on the island
 	for side in [-1.0, 1.0]:
-		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, 0.765, side * (radius - 0.55)), 0.0, 64, Color(0.95, 0.75, 0.1), 0.006, false, "print")
+		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, 0.765, side * (radius - 0.55)), 0.0, 64, Geo.SIGN_BLUE, 0.006, false, "print")
 		arrow.rotation.x = -PI / 2
 	# carousel display
 	var disp_holder := Node3D.new()
@@ -78,7 +79,7 @@ func build() -> void:
 	disp_holder.rotation.y = -PI / 2
 	Geo.box(disp_holder, Vector3(0, 0, -0.05), Vector3(1.6, 0.8, 0.1), Mats.get_mat("plastic_dark"), false)
 	Geo.cyl(disp_holder, Vector3(0, -1.5, -0.05), 0.05, 2.2, steel)
-	Geo.label(disp_holder, "B-03", Vector3(0, 0.18, 0.005), 0.0, 90, Color(1.0, 0.75, 0.25), 0.004, true)
+	Geo.label(disp_holder, "B-03", Vector3(0, 0.18, 0.005), 0.0, 90, Geo.SIGN_BLUE, 0.004, true)
 	_display = Geo.label(disp_holder, "TEST", Vector3(0, -0.17, 0.005), 0.0, 50, Color(0.6, 0.65, 0.7), 0.004, true)
 	focus = self
 	_motor = Snd.make_loop("belt_loop", self, -6.0, 5.0, 26.0)
@@ -155,7 +156,7 @@ func _hatch_clear() -> bool:
 	return true
 
 
-func _spawn_bag(kind: String, quiet := false) -> void:
+func _spawn_bag(kind: String) -> void:
 	var color := Color(0.06, 0.06, 0.07)
 	var tag := ""
 	var soft := false
@@ -186,25 +187,14 @@ func _spawn_bag(kind: String, quiet := false) -> void:
 	var b := {"node": root, "s": hatch_s, "kind": kind}
 	bags.append(b)
 	_place_bag(b)
-	bags_seen += 1
-	if quiet:
-		return
 	root.position.y += 0.6
 	create_tween().tween_property(root, "position:y", root.position.y - 0.6, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	Snd.play_at("luggage_thump", global_position + Vector3(half + radius, 0.5, 0), -2.0, randf_range(0.9, 1.1), 5.0)
+	bags_seen += 1
 	for flap in _flaps:
 		var t := create_tween()
 		t.tween_property(flap, "rotation:z", 0.5, 0.15)
 		t.tween_property(flap, "rotation:z", 0.0, 0.6)
-
-
-## Lays `count` bags of one kind evenly around the loop at once (endings: a carousel that is already full).
-func fill(kind: String, count: int) -> void:
-	for i in count:
-		_spawn_bag(kind, true)
-		var b: Dictionary = bags[bags.size() - 1]
-		b.s = hatch_s + path_len * float(i) / float(count)
-		_place_bag(b)
 
 
 func _place_bag(b: Dictionary) -> void:
@@ -245,6 +235,7 @@ func has_bag(kind: String) -> bool:
 func reset_for_inspection() -> void:
 	clear_bags()
 	bags_seen = 0
+	expect_bags = 3
 	estopped = false
 	target_speed = 0.0
 	running = false
@@ -271,6 +262,9 @@ func _on_start() -> void:
 		elif anomaly == "bag_name":
 			spawn_queue.append("name")
 		spawn_timer = 1.2
+		expect_bags = 3
+	elif bags.is_empty():
+		expect_bags = spawn_queue.size()
 
 
 func _on_stop() -> void:
@@ -343,7 +337,7 @@ func _remove_anomaly(anomaly_id: String) -> void:
 
 
 func is_observable() -> bool:
-	return powered and (running or bags_seen >= 3) and spawn_queue.is_empty() and bags_seen >= 3
+	return powered and spawn_queue.is_empty() and bags_seen >= expect_bags
 
 
 func describe_state() -> String:

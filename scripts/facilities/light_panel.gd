@@ -1,7 +1,8 @@
 class_name LightPanel
 extends Facility
 ## 조명 분전반 — wall panel with one lever per lighting zone.
-## Anomalies: light_flicker (rhythmic blink in a zone), light_red (one panel glows red).
+## Anomalies: light_flicker (rhythmic blink in a zone), light_red (one panel glows red),
+## light_dark (one panel stays dark in a lit zone).
 
 var zones := {}             # zone_name -> LightZone
 var switches := {}          # zone_name -> ToggleSwitch
@@ -76,6 +77,8 @@ func _apply_anomaly(anomaly_id: String) -> void:
 			z.set_pattern(true)
 		"light_red":
 			z.set_red(true)
+		"light_dark":
+			z.set_dark(true)
 
 
 func _remove_anomaly(anomaly_id: String) -> void:
@@ -87,6 +90,8 @@ func _remove_anomaly(anomaly_id: String) -> void:
 			z.set_pattern(false)
 		"light_red":
 			z.set_red(false)
+		"light_dark":
+			z.set_dark(false)
 
 
 func describe_state() -> String:

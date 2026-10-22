@@ -20,7 +20,7 @@ var _arrow_labels: Array[Label3D] = []
 
 func build(len_m := 42.0) -> void:
 	length = len_m
-	observe_radius = 14.0
+	observe_radius = maxf(14.0, len_m * 0.5 + 4.0)   # focus is mid-belt: watching it from the control pedestal at either end counts
 	surface_mat = Mats.shader_mat("res://shaders/conveyor.gdshader", {"axis": 2})
 	rail_mat = Mats.shader_mat("res://shaders/conveyor.gdshader", {
 		"axis": 2, "color": Color(0.03, 0.03, 0.03), "groove_color": Color(0.02, 0.02, 0.02),

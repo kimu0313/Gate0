@@ -2,7 +2,7 @@ class_name FidsBoard
 extends Facility
 ## FIDS 출발 전광판. Normal = fixed test schedule in TEST MODE.
 ## Anomalies: fids_extra (a flight that is not in the list), fids_changed (one field altered),
-## fids_clock (board clock runs backwards).
+## fids_clock (board clock runs backwards), fids_gate04 (the list is replaced by a FLIGHT 000 check-in screen).
 
 const NORMAL_ROWS := [
 	{"time": "06:10", "flight": "SH 101", "dest": "TOKYO/NARITA", "ko": "도쿄/나리타", "gate": "01", "remark": "TEST"},
@@ -147,10 +147,16 @@ func _apply_anomaly(anomaly_id: String) -> void:
 					_rows[6]["remark"] = "BOARDING"
 		"fids_clock":
 			_clock_offset = 0.0
+		"fids_gate04":
+			# the whole board turns into one check-in screen for a flight that does not exist
+			_story_mode = "story"
+			screen.big_lines = ["FLIGHT 000", "GATE 04", "CHECK-IN"]
 	_refresh()
 
 
-func _remove_anomaly(_anomaly_id: String) -> void:
+func _remove_anomaly(anomaly_id: String) -> void:
+	if anomaly_id == "fids_gate04":
+		_story_mode = ""
 	_rows = NORMAL_ROWS.duplicate(true)
 	_clock_offset = 0.0
 	if _reboot_t <= 0.0:

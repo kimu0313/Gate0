@@ -155,7 +155,7 @@ func _hatch_clear() -> bool:
 	return true
 
 
-func _spawn_bag(kind: String) -> void:
+func _spawn_bag(kind: String, quiet := false) -> void:
 	var color := Color(0.06, 0.06, 0.07)
 	var tag := ""
 	var soft := false
@@ -175,20 +175,36 @@ func _spawn_bag(kind: String) -> void:
 		"name":
 			color = Color(0.2, 0.14, 0.09)
 			tag = "%s\nFLIGHT 000\n→ ---" % Game.player_name
+		"pax":
+			# 1987: a passenger's bag, finally on a carousel
+			color = Color.from_hsv(randf_range(0.0, 1.0), randf_range(0.15, 0.45), randf_range(0.18, 0.42))
+			tag = "A0 · 1987\n→ HOME"
+			soft = randf() < 0.4
 	var root := Props.suitcase(self, color, tag, soft)
 	var it := Interactable.create(root, Vector3(0, 0.15, 0), Vector3(0.5, 0.32, 0.72), "가방 들어 확인하기", _on_touch_bag.bind(kind))
 	it.press_sound = ""
 	var b := {"node": root, "s": hatch_s, "kind": kind}
 	bags.append(b)
 	_place_bag(b)
+	bags_seen += 1
+	if quiet:
+		return
 	root.position.y += 0.6
 	create_tween().tween_property(root, "position:y", root.position.y - 0.6, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	Snd.play_at("luggage_thump", global_position + Vector3(half + radius, 0.5, 0), -2.0, randf_range(0.9, 1.1), 5.0)
-	bags_seen += 1
 	for flap in _flaps:
 		var t := create_tween()
 		t.tween_property(flap, "rotation:z", 0.5, 0.15)
 		t.tween_property(flap, "rotation:z", 0.0, 0.6)
+
+
+## Lays `count` bags of one kind evenly around the loop at once (endings: a carousel that is already full).
+func fill(kind: String, count: int) -> void:
+	for i in count:
+		_spawn_bag(kind, true)
+		var b: Dictionary = bags[bags.size() - 1]
+		b.s = hatch_s + path_len * float(i) / float(count)
+		_place_bag(b)
 
 
 func _place_bag(b: Dictionary) -> void:
@@ -223,6 +239,16 @@ func has_bag(kind: String) -> bool:
 		if b.kind == kind:
 			return true
 	return false
+
+
+## A new work order starts from an empty, stopped belt.
+func reset_for_inspection() -> void:
+	clear_bags()
+	bags_seen = 0
+	estopped = false
+	target_speed = 0.0
+	running = false
+	direction = 1.0
 
 
 func clear_bags() -> void:

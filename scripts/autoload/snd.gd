@@ -368,12 +368,13 @@ func pa_announce(clips: Array, opts: Dictionary = {}) -> bool:
 	return not cancelled
 
 
-func pa_stop() -> void:
+func pa_stop(quiet := false) -> void:
 	if not pa_busy:
 		return
 	_pa_cancel = true
 	_pa.stop()
-	play("glitch", -8.0, 1.0, "SFX")
+	if not quiet:
+		play("glitch", -8.0, 1.0, "SFX")
 
 
 func _pa_play(s: AudioStream, pitch: float, slow: bool) -> void:

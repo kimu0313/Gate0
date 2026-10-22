@@ -1,7 +1,9 @@
 class_name PaConsole
 extends Facility
 ## 안내방송 콘솔. [테스트 방송] plays the standard test announcement; [송출 중지] cuts the PA.
-## Anomalies: pa_word (one word differs from the standard text), pa_slow (the voice drags and deepens).
+## Anomalies: pa_word (one word differs from the standard text), pa_slow (the voice drags and deepens),
+## pa_extra (a sentence is added after the standard text), pa_auto (the PA keeps broadcasting by itself).
+## Night 5 can reveal a hidden [도착 안내] button (ending D) with enable_arrival().
 
 const TEXT_NORMAL := "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."
 const TEXT_EN := "Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. Thank you."
@@ -10,6 +12,8 @@ const WORD_VARIANTS := [
 	["pa_test_anom_b_ko", "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 승객 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."],
 	["pa_test_anom_c_ko", "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 기다리고 있겠습니다."],
 ]
+const TEXT_EXTRA := "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다. 지금 움직이시는 분, 거기 계신 거 다 보입니다."
+const AUTO_SUBS := ["영편 승객께서는 출국장으로 이동해 주시기 바랍니다.", "Passengers of flight zero, please proceed to the departure area."]
 
 var heard := false
 var word_variant := 0
@@ -17,6 +21,11 @@ var _lcd: Label3D
 var _vu: Array[MeshInstance3D] = []
 var _onair: MeshInstance3D
 var _t := 0.0
+var _arrival_holder: Node3D
+var _arrival_button: Interactable
+var _arrival_cb: Callable
+var _auto_running := false
+var _quiet_cancel := false
 
 
 func build() -> void:
@@ -49,6 +58,17 @@ func build() -> void:
 	_onair = Geo.box(self, Vector3(-0.3, 0.12, -0.2), Vector3(0.18, 0.06, 0.02), Mats.get_mat("screen_off"), false)
 	Geo.label(_onair, "ON AIR", Vector3(0, 0, 0.012), 0.0, 18, Color(0.9, 0.9, 0.9), 0.002)
 	focus = face
+	# hidden arrival-announcement panel (ending D)
+	_arrival_holder = Node3D.new()
+	add_child(_arrival_holder)
+	_arrival_holder.position = Vector3(-0.78, 0.13, 0.05)   # high enough that the tilted plate (and its caption) clears the desk
+	_arrival_holder.rotation.x = -1.1
+	Geo.box(_arrival_holder, Vector3(0, 0, -0.02), Vector3(0.3, 0.3, 0.04), Mats.get_mat("plastic_grey"), false)
+	Geo.label(_arrival_holder, "ARRIVAL", Vector3(0, 0.105, 0.002), 0.0, 18, Color(0.95, 0.85, 0.3), 0.0022, false, "print")
+	_arrival_button = Props.button(_arrival_holder, Vector3(0, -0.01, 0), 0.0, "button_blue", "도착 안내", "도착 안내 방송", _on_arrival)
+	_arrival_holder.visible = false
+	_arrival_button.enabled = false
+	_arrival_button.collision_layer = 0
 	Snd.pa_started.connect(_on_pa_started)
 	Snd.pa_finished.connect(_on_pa_finished)
 
@@ -87,6 +107,9 @@ func play_test() -> void:
 		"pa_slow":
 			opts["slow_index"] = 0
 			subs[0] = "안내 말씀 드립니다… 현재 터미널 시설 점검이… 진행 중… 입니다…"
+		"pa_extra":
+			clips[0] = "pa_test_anom_d_ko"
+			subs[0] = TEXT_EXTRA
 	opts["subs"] = subs
 	var finished := await Snd.pa_announce(clips, opts)
 	running = false
@@ -101,6 +124,42 @@ func _on_stop() -> void:
 		Snd.pa_stop()
 
 
+## pa_auto: the console keeps announcing flight 000 by itself until someone presses [송출 중지].
+func _auto_loop() -> void:
+	if _auto_running:
+		return
+	_auto_running = true
+	while anomaly == "pa_auto" and is_inside_tree():
+		if powered and not Snd.pa_busy:
+			running = true
+			await Snd.pa_announce(["pa_flight0_move_ko", "pa_flight0_move_en"], {"wrong": true, "tag": "auto", "subs": AUTO_SUBS})
+			running = false
+			heard = true
+			changed.emit()
+		await get_tree().create_timer(7.0, false).timeout
+	_auto_running = false
+
+
+func _apply_anomaly(a: String) -> void:
+	if a == "pa_auto":
+		_auto_loop()
+
+
+func enable_arrival(cb: Callable) -> void:
+	_arrival_cb = cb
+	_arrival_holder.visible = true
+	_arrival_button.enabled = true
+	_arrival_button.collision_layer = Geo.LAYER_INTERACT
+	Geo.set_text(_lcd, "A0 · 41 PAX")
+	_lcd.modulate = Color(0.45, 0.7, 1.0)
+
+
+func _on_arrival() -> void:
+	act("pa_arrival", id)
+	if _arrival_cb.is_valid():
+		_arrival_cb.call()
+
+
 func _on_pa_started(_tag: String) -> void:
 	_onair.material_override = Mats.get_mat("lamp_red")
 	Geo.set_text(_lcd, "ON AIR")
@@ -109,8 +168,11 @@ func _on_pa_started(_tag: String) -> void:
 
 func _on_pa_finished(cancelled: bool) -> void:
 	_onair.material_override = Mats.get_mat("screen_off")
-	Geo.set_text(_lcd, "STOPPED" if cancelled else "READY")
+	Geo.set_text(_lcd, "STOPPED" if cancelled and not _quiet_cancel else "READY")
 	_lcd.modulate = Color(0.35, 1.0, 0.5)
+	if _quiet_cancel:
+		_quiet_cancel = false
+		return
 	if cancelled:
 		heard = true
 		running = false
@@ -131,6 +193,10 @@ func _on_power_restored() -> void:
 
 
 func reset_inspection() -> void:
+	# a test broadcast still on air from the last inspection would block [테스트 방송] (or stand in for it)
+	if Snd.pa_busy and Snd.pa_tag == "test":
+		_quiet_cancel = true
+		Snd.pa_stop(true)
 	heard = false
 	running = false
 

@@ -46,6 +46,7 @@ var _detail_panel: PanelContainer
 var _stamp_layer: Control
 var _selected: Task
 var _erosion_meter: ErosionMeter
+var _judge_line: Label
 var _erosion_state: Label
 var _erosion_box: PanelContainer
 var _erosion_caption: Label
@@ -507,6 +508,8 @@ func _build_tasks_page(parent: Control) -> void:
 	_erosion_meter = ErosionMeter.new()
 	_erosion_meter.custom_minimum_size = Vector2(0, 12)
 	ev.add_child(_erosion_meter)
+	_judge_line = UiKit.caption("", UiKit.TEXT_DIM, 15)
+	ev.add_child(_judge_line)
 	var holder := Control.new()
 	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	page.add_child(holder)
@@ -770,6 +773,13 @@ func _report(task: Task, anomaly: bool) -> void:
 func _refresh_erosion() -> void:
 	if _erosion_meter == null:
 		return
+	# tonight's count: inspections done and judgment mistakes (3 = the shift is void)
+	var night: bool = director != null and Game.phase == "night" and director.inspections_total > 0
+	_judge_line.visible = night
+	if night:
+		_judge_line.text = UiKit.keep_all(UiKit.t("점검 %d / %d  ·  판정 실수 %d / 3") % [
+			director.inspections_done, director.inspections_total, director.mistakes])
+		_judge_line.add_theme_color_override("font_color", UiKit.ALERT if director.mistakes >= 2 else UiKit.TEXT_DIM)
 	if boarding_mode:
 		# the terminal has stopped measuring an inspector: it has checked in a passenger
 		_erosion_caption.text = UiKit.keep_all(UiKit.t("PASSENGER STATUS · 승객 상태"))

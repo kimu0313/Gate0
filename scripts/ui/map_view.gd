@@ -239,6 +239,8 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 
 func _locked(zn: String) -> bool:
 	match zn:
+		"baggage", "storage":
+			return terminal.shutters.has("baggage") and not terminal.shutters.baggage.is_open
 		"security":
 			return not terminal.shutters.security.is_open
 		"corridor":

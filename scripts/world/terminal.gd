@@ -324,6 +324,8 @@ func _build_baggage() -> void:
 		["수하물 수취대  B-03", 52, Color(1, 1, 1), Vector2(0, 0)],
 	], 6.0)
 	# storage door
+	# hall -> baggage opening is shuttered until Day 2 (zones open one per day)
+	shutters["baggage"] = Shutter.create(self, Vector3(22, 0, 0), PI / 2, 10.0, 6.0, "점검 구역 외 · 통제")
 	doors["storage"] = SlidingDoor.create(self, Vector3(41, 0, -14), 0.0, 1.8, 2.4, false, true)
 	Geo.label(self, "수하물 보관실\nBAGGAGE STORAGE", Vector3(41, 2.85, -13.78), 0.0, 32, Color(0.9, 0.9, 0.9), 0.005, false, "print")
 	# maintenance door (keypad)

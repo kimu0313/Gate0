@@ -10,7 +10,7 @@ var director: ShiftDirector
 
 func _ready() -> void:
 	var day := Game.phase == "day"
-	var preset := "night" if not day else ("day_wrong" if Game.cycle >= 3 else "day")
+	var preset := "night" if not day else ("day_wrong" if Game.cycle >= 5 else "day")
 	atmosphere = Atmosphere.new()
 	add_child(atmosphere)
 	atmosphere.setup(preset)

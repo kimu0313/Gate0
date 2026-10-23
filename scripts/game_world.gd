@@ -38,6 +38,25 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--label-audit"):
 		add_child(load("res://scripts/debug/label_audit.gd").new())
 		return
+	if OS.get_cmdline_user_args().has("--level-shots"):
+		var ls = load("res://scripts/debug/level_shots.gd").new()
+		ls.level = terminal
+		ls.player = player
+		add_child(ls)
+		ui.fade_to(0.0, 0.01)
+		return
+	if OS.get_cmdline_user_args().has("--shutter-clip"):
+		var sc = load("res://scripts/debug/shutter_clip.gd").new()
+		sc.world = self
+		add_child(sc)
+		ui.fade_to(0.0, 0.01)
+		return
+	if OS.get_cmdline_user_args().has("--level-plan"):
+		var lp = load("res://scripts/debug/level_plan.gd").new()
+		lp.level = terminal
+		add_child(lp)
+		ui.fade_to(0.0, 0.01)
+		return
 	if OS.get_cmdline_user_args().has("--uigallery"):
 		var gal = load("res://scripts/debug/ui_gallery.gd").new()
 		gal.world = self

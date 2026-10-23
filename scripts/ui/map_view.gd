@@ -46,8 +46,8 @@ func _zones() -> Array:
 func _layout(area: Rect2) -> void:
 	var b := Rect2()
 	for zn in _zones():
-		var r: Rect2 = Terminal.ZONE_RECTS[zn]
-		b = r if b.size == Vector2.ZERO else b.merge(r)
+		for r: Rect2 in Terminal.zone_rects(zn):
+			b = r if b.size == Vector2.ZERO else b.merge(r)
 	_bounds = b.grow(2.0)
 	# leave room below for outside name plates and the legend row
 	_scale = minf((area.size.x - PAD * 2.0) / _bounds.size.y, (area.size.y - PAD * 2.0 - 64.0) / _bounds.size.x)
@@ -80,23 +80,30 @@ func _draw() -> void:
 	# zones
 	var rects := {}
 	for zn in _zones():
-		var rect := _map_rect(Terminal.ZONE_RECTS[zn])
+		# a zone may have several footprints (hall + its strip, baggage + the staff passage): the largest carries
+		# the name and the lamp
+		var parts: Array = Terminal.zone_rects(zn).map(func(r): return _map_rect(r))
+		var rect: Rect2 = parts[0]
+		for pr: Rect2 in parts:
+			if pr.get_area() > rect.get_area():
+				rect = pr
 		rects[zn] = rect
 		var locked := _locked(zn)
 		var col := UiKit.SCREEN_3 if not locked else Color("0b0f14")
 		if zn == target_zone:
 			col = col.lerp(Color(UiKit.SIGNAL, 1.0), 0.12 + 0.08 * sin(_t * 4.0))
-		draw_rect(rect, col)
-		if locked:
-			var x := rect.position.x - rect.size.y
-			while x < rect.end.x:
-				var p0 := Vector2(maxf(x, rect.position.x), rect.position.y + maxf(0.0, rect.position.x - x))
-				var p1 := Vector2(minf(x + rect.size.y, rect.end.x), rect.position.y + minf(rect.size.y, rect.end.x - x))
-				draw_line(p0, p1, Color(1, 1, 1, 0.035), 1.0)
-				x += 14.0
-		draw_rect(rect, Color("2b3a4c") if not locked else Color("1c232c"), false, 2.0)
-		if zn == target_zone:
-			draw_rect(rect, Color(UiKit.SIGNAL_TEXT, 0.7), false, 2.0)
+		for pr: Rect2 in parts:
+			draw_rect(pr, col)
+			if locked:
+				var x := pr.position.x - pr.size.y
+				while x < pr.end.x:
+					var p0 := Vector2(maxf(x, pr.position.x), pr.position.y + maxf(0.0, pr.position.x - x))
+					var p1 := Vector2(minf(x + pr.size.y, pr.end.x), pr.position.y + minf(pr.size.y, pr.end.x - x))
+					draw_line(p0, p1, Color(1, 1, 1, 0.035), 1.0)
+					x += 14.0
+			draw_rect(pr, Color("2b3a4c") if not locked else Color("1c232c"), false, 2.0)
+			if zn == target_zone:
+				draw_rect(pr, Color(UiKit.SIGNAL_TEXT, 0.7), false, 2.0)
 		# lamp in the corner, clear of the name
 		if terminal.zones.has(zn) and not locked and rect.size.x > 20.0 and rect.size.y > 20.0:
 			var lp := Vector2(rect.end.x - 12.0, rect.position.y + 12.0)
@@ -239,7 +246,7 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 
 func _locked(zn: String) -> bool:
 	match zn:
-		"baggage", "storage":
+		"baggage":
 			return terminal.shutters.has("baggage") and not terminal.shutters.baggage.is_open
 		"security":
 			return not terminal.shutters.security.is_open

@@ -4410,3 +4410,72 @@ msgstr "Security today, then. For the X-ray, press Load Bag and watch the screen
 
 msgid "그럼… 게이트에서 봬요."
 msgstr "Well… see you at the gate."
+
+msgid "자재창고"
+msgstr "Storage"
+
+msgid ""
+"탑승 수속\n"
+"Check-in\n"
+"\n"
+"자동 탑승수속\n"
+"Self Check-in"
+msgstr ""
+"Check-in\n"
+"\n"
+"Self Check-in"
+
+msgid "◀  수하물 수취  BAGGAGE CLAIM"
+msgstr "◀  BAGGAGE CLAIM"
+
+msgid "◀  시설관리실  STAFF ONLY"
+msgstr "◀  FACILITY OFFICE  STAFF ONLY"
+
+msgid ""
+"직원 통로 · 수하물 수취\n"
+"STAFF · BAGGAGE CLAIM"
+msgstr ""
+"STAFF PASSAGE\n"
+"BAGGAGE CLAIM"
+
+msgid "자동 탑승수속"
+msgstr "Kiosk check-in"
+
+msgid ""
+"Self Check-in\n"
+"탑승수속"
+msgstr ""
+"Self Check-in\n"
+"Touch to start"
+
+msgid ""
+"운행 중지 · 점검 중\n"
+"OUT OF SERVICE"
+msgstr ""
+"OUT OF SERVICE\n"
+"Under inspection"
+
+msgid ""
+"2층 라운지 — 운영 준비 중\n"
+"2F LOUNGE · OPENING SOON"
+msgstr ""
+"2F LOUNGE\n"
+"OPENING SOON"
+
+msgid "B-%02d  운영 준비 중"
+msgstr "B-%02d  NOT IN SERVICE"
+
+msgid "도착 출구  ARRIVALS EXIT"
+msgstr "ARRIVALS EXIT"
+
+msgid ""
+"MW-2  운행 준비 중\n"
+"NOT IN SERVICE"
+msgstr ""
+"MW-2\n"
+"NOT IN SERVICE"
+
+msgid ""
+"자재창고\n"
+"STORAGE"
+msgstr "STORAGE"

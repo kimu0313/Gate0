@@ -203,12 +203,12 @@ func npc_leave(way := "entrance") -> void:
 	var route: Array
 	match way:
 		"office":
-			route = [Vector3(-23.4, 0, 0), Vector3(-20.4, 0, 0)]
+			route = t.route(n.global_position, "office_door_out")
 		"wing":
 			route = StaffNpc.route_to_wing(n.global_position)
 		_:
 			route = StaffNpc.route_to_entrance(n.global_position)
-			route.append(Vector3(0, 0, 16.8))
+			route.append(t.spot("entrance_out"))
 	n.walk(route)
 	var e := 0.0
 	var door_opened := false
@@ -217,10 +217,10 @@ func npc_leave(way := "entrance") -> void:
 		e += 0.25
 		if not is_instance_valid(n):
 			break
-		if not door_opened and way == "office" and n.global_position.x > -24.2:
+		if not door_opened and way == "office" and n.global_position.distance_to(t.doors.office.global_position) < 2.2:
 			door_opened = true
 			_open_door_briefly(t.doors.office, 2.0)
-		elif not door_opened and way == "entrance" and n.global_position.z > 11.0:
+		elif not door_opened and way == "entrance" and n.global_position.distance_to(t.doors.entrance.global_position) < 3.0:
 			door_opened = true
 			_open_door_briefly(t.doors.entrance, 2.0)
 		if e > 2.0 and way != "office" and not n.is_seen():

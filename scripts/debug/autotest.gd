@@ -15,15 +15,8 @@ var always_wrong := false   # `--wrong`: every report is the opposite (3 판정 
 var _shot := 0
 var _log_prefix := ""
 
-const VIEW := {
-	"lights": [Vector3(-19.6, 0.05, 4.6), Vector3(-21.78, 1.45, 4.6)],
-	"fids": [Vector3(-11.0, 0.05, -6.5), Vector3(-11.0, 4.6, -13.8)],
-	"pa": [Vector3(0.0, 0.05, 7.9), Vector3(0.0, 1.1, 6.6)],
-	"baggage": [Vector3(26.3, 0.05, -1.6), Vector3(35.0, 0.6, 2.5)],
-	"walkway": [Vector3(-0.8, 0.05, -28.6), Vector3(-2.8, 0.2, -40.0)],
-	"xray": [Vector3(-2.5, 0.05, -21.0), Vector3(-3.6, 1.24, -21.0)],
-	"punch": [Vector3(-28.4, 0.05, -4.4), Vector3(-28.4, 1.35, -5.8)],
-}
+## Facilities with a fixed viewpoint: Terminal spots "view_<id>" (feet) and "look_<id>".
+const VIEW := ["lights", "fids", "pa", "baggage", "walkway", "xray", "punch"]
 
 
 func _ready() -> void:
@@ -171,20 +164,21 @@ func _do_goal(task: Task) -> void:
 		await _pick("log2")
 	elif "탑승동 출입" in title:
 		var reader: CardReader = d.script_obj.get("_reader")
-		await goto(reader.global_position + Vector3(0, -1.2, 1.1), reader.global_position)
+		await goto(reader.global_position + reader.global_basis.z * 1.1 + Vector3(0, -1.2, 0), reader.global_position)
 		reader.interactable.interact()
 		await wait(0.5)
 		await shot("card_denied")
 	elif "승객 통로" in title:
-		await goto(Vector3(2.0, 0.05, -19.0), Vector3(2.0, 1.2, -24.0))
-		await goto(Vector3(2.0, 0.05, -21.0), Vector3(2.0, 1.2, -24.0))
+		var md := t.spot("md_east")
+		await goto(md + Vector3(0, 0.05, 1.6), md + Vector3(0, 1.2, -3.0))
+		await goto(md + Vector3(0, 0.05, -0.4), md + Vector3(0, 1.2, -3.0))
 		await _until(func(): return Game.flag("passenger_lane"), 10.0)
 		await shot("passenger_lane")
 	elif "0번 게이트 앞으로" in title:
 		await _finale_choice()
 		return
 	elif "퇴근" in title or "근무 종료" in title:
-		await goto(VIEW.punch[0], VIEW.punch[1])
+		await goto(t.spot("view_punch"), t.spot("look_punch"))
 		await shot("before_punch")
 		var got := [false]
 		var mark := func(): got[0] = true
@@ -238,8 +232,8 @@ func _do_inspect(task: Task) -> void:
 	if f is BoardingGate:
 		# far enough back that a seated "passenger" never comes within reach
 		await goto(f.to_global(Vector3(-1.0, 0.05, 11.5)), f.focus_position())
-	elif VIEW.has(task.facility_id):
-		await goto(VIEW[task.facility_id][0], VIEW[task.facility_id][1])
+	elif task.facility_id in VIEW:
+		await goto(t.spot("view_" + task.facility_id), t.spot("look_" + task.facility_id))
 	# activate
 	if f is LightPanel:
 		for zn in ["hall", "baggage"]:
@@ -278,7 +272,7 @@ func _do_inspect(task: Task) -> void:
 		log_line("  harness: re-positioning to observe %s" % task.facility_id)
 		var spot := Vector3(fp.x, 0.05, fp.z) + away * 6.0
 		if f is MovingWalkway:
-			spot = Vector3(fp.x + 4.0, 0.05, fp.z)   # beside the belt, never on it
+			spot = Vector3(fp.x - 3.0, 0.05, fp.z)   # beside the belt (west, MW-2 is on the east), never on it
 		await goto(spot, fp)
 		ok = await _until(func(): return task.observed or task.state != "active" or task.locked != "", 30.0)
 	if task.locked != "":
@@ -328,7 +322,7 @@ func _apply_fix(f: Facility, a: String) -> void:
 		"reset":
 			(f as FidsBoard)._on_reset()
 		"power_off":
-			await goto(Vector3(-25.2, 0.05, -4.6), Vector3(-25.2, 1.5, -5.8))
+			await goto(t.spot("view_breaker"), t.spot("look_breaker"))
 			t.breaker.switches[fix[1]]._on_used()
 			if not OS.get_cmdline_user_args().has("--leave-power-off"):   # like a player who never switches it back on
 				await wait(1.0)
@@ -386,7 +380,7 @@ func _watch_events() -> void:
 			"3am":
 				log_line("EVENT 3am → stay in a lit zone (lit=%s)" % d.player_zone_lit())
 				if not d.player_zone_lit():
-					await goto(Vector3(-28, 0.05, 0), Vector3(-33, 1, 0))
+					await goto(t.spot("office_inside"), t.spot("office_look"))
 				await _until(func(): return d.running_event != "3am", 40.0)
 			"slowpa":
 				log_line("EVENT slow PA → face south")
@@ -399,7 +393,7 @@ func _watch_events() -> void:
 				await _until(func(): return d.running_event != "broadcast", 90.0 * Engine.time_scale)
 			"boardingcall":
 				log_line("EVENT boarding call in zone %s → leave the gate area (p.8 ④)" % p.zone)
-				await goto(Vector3(0, 0.05, -62.0), Vector3(0, 1.6, -40.0))
+				await goto(t.spot("boarding_hold"), t.spot("boarding_look"))
 				await _until(func(): return d.running_event != "boardingcall", 90.0)
 
 
@@ -419,10 +413,10 @@ func _finale_choice() -> void:
 			await goto(Vector3(0, 0.05, -134.4), Vector3(0, 1.4, -136))
 		"exit":
 			await shot("exit_lights")
-			await goto(Vector3(17, 0.05, 11.5), Vector3(17, 1.5, 14))
+			await goto(t.spot("exit_inside"), t.spot("exit_look"))
 			await shot("emergency_exit")
 			await wait(1.0)
-			await goto(Vector3(17, 0.05, 16.0), Vector3(17, 1.5, 20))
+			await goto(t.spot("exit_outside"), t.spot("exit_out_look"))
 		_:
 			await shot("your_voice")
 	await _until(func(): return d.ending_started, 90.0)

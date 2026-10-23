@@ -168,6 +168,8 @@ static func _make(mat_name: String) -> Material:
 			return emissive(Color(0.9, 0.05, 0.03), 0.8, Color(0.5, 0.02, 0.02))
 		"button_yellow":
 			return emissive(Color(0.9, 0.7, 0.05), 0.6, Color(0.6, 0.45, 0.02))
+		"button_white":
+			return std(Color(0.86, 0.87, 0.88), 0.35)
 		"button_grey":
 			return std(Color(0.2, 0.2, 0.22), 0.5)
 		"button_blue":

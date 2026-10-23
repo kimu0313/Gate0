@@ -7,7 +7,7 @@ extends PhaseScript
 ## 마지막 장면: 업무일지 마지막 줄 — "수칙 7번은 내가 쓴 게 아니다."
 
 
-const POST := Vector3(-2.0, 0, -18.4)   # between the X-ray lanes, by the lane 1 monitor desk
+const POST := "npc_xray"   # Terminal spot: between the X-ray lanes, by the lane 1 monitor desk
 const TALK := [
 	["오늘은 보안검색대까지네요. 엑스레이는 가방 투입을 누르고 판독 화면을 보면 돼요.", ""],
 	["7페이지 추록이요. 정상 판독 화면은 노트북, 물병, 열쇠, 케이블. 그게 다예요.", "p7"],
@@ -24,7 +24,7 @@ func setup() -> void:
 	d.set_shutters_for_cycle(3)
 	d.clock_speed = 0.1
 	place_documents()
-	spawn_worker(POST, StaffNpc.yaw_for(Vector3(-1.5, 0, -2.6)))
+	spawn_worker(d.t.spot(POST), StaffNpc.yaw_for(Vector3(-1.5, 0, -2.6)))
 
 
 func run() -> void:
@@ -61,7 +61,7 @@ func _give(item: String) -> void:
 			Snd.play("button_press", -6.0, 1.3)
 			d.notify("사물함 열쇠 수령 — 보안검색 구역 동쪽 벽 직원 사물함", "good")
 			var e: Array = DOCS["log2"]
-			d.spawn_doc("log2", e[0], e[1], e[2])
+			d.spawn_doc("log2", d.t.spot(e[0]), e[1], e[2])
 
 
 func _lights_down() -> void:

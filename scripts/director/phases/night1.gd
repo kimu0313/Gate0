@@ -9,7 +9,7 @@ extends PhaseScript
 ## 03:00 정기 방송 (대기 수칙 p.9 ③) — 오늘은 문안도 평소 그대로.
 ## 06:00 퇴근하러 시설관리실로 가는 길에만, 출발 전광판 맨 위에 없는 항공편(SH 000 · GATE 0)이 잠깐 뜬다.
 
-const POST := Vector3(-26.4, 0, 1.0)   # in the office, between your spawn and the door
+const POST := "npc_office"   # Terminal spot: in the office, between your spawn and the door
 ## the handover talk: [text, item handed over with this line]
 const HANDOVER_TALK := [
 	["아, 오늘부터 새벽 근무 하시는 분이죠? 반가워요. 저는 저녁 근무예요.", ""],
@@ -47,7 +47,7 @@ func setup() -> void:
 	d.clock_speed = 0.1
 	fids = d.t.facility("fids")
 	place_documents()
-	spawn_worker(POST, StaffNpc.yaw_for(Vector3(-1, 0, 0)))
+	spawn_worker(d.t.spot(POST), StaffNpc.yaw_for(Vector3(-1, 0, 0)))
 	d.punched.connect(func(): _punched = true, CONNECT_ONE_SHOT)
 
 

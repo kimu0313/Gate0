@@ -1,9 +1,10 @@
 extends Node
 ## Debug: `godot --path . res://scenes/levels/security_baggage_level.tscn -- --level-shots <dir> [--shots a,b] [--settle s] [--bench]`
-## captures the level's SHOTS (player views) and SKETCH_SHOTS (shifted-lens views matching the sketches;
+## (or on the game scene, for the Terminal) captures the level's SHOTS (player views) and SKETCH_SHOTS (shifted-lens views matching the sketches;
 ## render at the sketch aspect, e.g. --resolution 1920x1258) and quits (same flags as the terminal tour).
 
-var level: SecurityBaggageLevel
+var level: Node3D          # SecurityBaggageLevel or Terminal: provides SHOTS / SKETCH_SHOTS
+var player: Player
 
 
 func _ready() -> void:
@@ -16,20 +17,24 @@ func _ready() -> void:
 	if args.find("--shots") >= 0 and args.find("--shots") + 1 < args.size():
 		only = args[args.find("--shots") + 1].split(",")
 	var wait := float(args[args.find("--settle") + 1]) if args.find("--settle") >= 0 else 0.9
-	for s in SecurityBaggageLevel.SKETCH_SHOTS:
+	if player == null:
+		player = level.get("player")
+	for n in get_tree().root.find_children("*", "CanvasLayer", true, false):
+		(n as CanvasLayer).visible = false
+	for s in level.SKETCH_SHOTS:
 		if not only.is_empty() and not (s[0] in only):
 			continue
 		var cam := _sketch_camera(s[1], s[2], s[3], s[4])
 		await get_tree().create_timer(wait).timeout
 		await _capture(out_dir, s[0])
 		cam.queue_free()
-	level.player.camera.make_current()
-	for s in SecurityBaggageLevel.SHOTS:
+	player.camera.make_current()
+	for s in level.SHOTS:
 		if not only.is_empty() and not (s[0] in only):
 			continue
-		level.player.teleport(Transform3D(Basis(), s[1]))
+		player.teleport(Transform3D(Basis(), s[1]))
 		await get_tree().process_frame
-		level.player.look_at_point(s[2], 0.01)
+		player.look_at_point(s[2], 0.01)
 		await get_tree().create_timer(wait).timeout
 		await _capture(out_dir, s[0])
 	get_tree().quit()

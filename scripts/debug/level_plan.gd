@@ -1,5 +1,5 @@
 extends Node
-## Debug: `-- --level-plan <png> [--plan-rect x0,z0,x1,z1] [--plan-cut y]` on a level scene: an orthographic
+## Debug: `-- --level-plan <png> [--plan-rect x0,z0,x1,z1] [--plan-cut y] [--plan-bright]` on a level or game scene: an orthographic
 ## top-down plan (everything above the cut height hidden, so ceilings drop out and walls read as their tops) for the
 ## level design log, plus a three-quarter overview next to it (<png>_overview.png). Quits when done.
 
@@ -15,6 +15,15 @@ func _ready() -> void:
 		r = PackedFloat64Array(Array(args[args.find("--plan-rect") + 1].split(",")).map(func(v): return float(v)))
 	var cut := float(args[args.find("--plan-cut") + 1]) if args.find("--plan-cut") >= 0 else 2.4
 	await get_tree().create_timer(1.5).timeout
+	for n in get_tree().root.find_children("*", "CanvasLayer", true, false):
+		(n as CanvasLayer).visible = false
+	if args.has("--plan-bright"):
+		# night scenes: a soft sun from straight above so the plan reads (the overview keeps it too)
+		var sun := DirectionalLight3D.new()
+		level.add_child(sun)
+		sun.rotation = Vector3(-PI / 2 + 0.25, 0.3, 0)
+		sun.light_energy = 0.9
+		sun.shadow_enabled = true
 	# drop everything above the cut (ceilings, beams, fixtures, hanging signs): walls read as their tops
 	for n in level.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D

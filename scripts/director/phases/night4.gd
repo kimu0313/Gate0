@@ -6,7 +6,7 @@ extends PhaseScript
 ## 새벽 전반 (점검 4–6): 시설 셋이 동시에 혼자 켜진다. 어느 것부터 볼지는 플레이어가 정한다. 무전은 점점 "승객분".
 ## 06:00 퇴근 → 근태 기록기에 한 줄이 더 찍혀 있다: PASSENGER · 10/23 06:00 · GATE 0.
 
-const POST := Vector3(2.6, 0, -25.6)   # by the boarding-wing door and its card reader
+const POST := "npc_wing"   # Terminal spot: by the boarding-wing door and its card reader
 const TALK := [
 	["오늘은 탑승동까지 다 보셔야 해요, 승객분. …아, 점검원님.", ""],
 	["6페이지, 8페이지 추록이요. 무빙워크랑 탑승구.", "pages"],
@@ -27,12 +27,12 @@ func setup() -> void:
 	d.t.shutters.gates.open(true)
 	d.clock_speed = 0.1
 	place_documents()
-	_reader = CardReader.create(d.t, Vector3(4.7, 1.25, -27.78), 0.0)
+	_reader = CardReader.create(d.t, d.t.spot("wing_reader"), 0.0)
 	_reader.swiped.connect(_on_wing_reader)
-	for x in [2.0, -8.0]:   # either walk-through detector is a passenger lane
-		var lane := Geo.area(d.t, Vector3(x, 1.0, -21.0), Vector3(1.4, 2.0, 1.0))
+	for md in ["md_east", "md_west"]:   # either walk-through detector is a passenger lane
+		var lane := Geo.area(d.t, d.t.spot(md) + Vector3(0, 1.0, 0), Vector3(1.4, 2.0, 1.0))
 		lane.body_entered.connect(_on_passenger_lane)
-	spawn_worker(POST, 0.0)
+	spawn_worker(d.t.spot(POST), 0.0)
 
 
 func run() -> void:

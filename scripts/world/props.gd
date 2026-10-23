@@ -36,7 +36,7 @@ static func panel_box(parent: Node3D, pos: Vector3, rot_y: float, size: Vector2,
 		plate.visible = false
 		sign_body(holder, Vector3(0, 0, -depth * 0.5), size, depth)
 	if title != "":
-		Geo.fit(Geo.label(holder, title, Vector3(0, size.y * 0.5 - 0.07, 0.006), 0.0, 30, Color(0.95, 0.85, 0.3), 0.0025, false, "print"), size.x - 0.08)
+		Geo.fit(Geo.label(holder, title, Vector3(0, size.y * 0.5 - 0.07, 0.006), 0.0, 30, Geo.SIGN_BLUE, 0.0025, false, "print"), size.x - 0.08)
 	return holder
 
 
@@ -55,7 +55,7 @@ static func pedestal(parent: Node3D, pos: Vector3, rot_y: float, title := "") ->
 	top.rotation.x = -0.6
 	Geo.box(top, Vector3(0, 0, -0.03), Vector3(0.56, 0.36, 0.06), Mats.get_mat("plastic_grey"), false)
 	if title != "":
-		Geo.label(top, title, Vector3(0, 0.14, 0.004), 0.0, 26, Color(0.95, 0.85, 0.3), 0.0025, false, "print")
+		Geo.label(top, title, Vector3(0, 0.14, 0.004), 0.0, 26, Geo.SIGN_BLUE, 0.0025, false, "print")
 	return top
 
 

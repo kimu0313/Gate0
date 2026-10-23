@@ -398,7 +398,7 @@ func _draw_camera() -> void:
 		# focus box locks onto a recognized facility
 		var f := ease(_cam_focus, 0.5)
 		var bs := Vector2(440, 290).lerp(Vector2(250, 166), f)
-		var col := Color(1, 1, 1, 0.6).lerp(UiKit.SIGNAL, f)
+		var col := Color(1, 1, 1, 0.6).lerp(UiKit.SIGNAL_TEXT, f)
 		var r := Rect2(s * 0.5 - bs * 0.5, bs)
 		var bl := 24.0
 		for corner in [r.position, Vector2(r.end.x, r.position.y), Vector2(r.position.x, r.end.y), r.end]:
@@ -414,7 +414,7 @@ func _draw_camera() -> void:
 			var tw := disp.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 			var p := Vector2(s.x * 0.5 - tw * 0.5, r.end.y + 34)
 			c.draw_rect(Rect2(p - Vector2(12, 22), Vector2(tw + 24, 32)), Color(0, 0, 0, 0.55 * f))
-			c.draw_string(disp, p, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UiKit.SIGNAL, f))
+			c.draw_string(disp, p, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UiKit.SIGNAL_TEXT, f))
 		# stills camera readout: mode + date stamp (it takes photos, so no REC timecode)
 		c.draw_circle(Vector2(m + 34, m + 42), 9, Color(UiKit.CLEAR, 0.9 if f > 0.5 else 0.35))
 		c.draw_string(disp, Vector2(m + 54, m + 50), UiKit.t("STILL  ·  점검 촬영"), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, white)
@@ -554,7 +554,7 @@ func _build_pause() -> void:
 	left.add_theme_constant_override("separation", 6)
 	_pause_menu.add_child(left)
 	# Korean first, like every other sign in the game; the English line is the sign's sub-label
-	left.add_child(UiKit.caption("SEOHAE OPS  ·  SHIFT ON HOLD", UiKit.SIGNAL, 18))
+	left.add_child(UiKit.caption("SEOHAE OPS  ·  SHIFT ON HOLD", UiKit.SIGNAL_TEXT, 18))
 	left.add_child(UiKit.label("일시정지", 96, UiKit.TEXT, "sans", 900))
 	if not UiKit.same("일시정지", "PAUSED  ·  근무가 잠시 멈췄습니다"):
 		left.add_child(UiKit.label("PAUSED  ·  근무가 잠시 멈췄습니다", 26, UiKit.TEXT_DIM, "display", 700))
@@ -598,12 +598,11 @@ func _close_settings() -> void:
 func _refresh_pause_status() -> void:
 	for c in _pause_status.get_children():
 		c.queue_free()
-	var day := Game.phase == "day"
 	_pause_status.add_child(UiKit.caption("CURRENT SHIFT · 현재 근무", UiKit.TEXT_MUTE, 15))
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 16)
 	_pause_status.add_child(h)
-	var chip := UiKit.chip("%s %d" % ["DAY" if day else "NIGHT", Game.cycle], UiKit.INK_0, UiKit.SIGNAL if day else UiKit.TEXT, "", 20)
+	var chip := UiKit.chip("DAY %d" % Game.cycle, UiKit.INK_0, UiKit.TEXT, "", 20)
 	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(chip)
 	h.add_child(UiKit.label(Game.clock_text(), 48, UiKit.TEXT, "display", 700))
@@ -615,7 +614,7 @@ func _refresh_pause_status() -> void:
 		zh.add_child(UiKit.label(str(Terminal.ZONE_NAMES.get(player.zone, "")), 18, UiKit.BODY))
 	var sep := HSeparator.new()
 	_pause_status.add_child(sep)
-	_pause_status.add_child(UiKit.caption("CURRENT ORDER · 현재 지시", UiKit.SIGNAL, 15))
+	_pause_status.add_child(UiKit.caption("CURRENT ORDER · 현재 지시", UiKit.SIGNAL_TEXT, 15))
 	var cur := director.current.title if director and director.current else "—"
 	var cl := UiKit.label(cur, 22, UiKit.TEXT, "sans", 700)
 	cl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -695,7 +694,7 @@ func title_card(title: String, sub := "", hold := 2.5) -> void:
 	_card_org.modulate.a = 0.0
 	_card_sub.text = ""
 	_card_line.custom_minimum_size.x = 0.0
-	_card_board.text_color = UiKit.SIGNAL if title.begins_with("DAY") else UiKit.TEXT
+	_card_board.text_color = UiKit.SIGNAL_TEXT if title.begins_with("DAY") else UiKit.TEXT
 	_card_board.show_text(title, 0.35)
 	var settle := _card_board.settle_time()
 	var tw := create_tween()
@@ -786,7 +785,7 @@ func show_death(reason: String) -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
 	v.add_child(row)
-	var again := UiKit.primary(UiKit.t("이 %s 다시 시작") % UiKit.t("밤" if Game.phase == "night" else "근무"), 22, func(): Game.restart_phase(), UiKit.ALERT)
+	var again := UiKit.primary(UiKit.t("이 %s 다시 시작") % UiKit.t("근무"), 22, func(): Game.restart_phase(), UiKit.ALERT)
 	again.custom_minimum_size = Vector2(300, 62)
 	row.add_child(again)
 	var menu := UiKit.button("메인 메뉴", 22, func(): Game.go_menu())
@@ -862,7 +861,7 @@ func show_report(summary: Dictionary) -> void:
 	var hc := UiKit.caption("MORNING REPORT", ink, 18)
 	hc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(hc)
-	head.add_child(UiKit.label("06:00 · NIGHT %d" % Game.cycle, UiKit.MIN_TEXT, Color("5a564e"), "display", 700))
+	head.add_child(UiKit.label("06:00 · DAY %d" % Game.cycle, UiKit.MIN_TEXT, Color("5a564e"), "display", 700))
 	v.add_child(UiKit.label("아침 보고", 40, ink, "sans", 900))
 	var rule := ColorRect.new()
 	rule.color = ink

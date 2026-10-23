@@ -206,7 +206,7 @@ static func photo_label(label: String) -> String:
 	return " · ".join(parts)
 
 
-## Tab and indicator accent: signal yellow, or boarding-pass cream in BOARDING INFORMATION.
+## Tab and indicator accent: signal blue, or boarding-pass cream in BOARDING INFORMATION.
 func _accent() -> Color:
 	return UiKit.NAVY_TEXT if boarding_mode else UiKit.SIGNAL
 
@@ -271,7 +271,7 @@ func _make_tab(key: String, title: String, icon_name: String) -> Button:
 func _style_tab(key: String) -> void:
 	var t: Dictionary = _tabs[key]
 	var on := key == _current_tab
-	var col := _accent() if on else (Color("8193bd") if boarding_mode else UiKit.TEXT_DIM)
+	var col := (UiKit.NAVY_TEXT if boarding_mode else UiKit.SIGNAL_TEXT) if on else (Color("8193bd") if boarding_mode else UiKit.TEXT_DIM)
 	(t.label as Label).add_theme_color_override("font_color", col)
 	(t.label as Label).add_theme_font_override("font", UiKit.font("sans", 700 if on else 500))
 	(t.icon as UiIcon).color = col
@@ -376,7 +376,7 @@ func open() -> void:
 		c.queue_free()
 	_selected = director.current if director and director.current else _selected
 	_tabs.power.button.visible = Game.phase == "day" and Game.cycle >= 2
-	_tabs.camera.button.visible = Game.phase == "day"
+	_tabs.camera.button.visible = Game.phase == "day" or Game.flag("handover")   # photos while the evening staff are still in
 	if not _tabs[_current_tab].button.visible:
 		_current_tab = "tasks"
 	_show_tab(_current_tab, false)
@@ -555,7 +555,7 @@ func _task_row(task: Task) -> Button:
 	match task.state:
 		"active":
 			icon = "play"
-			col = UiKit.SIGNAL
+			col = UiKit.SIGNAL_TEXT
 			title_col = UiKit.TEXT
 		"responding":
 			icon = "warn"
@@ -645,7 +645,7 @@ func _build_detail() -> void:
 		chips.add_child(UiKit.chip("URGENT · 긴급", UiKit.INK_0, UiKit.WARN, "warn", 15))
 	if task.location != "":
 		chips.add_child(UiKit.chip(str(Terminal.ZONE_NAMES.get(task.location, task.location)), UiKit.OPS, Color("13283a"), "pin"))
-	var st_col := UiKit.SIGNAL if task.state != "done" else UiKit.TEXT_DIM
+	var st_col := UiKit.SIGNAL_TEXT if task.state != "done" else UiKit.TEXT_DIM
 	chips.add_child(UiKit.chip(task.status_text(), st_col, Color(st_col, 0.14), "", 15))
 	var f: Facility = director.t.facility(task.facility_id) if task.facility_id != "" else null
 	if f:
@@ -932,7 +932,7 @@ func _photo_card(i: int) -> Button:
 	tr.clip_contents = true
 	v.add_child(tr)
 	var parts := str(ph.label).split(" · ")
-	var stamp := UiKit.label(parts[parts.size() - 1], UiKit.MIN_TEXT, UiKit.SIGNAL, "display", 700)
+	var stamp := UiKit.label(parts[parts.size() - 1], UiKit.MIN_TEXT, UiKit.SIGNAL_TEXT, "display", 700)
 	stamp.add_theme_constant_override("outline_size", 4)
 	stamp.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	stamp.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -1065,7 +1065,7 @@ func _build_camera_page(parent: Control) -> void:
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 18)
 	page.add_child(head)
-	head.add_child(UiIcon.make("camera", 56, UiKit.SIGNAL))
+	head.add_child(UiIcon.make("camera", 56, UiKit.SIGNAL_TEXT))
 	var hv := VBoxContainer.new()
 	hv.add_theme_constant_override("separation", 0)
 	head.add_child(hv)
@@ -1077,7 +1077,7 @@ func _build_camera_page(parent: Control) -> void:
 	_film_row = HBoxContainer.new()
 	_film_row.add_theme_constant_override("separation", 8)
 	page.add_child(_film_row)
-	_camera_info = UiKit.label("", 20, UiKit.SIGNAL, "sans", 700)
+	_camera_info = UiKit.label("", 20, UiKit.SIGNAL_TEXT, "sans", 700)
 	page.add_child(_camera_info)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
@@ -1141,7 +1141,7 @@ func _build_power_page(parent: Control) -> void:
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 16)
 	page.add_child(head)
-	head.add_child(UiIcon.make("power", 46, UiKit.SIGNAL))
+	head.add_child(UiIcon.make("power", 46, UiKit.SIGNAL_TEXT))
 	var hv := VBoxContainer.new()
 	hv.add_theme_constant_override("separation", 0)
 	head.add_child(hv)
@@ -1165,7 +1165,7 @@ func _build_power_page(parent: Control) -> void:
 	_power_meter.add_theme_constant_override("separation", 4)
 	_power_meter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	foot.add_child(_power_meter)
-	_power_info = UiKit.label("", 19, UiKit.SIGNAL, "sans", 700)
+	_power_info = UiKit.label("", 19, UiKit.SIGNAL_TEXT, "sans", 700)
 	_power_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_power_info.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	foot.add_child(_power_info)
@@ -1228,10 +1228,10 @@ func _style_zone(zn: String, on: bool, animate: bool) -> void:
 	b.add_theme_stylebox_override("hover", UiKit.box(bg.lightened(0.04), UiKit.SIGNAL if on else UiKit.TEXT_MUTE, 0, 2, 0))
 	b.add_theme_stylebox_override("focus", UiKit.empty_box())
 	var ic: UiIcon = b.find_child("Icon", true, false)
-	ic.set_icon("lamp_on" if on else "lamp", UiKit.SIGNAL if on else UiKit.TEXT_MUTE)
+	ic.set_icon("lamp_on" if on else "lamp", UiKit.SIGNAL_TEXT if on else UiKit.TEXT_MUTE)
 	var st_l: Label = b.find_child("State", true, false)
 	st_l.text = UiKit.keep_all(UiKit.t("ON · 예약됨" if on else "OFF · 꺼짐"))
-	st_l.add_theme_color_override("font_color", UiKit.SIGNAL if on else UiKit.TEXT_MUTE)
+	st_l.add_theme_color_override("font_color", UiKit.SIGNAL_TEXT if on else UiKit.TEXT_MUTE)
 	var sw: Control = b.find_child("Switch", true, false)
 	var target := 1.0 if on else 0.0
 	if animate:
@@ -1268,7 +1268,7 @@ func _refresh_power(animate := false) -> void:
 		seg.add_theme_stylebox_override("panel", UiKit.box(UiKit.SIGNAL if i < n else Color("232b36"), Color(0, 0, 0, 0), 0, 0, 0))
 		_power_meter.add_child(seg)
 	_power_info.text = UiKit.t("%d / 3 구역 예약됨") % n
-	_power_info.add_theme_color_override("font_color", UiKit.SIGNAL)
+	_power_info.add_theme_color_override("font_color", UiKit.SIGNAL_TEXT)
 
 
 func _toggle_power(zn: String) -> void:

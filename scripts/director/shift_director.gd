@@ -14,9 +14,12 @@ signal radio_free
 signal action_seen(action: String, target: String)
 signal office_denied
 signal main_power_pulled
-signal arrival_announced
 
 const MAX_MISTAKES := 3
+## DAY 3 06:00 ending from the 3-day record: 정상 개장 needs this accuracy and no rule violations;
+## following a fake page or missing this many anomalies means 탑승.
+const EXIT_ACCURACY := 0.8
+const BOARD_MISSES := 4
 const DIM_STEPS := [1.0, 0.7, 0.48]
 ## Correct detections make the radio a little stranger each time (1–2 lines a night).
 const RADIO_ODD := [
@@ -189,6 +192,7 @@ func inspect(fac_id: String, title: String, detail: String, anomaly := "", opts 
 	task.anomaly = anomaly
 	task.urgent = opts.get("urgent", false)
 	task.slot = int(opts.get("slot", 0))
+	task.group = str(opts.get("group", ""))
 	var f := t.facility(fac_id)
 	task.location = f.zone if f else ""
 	_add_task(task)
@@ -239,7 +243,7 @@ func _activate_next() -> void:
 	Events.tasks_changed.emit()
 
 
-func _activate(task: Task) -> void:
+func _activate(task: Task, quiet := false) -> void:
 	current = task
 	task.state = "active"
 	task.progress = 0.0
@@ -247,9 +251,12 @@ func _activate(task: Task) -> void:
 	if task.kind == "inspect":
 		var f := t.facility(task.facility_id)
 		if f:
+			# a circuit the player cut for an earlier response comes back with the new order (no dead end)
+			if not f.powered and running_event == "" and t.breaker.restore_for(f):
+				notify(tr("%s 전원이 복구되었습니다. (배전반)") % tr(f.title), "info")
 			if f is PaConsole and task.anomaly != "pa_auto":
 				(f as PaConsole).reset_inspection()
-			if f is BoardingGate:
+			if f is BoardingGate and not quiet:
 				(f as BoardingGate).checked = false
 				# gate lights are off in the default night plan; an inspection lights the gate area so p.8 ② can be followed
 				if not t.zones["gates"].is_on:
@@ -261,6 +268,10 @@ func _activate(task: Task) -> void:
 			if task.anomaly != "" and f.anomaly != task.anomaly:
 				_prepare_anomaly(f, task.anomaly)
 				f.set_anomaly(task.anomaly)
+	if quiet:
+		objective(task.title)
+		Events.tasks_changed.emit()
+		return
 	Snd.play("ui_alert" if task.urgent else "ui_notify", -6.0)
 	var head := tr("⚠ 긴급 지시: " if task.urgent else "새 점검 지시: ")
 	if task.slot > 0:
@@ -355,7 +366,9 @@ func can_report(task: Task) -> String:
 	if not task.observed:
 		var f := t.facility(task.facility_id)
 		var hint := ""
-		if f and not f.is_observable():
+		if f and not f.powered:
+			hint = " (시설관리실 배전반에서 전원을 다시 올리십시오)"
+		elif f and not f.is_observable():
 			hint = " (시설을 가동하거나 확인 버튼을 누르십시오)"
 		return tr("현장에서 시설을 직접 관찰해야 보고할 수 있습니다.") + tr(hint)
 	return ""
@@ -495,6 +508,8 @@ func _on_player_action(action: String, target: String) -> void:
 		if def.is_empty():
 			continue
 		if _match_any(def.get("lethal", []), action, target, fac):
+			if def.has("fake") and Game.binder_pages.has(def.fake):
+				Game.stat("fake_followed")
 			kill(def.get("death", "근무 수칙을 위반했습니다."))
 			return
 		if _match_any(def.get("fix", []), action, target, fac):
@@ -557,7 +572,25 @@ func _process(delta: float) -> void:
 	_update_pressure(delta)
 
 
+## Several facilities started at once (DAY 3): whichever of them the player goes to look at becomes the active order.
+func _maybe_switch_group() -> void:
+	if current == null or current.group == "" or current.state != "active" or current.observed or current.progress > 0.0:
+		return
+	for task in tasks:
+		if task == current or task.group != current.group or task.state != "pending":
+			continue
+		var f := t.facility(task.facility_id)
+		if f == null or not f.is_observable():
+			continue
+		var fp := f.focus_position()
+		if p.camera.global_position.distance_to(fp) <= f.observe_radius and (p.facing_dot(fp) > 0.55 or f is LightPanel):
+			current.state = "pending"
+			_activate(task, true)
+			return
+
+
 func _update_observation(delta: float) -> void:
+	_maybe_switch_group()
 	if current == null or current.kind != "inspect" or current.state != "active" or current.observed:
 		ui.hud.set_inspect_progress(-1.0)
 		return
@@ -877,6 +910,78 @@ func ev_slow_broadcast(lethal := false) -> void:
 		notify("방송이 끝났다.", "good")
 
 
+## 01:00: the last evening worker clocks out. Zones outside the night plan go dark, the rest run at half light.
+func ev_staff_leave(line := "먼저 들어갈게요. 수칙 꼭 지키세요.") -> void:
+	Game.set_flag("handover", false)
+	Snd.play_at("distant_door", t.doors.entrance.global_position + Vector3(0, 1.2, 0), -4.0, 1.0, 40.0)
+	await radio(line, "저녁 근무자")
+	if dead:
+		return
+	await wait(1.0)
+	for zn in Game.night_lights.keys():
+		if t.zones.has(zn):
+			if Game.night_lights[zn]:
+				(t.zones[zn] as LightZone).night_dim = 0.55
+			else:
+				t.set_zone_light(zn, false)
+	Snd.play("flicker_zap", -10.0, 0.8, "SFX")
+	notify("구역 조명 절반이 자동으로 꺼졌다. 여기서부터는 혼자다.", "info")
+
+
+## 03:00 정기 방송 (수칙 p.9 ③): stand still until it ends. One word is not what it usually is.
+func ev_regular_broadcast(lethal := false) -> void:
+	if dead:
+		return
+	running_event = "broadcast"
+	event_tension = 0.7
+	Snd.pa_announce(["pa_regular_intro_ko", "pa_test_anom_b_ko", "pa_test_normal_en"], {"tag": "regular",
+		"subs": ["현재 시각, 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.",
+			"안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 승객 외에는 출입을 삼가 주시기 바랍니다. 감사합니다.",
+			"Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. Thank you."]})
+	await get_tree().process_frame
+	var moved := 0.0
+	while Snd.pa_busy:
+		await get_tree().process_frame
+		if dead:
+			return
+		if get_tree().paused:
+			continue
+		if p.move_vel.length() > 0.6:
+			moved += get_process_delta_time()
+	running_event = ""
+	if dead:
+		return
+	if moved > 0.35:
+		_violation("03:00 정기 방송 중에 움직였습니다. (수칙 p.9 ③)", lethal)
+	else:
+		notify("방송이 끝났다. …'관계자'가 아니라 '승객'이라고 했던 것 같다.", "info")
+
+
+## DAY 3: FLIGHT 000 boarding call while you stand at the gates. p.9 ③ says freeze during broadcasts;
+## the later 추록 p.8 ④ says leave the gate area at once — and p.1 5 says the later 추록 wins.
+func ev_boarding_call(lethal := false) -> void:
+	if dead:
+		return
+	running_event = "boardingcall"
+	event_tension = 1.0
+	Snd.pa_announce(["pa_flight0_checkin_ko", "pa_final_call_ko", "pa_flight0_boarding_en"], {"wrong": true, "tag": "auto",
+		"subs": ["영편 탑승 수속을 시작합니다. 승객 여러분께서는 영번 게이트로 이동해 주시기 바랍니다.",
+			"영편 최종 탑승 안내입니다. 아직 탑승하지 않으신 승객께서는, 지금 즉시 영번 게이트로 오시기 바랍니다.",
+			"Flight zero is now boarding."]})
+	await get_tree().process_frame
+	while Snd.pa_busy:
+		await get_tree().process_frame
+		if dead:
+			return
+	running_event = ""
+	if dead:
+		return
+	if p.zone == "gates" or p.zone == "bridge0":
+		_violation("탑승 안내가 끝날 때까지 게이트 구역에 남아 있었습니다. (수칙 p.8 ④)", lethal)
+	else:
+		notify("방송이 끝났다. 게이트 쪽에서 의자 끄는 소리가 났다.", "good")
+
+
 func player_zone_lit() -> bool:
 	var zn := p.zone
 	match zn:
@@ -888,6 +993,7 @@ func player_zone_lit() -> bool:
 
 
 func _violation(reason: String, lethal: bool) -> void:
+	Game.stat("violations")
 	if lethal:
 		kill(reason)
 		return
@@ -938,26 +1044,42 @@ func _on_punch() -> void:
 func end_phase() -> void:
 	p.controls_enabled = false
 	ui.close_all()
-	if Game.phase == "day":
-		await ui.fade_to(1.0, 1.2)
-		Game.start_phase(Game.cycle, "night")
-	else:
-		await script_obj.end_cut()
-		await ui.fade_to(1.0, 1.2)
-		Snd.stop_all_world()
-		var summary := night_log.duplicate()
-		summary["erosion_before"] = erosion_start
-		summary["erosion_after"] = Game.erosion
-		summary["mistakes"] = mistakes
-		summary["inspections"] = inspections_done
-		summary["missed_list"] = missed_list.duplicate()
-		var good := int(night_log.get("correct", 0)) + int(night_log.get("cleared", 0))
-		summary["accuracy"] = roundi(100.0 * good / maxf(1.0, float(inspections_done)))
-		Game.stat("inspections", inspections_done)
-		Game.stat("judged_right", good)
-		await ui.show_report(summary)
-		Game.erosion *= 0.8
-		Game.start_phase(Game.cycle + 1, "day")
+	await script_obj.end_cut()
+	await ui.fade_to(1.0, 1.2)
+	Snd.stop_all_world()
+	var summary := night_log.duplicate()
+	summary["erosion_before"] = erosion_start
+	summary["erosion_after"] = Game.erosion
+	summary["mistakes"] = mistakes
+	summary["inspections"] = inspections_done
+	summary["missed_list"] = missed_list.duplicate()
+	var good := int(night_log.get("correct", 0)) + int(night_log.get("cleared", 0))
+	summary["accuracy"] = roundi(100.0 * good / maxf(1.0, float(inspections_done)))
+	Game.stat("inspections", inspections_done)
+	Game.stat("judged_right", good)
+	await ui.show_report(summary)
+	Game.erosion *= 0.8
+	Game.start_phase(Game.cycle + 1, "night")
+
+
+## DAY 3 06:00: the three days' judgment record picks the ending (플레이 시나리오 · 엔딩).
+## Today's inspections are not in Game.stats yet (no morning report on the last day).
+func decide_ending() -> String:
+	var done := int(Game.stats.get("inspections", 0)) + inspections_done
+	var right := int(Game.stats.get("judged_right", 0)) + int(night_log.get("correct", 0)) + int(night_log.get("cleared", 0))
+	var accuracy := float(right) / float(done) if done > 0 else 1.0
+	if int(Game.stats.get("fake_followed", 0)) > 0 or int(Game.stats.get("missed", 0)) >= BOARD_MISSES:
+		return "board"
+	if accuracy >= EXIT_ACCURACY and int(Game.stats.get("violations", 0)) == 0:
+		return "exit"
+	return "announce"
+
+
+## Accuracy over the three days so far, in percent (for the finale's tablet line).
+func record_accuracy() -> int:
+	var done := int(Game.stats.get("inspections", 0)) + inspections_done
+	var right := int(Game.stats.get("judged_right", 0)) + int(night_log.get("correct", 0)) + int(night_log.get("cleared", 0))
+	return roundi(100.0 * right / done) if done > 0 else 100
 
 
 func start_ending(id: String) -> void:
@@ -1042,7 +1164,7 @@ func _on_keypad_code(code: String) -> void:
 
 
 func _on_syslog() -> void:
-	if Game.phase == "night" and Game.cycle >= 4:
+	if Game.cycle >= 3:
 		Game.add_clue("syslog")
 		var c: Dictionary = RulesDB.CLUES.syslog
 		await ui.read_doc(c.title, tr(str(c.body)) % Game.player_name, "mono")
@@ -1092,44 +1214,59 @@ func until_action(action: String, target := "") -> void:
 			return
 
 
-## Zones open one per day: D1 체크인 · D2 +수하물 · D3 +보안검색·통로 · D4 +탑승 게이트 · D5 전 구역.
+## Zones open one per day: DAY 1 체크인 · DAY 2 +수하물·보안검색 · DAY 3 +탑승동 통로·탑승 게이트.
 func set_shutters_for_cycle(c: int) -> void:
 	if c >= 2:
 		t.shutters.baggage.open(true)
-	if c >= 3:
 		t.shutters.security.open(true)
+	if c >= 3:
 		t.shutters.corridor.open(true)
-	if c >= 4:
 		t.shutters.gates.open(true)
 
 
-## Runs a night's 10 inspections (NightPlan.build). `beats` = {inspection number: Callable} awaited after
+## Runs a shift's 14 inspections (NightPlan.build). `beats` = {inspection number: Callable} awaited after
 ## that inspection (story beats, emergency rules). `custom` = {inspection number: Callable(slot) -> Task}
-## for scripted inspections (the callable creates the slot's task and returns it).
+## for scripted inspections; a custom callable may return an Array of tasks that run at the same time
+## (they take that many consecutive inspection numbers).
 func run_inspections(plan: Array, beats := {}, custom := {}) -> void:
 	inspections_total = plan.size()
-	for i in plan.size():
+	var i := 0
+	while i < plan.size():
 		if dead or ending_started:
 			return
 		var slot: Dictionary = plan[i]
 		var n := i + 1
-		var task: Task
+		var got: Variant
 		if custom.has(n):
-			task = await custom[n].call(slot)
+			got = await custom[n].call(slot)
 		else:
 			if slot.get("auto", false):
 				await _autonomous_start(slot)
-			task = inspect(slot.fac, slot.title, slot.detail, slot.anomaly, {"urgent": slot.get("auto", false), "slot": n})
-		if task.slot == 0:
-			task.slot = n
-		await until_done(task)
+			got = inspect(slot.fac, slot.title, slot.detail, slot.anomaly, {"urgent": slot.get("auto", false), "slot": n})
+		var batch: Array = got if got is Array else [got]
+		for k in batch.size():
+			if (batch[k] as Task).slot == 0:
+				(batch[k] as Task).slot = n + k
+		for task in batch:
+			await until_done(task)
 		if dead or ending_started:
 			return
-		inspections_done += 1
-		Game.clock_minutes += 22
-		Events.clock_changed.emit(Game.clock_minutes)
-		if beats.has(n):
-			await beats[n].call()
+		for k in batch.size():
+			inspections_done += 1
+			_advance_clock()
+			if beats.has(n + k):
+				await beats[n + k].call()
+				if dead or ending_started:
+					return
+		i += batch.size()
+
+
+## The shift clock follows the inspections (01:00 handover over, 03:00 broadcast, 05:30 last check).
+func _advance_clock() -> void:
+	var target := NightPlan.clock_after(inspections_done)
+	if target > Game.clock_minutes:
+		Game.clock_minutes = target
+		Events.clock_changed.emit(target)
 
 
 ## Before inspection 6 a facility the player did not touch starts by itself.
@@ -1137,6 +1274,7 @@ func _autonomous_start(slot: Dictionary) -> void:
 	var f := t.facility(slot.fac)
 	if f == null:
 		return
+	t.breaker.restore_for(f)   # a facility that starts by itself needs its circuit, even one the player cut earlier
 	match slot.anomaly:
 		"gate_open":
 			Snd.play_at("door_heavy", f.focus_position(), -4.0, 0.8, 20.0)

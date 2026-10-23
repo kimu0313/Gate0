@@ -96,14 +96,14 @@ func _draw() -> void:
 				x += 14.0
 		draw_rect(rect, Color("2b3a4c") if not locked else Color("1c232c"), false, 2.0)
 		if zn == target_zone:
-			draw_rect(rect, Color(UiKit.SIGNAL, 0.7), false, 2.0)
+			draw_rect(rect, Color(UiKit.SIGNAL_TEXT, 0.7), false, 2.0)
 		# lamp in the corner, clear of the name
 		if terminal.zones.has(zn) and not locked and rect.size.x > 20.0 and rect.size.y > 20.0:
 			var lp := Vector2(rect.end.x - 12.0, rect.position.y + 12.0)
 			var lit: bool = terminal.zones[zn].is_on
 			if lit:
 				draw_circle(lp, 9.0, Color(UiKit.SIGNAL, 0.18))
-			draw_circle(lp, 5.0, UiKit.SIGNAL if lit else Color("3a4552"))
+			draw_circle(lp, 5.0, UiKit.SIGNAL_TEXT if lit else Color("3a4552"))
 	# facilities
 	for fac in terminal.facilities.values():
 		var fp: Vector3 = (fac as Facility).focus_position()
@@ -118,15 +118,15 @@ func _draw() -> void:
 	if target_pos != Vector3.INF:
 		var tp := _to_map(Vector2(target_pos.x, target_pos.z))
 		var k := fmod(_t, 1.2) / 1.2
-		draw_arc(tp, 10.0 + k * 22.0, 0, TAU, 40, Color(UiKit.SIGNAL, 1.0 - k), 2.5, true)
-		draw_arc(tp, 9.0, 0, TAU, 32, UiKit.SIGNAL, 3.0, true)
+		draw_arc(tp, 10.0 + k * 22.0, 0, TAU, 40, Color(UiKit.SIGNAL_TEXT, 1.0 - k), 2.5, true)
+		draw_arc(tp, 9.0, 0, TAU, 32, UiKit.SIGNAL_TEXT, 3.0, true)
 		var label := UiKit.t("점검 위치")
 		var lw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x
 		var lr := Rect2(tp + Vector2(16, -30), Vector2(lw + 18, 28))
 		if lr.end.x > map_area.end.x - 4.0:
 			lr.position.x = tp.x - 16.0 - lr.size.x
 		draw_rect(lr, UiKit.SIGNAL)
-		draw_string(f, lr.position + Vector2(9, 20), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.INK_0)
+		draw_string(f, lr.position + Vector2(9, 20), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL_INK)
 	# player
 	if player:
 		var pp := _to_map(Vector2(player.global_position.x, player.global_position.z))
@@ -149,9 +149,9 @@ func _draw() -> void:
 			"현재 위치":
 				draw_colored_polygon(PackedVector2Array([Vector2(lx + 12, ly - 6), Vector2(lx, ly - 13), Vector2(lx + 3, ly - 6), Vector2(lx, ly + 1)]), UiKit.CLEAR)
 			"점검 위치":
-				draw_arc(Vector2(lx + 6, ly - 6), 6.5, 0, TAU, 20, UiKit.SIGNAL, 2.0, true)
+				draw_arc(Vector2(lx + 6, ly - 6), 6.5, 0, TAU, 20, UiKit.SIGNAL_TEXT, 2.0, true)
 			_:
-				draw_circle(Vector2(lx + 5, ly - 6), 5.0, UiKit.SIGNAL)
+				draw_circle(Vector2(lx + 5, ly - 6), 5.0, UiKit.SIGNAL_TEXT)
 		var label := UiKit.t(item)
 		draw_string(f, Vector2(lx + 20, ly), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 		lx += 20.0 + f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x + 26.0
@@ -216,12 +216,12 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 		draw_string(f, Vector2(x, y + 26.0), UiKit.t(Terminal.ZONE_NAMES.get(zn, zn)), HORIZONTAL_ALIGNMENT_LEFT, w - 150.0, 18,
 			UiKit.TEXT if not locked else UiKit.TEXT_MUTE)
 		var state := UiKit.t("통제") if locked else ("—" if not terminal.zones.has(zn) else ("ON" if terminal.zones[zn].is_on else "OFF"))
-		var sc := UiKit.ALERT.darkened(0.15) if locked else (UiKit.SIGNAL if state == "ON" else UiKit.TEXT_MUTE)
+		var sc := UiKit.ALERT.darkened(0.15) if locked else (UiKit.SIGNAL_TEXT if state == "ON" else UiKit.TEXT_MUTE)
 		var sw := disp.get_string_size(state, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT).x
 		var chip := Rect2(Vector2(x + w - sw - 18.0, y + 8.0), Vector2(sw + 18.0, 24.0))
 		if state == "ON":
 			draw_rect(chip, UiKit.SIGNAL)
-			sc = UiKit.INK_0
+			sc = UiKit.SIGNAL_INK
 		else:
 			draw_rect(chip, sc if locked else Color("3a4552"), false, 1.0)
 		draw_string(disp, chip.position + Vector2(9, 18), state, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, sc)
@@ -229,7 +229,7 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 		y += 40.0
 	# active order
 	y += 40.0
-	draw_string(disp, Vector2(x, y), UiKit.t("CURRENT ORDER · 현재 지시"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL)
+	draw_string(disp, Vector2(x, y), UiKit.t("CURRENT ORDER · 현재 지시"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL_TEXT)
 	var title := UiKit.t(director.current.title) if director and director.current else "—"
 	draw_multiline_string(f, Vector2(x, y + 30.0), title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2, UiKit.TEXT)
 	var th := f.get_multiline_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2).y

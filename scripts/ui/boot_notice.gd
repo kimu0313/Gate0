@@ -44,12 +44,12 @@ func show_warning() -> void:
 	head.add_child(tile)
 	var cc := CenterContainer.new()
 	tile.add_child(cc)
-	cc.add_child(UiIcon.make("warn", 36, UiKit.INK_0))
+	cc.add_child(UiIcon.make("warn", 36, UiKit.SIGNAL_INK))
 	var hv := VBoxContainer.new()
 	hv.add_theme_constant_override("separation", 0)
 	hv.alignment = BoxContainer.ALIGNMENT_CENTER
 	head.add_child(hv)
-	hv.add_child(UiKit.caption("PHOTOSENSITIVITY WARNING", UiKit.SIGNAL, 18))
+	hv.add_child(UiKit.caption("PHOTOSENSITIVITY WARNING", UiKit.SIGNAL_TEXT, 18))
 	hv.add_child(UiKit.label("광과민성 발작 경고", 36, UiKit.TEXT, "sans", 900))
 	var body := UiKit.rich("이 게임에는 [b]깜빡이는 조명과 화면 효과[/b]가 포함되어 있습니다. 빛에 민감하거나 발작 병력이 있는 분은 플레이 전에 의사와 상의하십시오. 플레이 중 어지러움, 시야 이상, 경련 등이 느껴지면 즉시 중단하십시오.\n\n[color=#9aa3ae]설정 › 자막·접근성에서 UI 흔들림과 깜빡임을 줄일 수 있습니다.[/color]", 21, UiKit.BODY)
 	body.custom_minimum_size = Vector2(980, 0)
@@ -73,7 +73,7 @@ func show_warning() -> void:
 func show_calibration() -> void:
 	_clear()
 	_page = "calibrate"
-	_root.add_child(UiKit.caption("DISPLAY CALIBRATION", UiKit.SIGNAL, 18))
+	_root.add_child(UiKit.caption("DISPLAY CALIBRATION", UiKit.SIGNAL_TEXT, 18))
 	_root.add_child(UiKit.label("화면 밝기 조정", 36, UiKit.TEXT, "sans", 900))
 	_root.add_child(UiKit.label("어두운 장면이 많은 게임입니다. 처음 한 번만 맞추면 되고, 설정에서 언제든 바꿀 수 있습니다.", 20, UiKit.BODY))
 	var prev := SettingsPanel.BrightnessPreview.new()
@@ -92,7 +92,7 @@ func show_calibration() -> void:
 	_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_slider.focus_mode = Control.FOCUS_NONE
 	row.add_child(_slider)
-	var val := UiKit.label("%d%%" % roundi(_slider.value * 100.0), 20, UiKit.SIGNAL, "display", 700)
+	var val := UiKit.label("%d%%" % roundi(_slider.value * 100.0), 20, UiKit.SIGNAL_TEXT, "display", 700)
 	row.add_child(val)
 	_slider.value_changed.connect(func(x):
 		Game.settings.brightness = x

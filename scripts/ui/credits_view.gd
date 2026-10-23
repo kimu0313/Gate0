@@ -52,7 +52,7 @@ func _ready() -> void:
 	_center(v, UiKit.caption("SEOHAE INT'L AIRPORT · CREDITS", UiKit.TEXT_MUTE, 18))
 	_gap(v, 40)
 	for t in TEAM:
-		_center(v, UiKit.caption(t[0], UiKit.SIGNAL, 18))
+		_center(v, UiKit.caption(t[0], UiKit.SIGNAL_TEXT, 18))
 		_center(v, UiKit.label(t[1], 30, UiKit.TEXT, "sans", 700))
 		_gap(v, 12)
 	_gap(v, 40)
@@ -114,7 +114,7 @@ func _heading(parent: Control, text: String) -> void:
 	line.custom_minimum_size = Vector2(80, 3)
 	line.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	parent.add_child(line)
-	_center(parent, UiKit.caption(text, UiKit.SIGNAL, 20))
+	_center(parent, UiKit.caption(text, UiKit.SIGNAL_TEXT, 20))
 
 
 ## Notice text in a quiet, monospaced block (already-escaped BBCode when `bbcode`).

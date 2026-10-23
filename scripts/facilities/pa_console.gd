@@ -3,7 +3,6 @@ extends Facility
 ## 안내방송 콘솔. [테스트 방송] plays the standard test announcement; [송출 중지] cuts the PA.
 ## Anomalies: pa_word (one word differs from the standard text), pa_slow (the voice drags and deepens),
 ## pa_extra (a sentence is added after the standard text), pa_auto (the PA keeps broadcasting by itself).
-## Night 5 can reveal a hidden [도착 안내] button (ending D) with enable_arrival().
 
 const TEXT_NORMAL := "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."
 const TEXT_EN := "Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. Thank you."
@@ -21,9 +20,6 @@ var _lcd: Label3D
 var _vu: Array[MeshInstance3D] = []
 var _onair: MeshInstance3D
 var _t := 0.0
-var _arrival_holder: Node3D
-var _arrival_button: Interactable
-var _arrival_cb: Callable
 var _auto_running := false
 var _quiet_cancel := false
 
@@ -37,7 +33,7 @@ func build() -> void:
 	face.position = Vector3(0, 0.1, 0.05)
 	face.rotation.x = -1.1
 	Geo.box(face, Vector3(0, 0, -0.02), Vector3(0.86, 0.36, 0.04), Mats.get_mat("plastic_grey"), false)
-	Geo.label(face, "PA-01  안내방송", Vector3(-0.22, 0.13, 0.002), 0.0, 22, Color(0.95, 0.85, 0.3), 0.0024, false, "print")
+	Geo.label(face, "PA-01  안내방송", Vector3(-0.22, 0.13, 0.002), 0.0, 22, Geo.SIGN_BLUE, 0.0024, false, "print")
 	Props.button(face, Vector3(-0.25, -0.04, 0), 0.0, "button_green", "테스트 방송", "테스트 방송 송출", _on_test)
 	Props.button(face, Vector3(-0.05, -0.04, 0), 0.0, "button_red", "송출 중지", "방송 송출 중지", _on_stop)
 	# LCD + VU meter
@@ -58,17 +54,6 @@ func build() -> void:
 	_onair = Geo.box(self, Vector3(-0.3, 0.12, -0.2), Vector3(0.18, 0.06, 0.02), Mats.get_mat("screen_off"), false)
 	Geo.label(_onair, "ON AIR", Vector3(0, 0, 0.012), 0.0, 18, Color(0.9, 0.9, 0.9), 0.002)
 	focus = face
-	# hidden arrival-announcement panel (ending D)
-	_arrival_holder = Node3D.new()
-	add_child(_arrival_holder)
-	_arrival_holder.position = Vector3(-0.78, 0.13, 0.05)   # high enough that the tilted plate (and its caption) clears the desk
-	_arrival_holder.rotation.x = -1.1
-	Geo.box(_arrival_holder, Vector3(0, 0, -0.02), Vector3(0.3, 0.3, 0.04), Mats.get_mat("plastic_grey"), false)
-	Geo.label(_arrival_holder, "ARRIVAL", Vector3(0, 0.105, 0.002), 0.0, 18, Color(0.95, 0.85, 0.3), 0.0022, false, "print")
-	_arrival_button = Props.button(_arrival_holder, Vector3(0, -0.01, 0), 0.0, "button_blue", "도착 안내", "도착 안내 방송", _on_arrival)
-	_arrival_holder.visible = false
-	_arrival_button.enabled = false
-	_arrival_button.collision_layer = 0
 	Snd.pa_started.connect(_on_pa_started)
 	Snd.pa_finished.connect(_on_pa_finished)
 
@@ -143,21 +128,6 @@ func _auto_loop() -> void:
 func _apply_anomaly(a: String) -> void:
 	if a == "pa_auto":
 		_auto_loop()
-
-
-func enable_arrival(cb: Callable) -> void:
-	_arrival_cb = cb
-	_arrival_holder.visible = true
-	_arrival_button.enabled = true
-	_arrival_button.collision_layer = Geo.LAYER_INTERACT
-	Geo.set_text(_lcd, "A0 · 41 PAX")
-	_lcd.modulate = Color(0.45, 0.7, 1.0)
-
-
-func _on_arrival() -> void:
-	act("pa_arrival", id)
-	if _arrival_cb.is_valid():
-		_arrival_cb.call()
 
 
 func _on_pa_started(_tag: String) -> void:

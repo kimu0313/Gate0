@@ -1,7 +1,8 @@
 class_name XrayMachine
 extends Facility
 ## 보안검색대 X-ray 1번 레인. [테스트 가방 투입] scans the test bag and shows the image.
-## Anomalies: xray_figure (a curled human shape in the bag), xray_heart (something beating).
+## Anomalies: xray_figure (a curled human shape in the bag), xray_heart (something beating),
+## xray_mybag (your own bag with a passenger tag).
 
 var screen: XrayScreen
 var viewport: SubViewport
@@ -160,6 +161,8 @@ func _content_for(a: String) -> String:
 			return "figure"
 		"xray_heart":
 			return "heart"
+		"xray_mybag":
+			return "mybag"
 	return "bag"
 
 

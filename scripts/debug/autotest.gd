@@ -1,7 +1,8 @@
 extends Node
-## Debug bot: `godot --path . res://scenes/game.tscn -- --day 1 --autotest <outdir> [--ending exit|board|return|announce] [--mistakes]`
-## Plays phases by itself (teleporting, operating facilities, reporting, applying rulebook fixes,
-## obeying emergency rules), prints a log and saves screenshots. Carries on across scene changes.
+## Debug bot: `godot --path . res://scenes/game.tscn -- --day 1 --autotest <outdir> [--ending exit|board|announce]
+## [--mistakes|--wrong] [--leave-power-off]`. Plays the dawn shifts by itself (teleporting, operating facilities, reporting, applying
+## rulebook fixes, obeying emergency rules), prints a log and saves screenshots. Carries on across scene changes.
+## The DAY 3 ending comes from the judgment record; `--ending` seeds the record on DAY 3 so each one can be reached.
 
 var world: Node
 var d: ShiftDirector
@@ -36,9 +37,12 @@ func _ready() -> void:
 	mistakes = args.has("--mistakes")
 	always_wrong = args.has("--wrong")
 	Engine.time_scale = 3.0
-	if ending == "return" and Game.cycle == 5 and Game.phase == "night":
-		for c in RulesDB.TRUE_CLUES:
-			Game.add_clue(c)
+	if Game.cycle == 3:
+		match ending:
+			"board":
+				Game.stats["fake_followed"] = 1
+			"announce":
+				Game.stats["violations"] = int(Game.stats.get("violations", 0)) + 1
 	_log_prefix = "[%s%d] " % [Game.phase, Game.cycle]
 	await get_tree().create_timer(0.3).timeout
 	d = world.director
@@ -121,9 +125,6 @@ func _run() -> void:
 			return
 		var task := d.current
 		if task == null:
-			if Game.phase == "night" and Game.cycle == 5 and d.script_obj.get("finale"):
-				await _finale_choice()
-				return
 			continue
 		if task.kind == "goal":
 			await _do_goal(task)
@@ -137,59 +138,22 @@ func _do_goal(task: Task) -> void:
 	var title := task.title
 	if "바인더" in title:
 		await _pick("binder")
-	elif "FIDS 출발 전광판 촬영" in title:
-		await goto(VIEW.fids[0], VIEW.fids[1])
-		var fv := d.facility_in_view()
-		log_line("  in view: %s  fwd=%s  photos_left=%d" % [fv.id if fv else "none", p.forward(), Game.photos_left])
-		await _photo()
-		await shot("fids_day")
-		log_line("  photos: %s" % [Game.photos.map(func(x): return x.get("facility", "?"))])
-	elif "표준 문안" in title:
-		await goto(VIEW.pa[0], VIEW.pa[1])
-		(t.facility("pa") as PaConsole)._on_test()
-		await _until(func(): return task.state == "done", 60.0)
-	elif "B-03 시운전" in title:
-		await goto(VIEW.baggage[0], VIEW.baggage[1])
-		(t.facility("baggage") as BaggageBelt).press_start()
-		await _until(func(): return task.state == "done", 40.0)
-		await shot("belt_day")
-		await _photo()
-	elif "개정 수칙" in title:
-		await goto(Vector3(-24.2, 0.05, -3.6), Vector3(-23.3, 0.9, -4.6))
-		await _pick_prefix("fax_")
-	elif "조명 분전반 확인" in title:
-		await goto(VIEW.lights[0], VIEW.lights[1])
-		t.lights_panel.switches["hall"]._on_used()
-		await wait(1.5)
-		t.lights_panel.switches["hall"]._on_used()
-	elif "보안검색 데스크 서류" in title:
+	elif "사물함" in title:
 		await _pick("log2")
-	elif "전 구역 순회" in title:
-		await goto(Vector3(0, 0.05, -82.0), Vector3(0, 1.8, -100.0))
-		await shot("day5_gates")
-	elif "X-ray 1번 시운전" in title:
-		await goto(VIEW.xray[0], VIEW.xray[1])
-		(t.facility("xray") as XrayMachine)._on_scan()
-		await _until(func(): return task.state == "done", 30.0)
-		await _photo()
-	elif "MW-1 시운전" in title:
-		await goto(VIEW.walkway[0], VIEW.walkway[1])
-		(t.facility("walkway") as MovingWalkway).press_start()
-		await _until(func(): return task.state == "done", 30.0)
-		await shot("walkway_day")
-	elif "야간 조명 배분" in title:
-		Game.night_lights = {"hall": true, "baggage": true, "security": false, "corridor": true, "gates": false}
-		Events.player_action.emit("power_plan", "")
-	elif "탑승 게이트 구역 확인" in title:
-		var g: BoardingGate = t.facility("gate03")
-		await goto(g.to_global(Vector3(0, 0.05, 7.5)), g.focus_position())
-		g._on_check()
-		await shot("gate_day")
-	elif "시설관리실 복귀" in title:
-		await goto(Vector3(-20.8, 0.05, 1.55), Vector3(-21.78, 1.25, 1.55))
-		d._on_office_reader(t.readers.office_out)
-		await _until(func(): return task.state == "done", 120.0)
-		await shot("reclassified")
+	elif "탑승동 출입" in title:
+		var reader: CardReader = d.script_obj.get("_reader")
+		await goto(reader.global_position + Vector3(0, -1.2, 1.1), reader.global_position)
+		reader.interactable.interact()
+		await wait(0.5)
+		await shot("card_denied")
+	elif "승객 통로" in title:
+		await goto(Vector3(2.0, 0.05, -19.0), Vector3(2.0, 1.2, -24.0))
+		await goto(Vector3(2.0, 0.05, -21.0), Vector3(2.0, 1.2, -24.0))
+		await _until(func(): return Game.flag("passenger_lane"), 10.0)
+		await shot("passenger_lane")
+	elif "0번 게이트 앞으로" in title:
+		await _finale_choice()
+		return
 	elif "퇴근" in title or "근무 종료" in title:
 		await goto(VIEW.punch[0], VIEW.punch[1])
 		await shot("before_punch")
@@ -337,8 +301,9 @@ func _apply_fix(f: Facility, a: String) -> void:
 		"power_off":
 			await goto(Vector3(-25.2, 0.05, -4.6), Vector3(-25.2, 1.5, -5.8))
 			t.breaker.switches[fix[1]]._on_used()
-			await wait(1.0)
-			t.breaker.switches[fix[1]]._on_used()
+			if not OS.get_cmdline_user_args().has("--leave-power-off"):   # like a player who never switches it back on
+				await wait(1.0)
+				t.breaker.switches[fix[1]]._on_used()
 		"pa_stop":
 			(f as PaConsole)._on_test()
 			await wait(2.0)
@@ -398,45 +363,40 @@ func _watch_events() -> void:
 				log_line("EVENT slow PA → face south")
 				p.look_at_point(p.camera.global_position + Vector3(0, 0, 10), 0.01)
 				await _until(func(): return d.running_event != "slowpa", 40.0)
+			"broadcast":
+				log_line("EVENT 03:00 broadcast → stand still")
+				await shot("regular_broadcast")
+				await _until(func(): return d.running_event != "broadcast", 90.0)
+			"boardingcall":
+				log_line("EVENT boarding call in zone %s → leave the gate area (p.8 ④)" % p.zone)
+				await goto(Vector3(0, 0.05, -62.0), Vector3(0, 1.6, -40.0))
+				await _until(func(): return d.running_event != "boardingcall", 90.0)
 
 
-# --- night 5 finale: pick one of the four endings ---------------------------------------------------
+# --- DAY 3 06:00: walk to Gate 0, then follow whichever sign the record lit -----------------------------
 func _finale_choice() -> void:
-	log_line("FINALE → ending " + ending + "  erosion=%d lever=%s arrival=%s" % [int(Game.erosion), d.main_power_enabled, Game.flag("arrival_ready")])
-	await wait(4.0)
-	await goto(Vector3(0, 0.05, -90.0), Vector3(0, 2.5, -110))
-	await shot("gate0_open")
-	match ending:
+	await goto(Vector3(0, 0.05, -95.0), Vector3(0, 2.5, -110))
+	await shot("gate0_front")
+	await _until(func(): return str(d.script_obj.get("ending")) != "", 30.0)
+	var picked := str(d.script_obj.get("ending"))
+	log_line("FINALE → %s  accuracy=%d%% missed=%d violations=%d fakes=%d (wanted %s)" % [picked, d.record_accuracy(),
+		int(Game.stats.get("missed", 0)), int(Game.stats.get("violations", 0)), int(Game.stats.get("fake_followed", 0)), ending])
+	await wait(2.0)
+	match picked:
 		"board":
+			await shot("board_sign")
 			await goto(Vector3(0, 0.05, -125.0), Vector3(0, 1.4, -136))
-			await shot("jet_bridge")
 			await goto(Vector3(0, 0.05, -134.4), Vector3(0, 1.4, -136))
-		"return":
-			await goto(VIEW.pa[0], VIEW.pa[1])
-			await shot("arrival_button")
-			var pa: PaConsole = t.facility("pa")
-			pa._arrival_button.interact()
-		"announce":
-			Game.add_erosion(100.0)
-		_:
-			await goto(Vector3(44.5, 0.05, 10.4), Vector3(45.8, 1.3, 10.4))
-			d._on_keypad_code("1103")
-			await wait(2.0)
-			await goto(Vector3(55.5, 0.05, 9.0), Vector3(57.8, 1.4, 9.0))
-			d.t.syslog_terminal.interact()
-			await wait(1.0)
-			await shot("syslog")
-			if world.ui.modal == "doc":
-				world.ui._close_reader()
-			d._on_main_power()
-			await wait(4.0)
+		"exit":
+			await shot("exit_lights")
 			await goto(Vector3(17, 0.05, 11.5), Vector3(17, 1.5, 14))
 			await shot("emergency_exit")
-			d._on_exit_door()
-			await wait(1.5)
+			await wait(1.0)
 			await goto(Vector3(17, 0.05, 16.0), Vector3(17, 1.5, 20))
-	await _until(func(): return d.ending_started, 60.0)
-	log_line("ENDING STARTED: " + ending)
+		_:
+			await shot("your_voice")
+	await _until(func(): return d.ending_started, 90.0)
+	log_line("ENDING STARTED: " + picked)
 
 
 func _until(cond: Callable, timeout: float) -> bool:

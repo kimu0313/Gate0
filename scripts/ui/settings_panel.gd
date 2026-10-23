@@ -44,7 +44,7 @@ func _build() -> void:
 	head.add_theme_constant_override("separation", 16)
 	v.add_child(head)
 	head.add_child(UiKit.label("설정", 36, UiKit.TEXT, "sans", 900))
-	var cap := UiKit.caption("SETTINGS", UiKit.SIGNAL, 18)
+	var cap := UiKit.caption("SETTINGS", UiKit.SIGNAL_TEXT, 18)
 	cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(cap)
 	_build_tabs(v)
@@ -138,7 +138,7 @@ func _show_tab(key: String, sound := true) -> void:
 	for k in _tab_buttons:
 		var b: Button = _tab_buttons[k]
 		var on: bool = k == key
-		b.add_theme_color_override("font_color", UiKit.SIGNAL if on else UiKit.TEXT_DIM)
+		b.add_theme_color_override("font_color", UiKit.SIGNAL_TEXT if on else UiKit.TEXT_DIM)
 		b.add_theme_font_override("font", UiKit.font("sans", 700 if on else 500))
 	if sound:
 		Snd.play("ui_tap", -12.0, 1.2)
@@ -257,7 +257,7 @@ func _slider(parent: Control, text: String, key: String, lo: float, hi: float, s
 	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	s.focus_mode = Control.FOCUS_NONE
 	row.add_child(s)
-	var val := UiKit.label(fmt.call(s.value), 19, UiKit.SIGNAL, "display", 700)
+	var val := UiKit.label(fmt.call(s.value), 19, UiKit.SIGNAL_TEXT, "display", 700)
 	val.custom_minimum_size = Vector2(80, 0)
 	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	val.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -290,7 +290,7 @@ func _toggle(parent: Control, text: String, key: String, sub := "") -> void:
 	row.add_child(c)
 	var paint := func(v: bool):
 		state.text = "ON" if v else "OFF"
-		state.add_theme_color_override("font_color", UiKit.SIGNAL if v else UiKit.TEXT_DIM)
+		state.add_theme_color_override("font_color", UiKit.SIGNAL_TEXT if v else UiKit.TEXT_DIM)
 	paint.call(on)
 	c.toggled.connect(func(v):
 		Snd.play("switch_heavy", -18.0, 1.4)
@@ -363,7 +363,7 @@ func _refresh_keys() -> void:
 		var b: Button = _key_buttons[action]
 		if action == _capturing:
 			b.text = UiKit.t("키를 누르십시오…")
-			b.add_theme_color_override("font_color", UiKit.SIGNAL)
+			b.add_theme_color_override("font_color", UiKit.SIGNAL_TEXT)
 		else:
 			b.text = Game.key_label(action)
 			b.add_theme_color_override("font_color", UiKit.TEXT)

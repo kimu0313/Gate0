@@ -60,14 +60,14 @@ func build(width := 8.0, height := 3.2, with_controls := true) -> void:
 	quad.material_override = screen_mat
 	add_child(quad)
 	quad.position = Vector3(0, 0, -0.015)
-	var glow := Geo.omni(self, Vector3(0, -height * 0.3, 1.4), Color(1.0, 0.75, 0.4), 0.5, 7.0)
+	var glow := Geo.omni(self, Vector3(0, -height * 0.3, 1.4), Color(0.5, 0.65, 1.0), 0.5, 7.0)
 	glow.light_specular = 0.0   # spill on the floor only, no hotspot on the board's own glass
 	glow.light_volumetric_fog_energy = 0.8
 	focus = quad
 	_hum = Snd.make_loop("machine_hum_loop", self, -18.0, 3.0, 12.0)
 	if with_controls:
 		var box := Props.panel_box(self, Vector3(width * 0.5 - 0.45, -height * 0.5 - 1.75, 0.05), 0.0, Vector2(0.6, 0.5), "FIDS 제어함")
-		Props.button(box, Vector3(-0.12, -0.04, 0), 0.0, "button_yellow", "RESET", "전광판 RESET", _on_reset)
+		Props.button(box, Vector3(-0.12, -0.04, 0), 0.0, "button_blue", "RESET", "전광판 RESET", _on_reset)
 		Geo.label(box, "SEOHAE FIDS-01", Vector3(0.13, -0.04, 0.006), 0.0, 18, Color(0.7, 0.75, 0.8), 0.0022, false, "print")
 	_rows = NORMAL_ROWS.duplicate(true)
 	_refresh()

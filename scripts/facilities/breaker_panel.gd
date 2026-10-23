@@ -29,6 +29,15 @@ func _on_toggle(on: bool, key: String) -> void:
 	Events.player_action.emit("power_on" if on else "power_off", key)
 
 
+## Switches a facility's circuit back on (if the player cut it). Returns true if it was off.
+func restore_for(f: Facility) -> bool:
+	for key in groups.keys():
+		if (groups[key] as Array).has(f) and not f.powered:
+			set_power(key, true)
+			return true
+	return false
+
+
 func set_power(key: String, on: bool) -> void:
 	if switches.has(key):
 		switches[key].set_on(on)

@@ -29,6 +29,7 @@ var red_area: Area3D
 var red_index := -1
 ## Overall brightness multiplier: each judgment mistake dims the whole terminal one step.
 var intensity := 1.0
+var night_dim := 1.0   # 01:00, the evening staff gone: the zones run on half their panels' light
 var _panel_light := {}      # panel -> its lights [area, fill omni] (if any)
 var _dark_panel: MeshInstance3D
 var _dark_mat: StandardMaterial3D
@@ -209,7 +210,7 @@ func _pattern(t: float) -> float:
 
 
 func _apply(k: float) -> void:
-	k *= intensity
+	k *= intensity * night_dim
 	panel_mat.emission_energy_multiplier = panel_energy * k
 	for l in lights:
 		l.light_energy = _base_energy[l] * k

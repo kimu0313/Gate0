@@ -1,12 +1,12 @@
 class_name SignRow
 extends Button
 ## Wayfinding-sign menu row: index number, label, optional meta text and an arrow.
-## On hover a signal-yellow fill sweeps in from the left and the text inverts.
+## On hover a signal-blue fill sweeps in from the left and the text switches to the ink that reads on it.
 
 var label_text := ""
 var index_text := ""
 var meta_text := ""
-var accent := Color("ffc21a")
+var accent := UiKit.SIGNAL
 var font_size := 24
 var group: Array = []      # rows of one menu (see link): one stays highlighted, arrow keys / d-pad move it
 var lit := false
@@ -14,7 +14,7 @@ var _fill := 0.0
 var _tw: Tween
 
 
-static func make(idx: String, txt: String, cb: Callable, meta := "", accent_color := Color("ffc21a"), w := 520.0, h := 62.0) -> SignRow:
+static func make(idx: String, txt: String, cb: Callable, meta := "", accent_color := UiKit.SIGNAL, w := 520.0, h := 62.0) -> SignRow:
 	var r := SignRow.new()
 	r.index_text = idx
 	r.label_text = UiKit.t(txt)
@@ -104,8 +104,9 @@ func _draw() -> void:
 	if _fill > 0.001:
 		draw_rect(Rect2(0, 0, w * _fill, h), accent)
 	var dim := disabled
-	var fg := Color("e8eaed").lerp(Color("0b0e12"), _fill)
-	var fg_idx := Color("7c8590").lerp(Color("0b0e12"), _fill)
+	var ink := UiKit.ink_on(accent)
+	var fg := Color("e8eaed").lerp(ink, _fill)
+	var fg_idx := Color("7c8590").lerp(ink, _fill)
 	if dim:
 		fg = Color("4a525d")
 		fg_idx = fg
@@ -123,9 +124,9 @@ func _draw() -> void:
 		var ma := mono.get_ascent(15) - mono.get_descent(15)
 		var mw := mono.get_string_size(meta_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 		var mx := w - 22.0 - mw - (46.0 * _fill)
-		draw_string(mono, Vector2(mx, base + ma * 0.5), meta_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("7c8590").lerp(Color("0b0e12"), _fill))
+		draw_string(mono, Vector2(mx, base + ma * 0.5), meta_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("7c8590").lerp(ink, _fill))
 	if _fill > 0.05:
 		var ax := w - 50.0 - (1.0 - _fill) * 18.0
-		var ac := Color(Color("0b0e12"), _fill)
+		var ac := Color(ink, _fill)
 		draw_line(Vector2(ax, base), Vector2(ax + 28, base), ac, 3.5)
 		draw_polyline(PackedVector2Array([Vector2(ax + 19, base - 8), Vector2(ax + 29, base), Vector2(ax + 19, base + 8)]), ac, 3.5)

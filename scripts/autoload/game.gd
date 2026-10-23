@@ -4,7 +4,7 @@ extends Node
 const SAVE_PATH := "user://save.json"
 const SETTINGS_PATH := "user://settings.cfg"
 const PHOTO_DIR := "user://photos"
-const MAX_CYCLE := 5
+const MAX_CYCLE := 3
 const PHOTOS_PER_DAY := 6
 
 const SCENE_MENU := "res://scenes/menu.tscn"
@@ -60,10 +60,10 @@ const REBINDABLE := [["move_forward", "앞으로 이동"], ["move_back", "뒤로
 
 # --- session state ---------------------------------------------------------------
 var player_name := "점검원"
-var cycle := 1             # 1..5 : Day N -> Night N (10/18 … 10/22, opening on 10/23)
-var phase := "day"         # "day" | "night"
+var cycle := 1             # 1..3 : DAY N = one dawn shift 00:00–06:00 (10/21 · 10/22 · 10/23, opening day)
+var phase := "night"       # always "night" now (the day shifts were cut in the 3-day scenario)
 var erosion := 0.0         # 0..100
-var clock_minutes := 9 * 60
+var clock_minutes := 0          # minutes after 00:00
 var clues := {}            # clue_id -> true
 var binder_pages: Array = []   # page ids currently in the binder
 var stats := {}
@@ -88,38 +88,47 @@ func _ready() -> void:
 	_debug_args()
 
 
-## Debug / test hooks: `-- --night 2` or `-- --day 3` jumps straight into a phase.
+## Debug / test hooks: `-- --day 2` (or `--night 2`) jumps straight into that dawn shift.
 func _debug_args() -> void:
 	var args := OS.get_cmdline_user_args()
 	for key in ["--night", "--day"]:
 		var i := args.find(key)
 		if i >= 0:
-			phase = key.substr(2)
-			cycle = int(args[i + 1]) if i + 1 < args.size() and args[i + 1].is_valid_int() else 1
-			clock_minutes = 23 * 60 if phase == "night" else 9 * 60
+			phase = "night"
+			cycle = clampi(int(args[i + 1]) if i + 1 < args.size() and args[i + 1].is_valid_int() else 1, 1, MAX_CYCLE)
+			clock_minutes = 0
 			prepare_chapter(cycle, phase)
 
 
-## Binder contents a player would have when starting directly at (cycle, phase).
-## Schedule: D1 p0–p4,p9 · D2 +p5 · D3 +p6,p7 · D4 +p8 · D5 +p10 (each handed out at the day's fax).
-func prepare_chapter(c: int, ph: String) -> void:
+## Pages slipped into the binder at the start of each shift (the day's handover).
+const DAY_PAGES := {1: ["p0", "p1", "p2", "p3", "p4", "p9"], 2: ["p5", "p7", "f7"], 3: ["p6", "p8", "f4", "f8"]}
+
+
+## Binder contents a player would have when starting directly at shift `c` (before its own new pages).
+func prepare_chapter(c: int, _ph := "night") -> void:
 	binder_pages = []
-	if c > 1 or ph == "night":
-		binder_pages.append_array(["p0", "p1", "p2", "p3", "p4", "p9"])
-	var fax := {2: ["p5"], 3: ["p6", "p7"], 4: ["p8"], 5: ["p10"]}
-	for day in fax.keys():
-		if c > day or (c == day and ph == "night"):
-			binder_pages.append_array(fax[day])
-	if c >= 5:
-		set_flag("passenger")
+	for day in range(1, c):
+		binder_pages.append_array(DAY_PAGES[day])
+	if c >= 3:
+		binder_pages.erase("p3")
+		binder_pages.append("p3_dmg")
 	set_flag("prologue_seen")
+
+
+## The day's pages arrive with the handover (DAY 2 also water-damages p.3).
+func add_day_pages(c: int) -> void:
+	for id in DAY_PAGES.get(c, []):
+		add_binder_page(id)
+	if c >= 2 and binder_pages.has("p3"):
+		remove_binder_page("p3")
+		add_binder_page("p3_dmg")
 
 
 func reset_session() -> void:
 	cycle = 1
-	phase = "day"
+	phase = "night"
 	erosion = 0.0
-	clock_minutes = 9 * 60
+	clock_minutes = 0
 	clues = {}
 	binder_pages = []
 	flags = {}
@@ -130,7 +139,7 @@ func reset_session() -> void:
 	stats = {
 		"correct": 0, "missed": 0, "false_alarm": 0, "cleared": 0,
 		"failed": 0, "deaths": 0, "fake_followed": 0, "photos": 0,
-		"mistakes": 0, "inspections": 0, "judged_right": 0,
+		"mistakes": 0, "inspections": 0, "judged_right": 0, "violations": 0,
 	}
 
 
@@ -299,17 +308,14 @@ func start_new_game(name_text: String) -> void:
 	reset_session()
 	player_name = name_text.strip_edges() if name_text.strip_edges() != "" else "점검원"
 	_prepare_name_voice()
-	start_phase(1, "day")
+	start_phase(1, "night")
 
 
-func start_phase(new_cycle: int, new_phase: String) -> void:
+func start_phase(new_cycle: int, _new_phase := "night") -> void:
 	cycle = clampi(new_cycle, 1, MAX_CYCLE)
-	phase = new_phase
-	if phase == "day":
-		photos_left = PHOTOS_PER_DAY
-		clock_minutes = 9 * 60
-	else:
-		clock_minutes = 23 * 60
+	phase = "night"   # every shift is a dawn shift now; the argument stays for callers and old saves
+	photos_left = PHOTOS_PER_DAY
+	clock_minutes = 0
 	_take_snapshot()
 	save_game()
 	change_scene(SCENE_GAME)
@@ -356,12 +362,15 @@ func _take_snapshot() -> void:
 func _restore_snapshot() -> void:
 	if _snapshot.is_empty():
 		return
+	# deaths and fake pages followed stay on the record across a restart (they decide the ending)
 	var deaths := int(stats.get("deaths", 0))
+	var fakes := int(stats.get("fake_followed", 0))
 	erosion = _snapshot.erosion
 	clues = _snapshot.clues.duplicate(true)
 	binder_pages = _snapshot.binder_pages.duplicate(true)
 	stats = _snapshot.stats.duplicate(true)
 	stats["deaths"] = deaths
+	stats["fake_followed"] = fakes
 	flags = _snapshot.flags.duplicate(true)
 	photos.resize(mini(photos.size(), int(_snapshot.photos_count)))
 	photos_left = _snapshot.photos_left
@@ -412,8 +421,8 @@ func load_game() -> bool:
 		return false
 	reset_session()
 	player_name = str(data.get("player_name", "점검원"))
-	cycle = int(data.get("cycle", 1))
-	phase = str(data.get("phase", "day"))
+	cycle = clampi(int(data.get("cycle", 1)), 1, MAX_CYCLE)   # saves from the 5-day build carry on at the last shift
+	phase = "night"
 	erosion = float(data.get("erosion", 0.0))
 	clues = data.get("clues", {})
 	binder_pages = data.get("binder_pages", [])

@@ -2,6 +2,8 @@ class_name Geo
 extends RefCounted
 ## Primitive builders used by the procedural terminal (boxes, cylinders, labels, lights, walls).
 
+## Sign lettering in the signal blue (UiKit.SIGNAL), lifted so it still reads on dark plates in a dark terminal.
+const SIGN_BLUE := Color(0.36, 0.56, 1.0)
 const LAYER_WORLD := 1
 const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4

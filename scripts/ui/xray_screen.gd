@@ -1,7 +1,7 @@
 class_name XrayScreen
 extends Control
 ## False-colour X-ray scan image drawn procedurally.
-## content: "" (idle) | "bag" | "figure" | "heart"
+## content: "" (idle) | "bag" | "figure" | "heart" | "mybag" (your own bag, scanned as a passenger's)
 
 var content := ""
 var powered := true
@@ -49,6 +49,9 @@ func _draw() -> void:
 			_draw_normal_contents(cx, cy)
 		"figure":
 			_draw_figure(cx, cy)
+		"mybag":
+			_draw_normal_contents(cx, cy)
+			_draw_passenger_tag(cx, cy)
 		"heart":
 			_draw_normal_contents(cx, cy)
 			var beat := 1.0 + 0.18 * maxf(0.0, sin(_t * 7.5)) + 0.1 * maxf(0.0, sin(_t * 7.5 - 1.2))
@@ -77,6 +80,18 @@ func _draw_normal_contents(cx: float, cy: float) -> void:
 	for i in 20:
 		pts.append(Vector2(cx - 170 + i * 14, cy + 80 + sin(i * 0.9) * 12.0))
 	draw_polyline(pts, Color(0.3, 0.9, 0.4, 0.8), 4.0)
+
+
+## A baggage tag on the handle: the airport scanned your bag as a passenger's (DAY 2 · 수칙 p.7 ③).
+func _draw_passenger_tag(cx: float, cy: float) -> void:
+	var red := Color(1.0, 0.32, 0.25)
+	draw_string(mono, Vector2(0, 30), "PASSENGER BAGGAGE   ", HORIZONTAL_ALIGNMENT_RIGHT, size.x - 16, 20, red)
+	var tag := Rect2(cx + 60, cy - 214, 230, 70)
+	draw_line(Vector2(cx + 30, cy - 160), tag.position + Vector2(20, 70), Color(0.95, 0.85, 0.4, 0.8), 3.0)
+	draw_rect(tag, Color(0.95, 0.85, 0.4, 0.22))
+	draw_rect(tag, Color(0.95, 0.85, 0.4, 0.8), false, 3.0)
+	draw_string(mono, tag.position + Vector2(12, 28), "PAX  " + Game.player_name, HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 20, 22, Color(1, 0.95, 0.75))
+	draw_string(mono, tag.position + Vector2(12, 56), "FLT 000  -> HOME", HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 20, 20, red)
 
 
 func _draw_figure(cx: float, cy: float) -> void:

@@ -228,11 +228,15 @@ static func label(parent: Node, text: String, pos: Vector3, rot_y := 0.0, font_s
 	return l
 
 
-## Shrinks a Label3D so its widest line fits `max_width` metres (signs, boards, plates).
-static func fit(l: Label3D, max_width: float) -> Label3D:
+## Shrinks a Label3D so its widest line fits `max_width` metres (signs, boards, plates) and, when given, all of
+## its lines fit `max_height`.
+static func fit(l: Label3D, max_width: float, max_height := INF) -> Label3D:
 	var w := l.font.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.font_size).x * l.pixel_size
 	if w > max_width and w > 0.0:
 		l.pixel_size *= max_width / w
+	var h := _text_px(l).y * l.pixel_size
+	if h > max_height and h > 0.0:
+		l.pixel_size *= max_height / h
 	return l
 
 

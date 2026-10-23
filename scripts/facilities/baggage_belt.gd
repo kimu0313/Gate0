@@ -70,7 +70,8 @@ func build() -> void:
 	_beacon = Geo.omni(hatch, Vector3(0.3, 2.3, 0.5), Color(1.0, 0.55, 0.05), 0.0, 8.0)
 	# direction arrows painted on the island
 	for side in [-1.0, 1.0]:
-		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, 0.765, side * (radius - 0.55)), 0.0, 64, Geo.SIGN_BLUE, 0.006, false, "print")
+		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, 0.765, side * (radius - 0.85)), 0.0, 64, Geo.SIGN_BLUE, 0.006, false, "print")
+		Geo.fit(arrow, half * 2.0, 0.5)      # painted inside the island's edge
 		arrow.rotation.x = -PI / 2
 	# carousel display
 	var disp_holder := Node3D.new()

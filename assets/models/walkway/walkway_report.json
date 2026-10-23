@@ -1,0 +1,67 @@
+{
+ "zone": "walkway",
+ "props": {
+  "SEC_WalkwayEnd": {
+   "scale": 3.514508580343214,
+   "size_m": [
+    2.263,
+    3.513,
+    1.1
+   ],
+   "spec_m": [
+    1.6,
+    3.0,
+    1.1
+   ],
+   "tris": 4371,
+   "faces": 4371,
+   "verts": 4060,
+   "src_images": [
+    "Color",
+    "Normal",
+    "SEC_WalkwayEnd_p2_glb_metallic-SEC_WalkwayEnd_p2_glb_roughness"
+   ],
+   "file_kb": 247.7
+  },
+  "SEC_WalkwayMid": {
+   "scale": 3.4605222734254997,
+   "size_m": [
+    1.759,
+    3.459,
+    1.1
+   ],
+   "spec_m": [
+    1.6,
+    4.0,
+    1.1
+   ],
+   "tris": 1960,
+   "faces": 1960,
+   "verts": 1993,
+   "src_images": [
+    "Color.001",
+    "Normal.001",
+    "SEC_WalkwayMid_p2_glb_metallic-SEC_WalkwayMid_p2_glb_roughness"
+   ],
+   "file_kb": 125.0
+  }
+ },
+ "surface_m2": 74.12,
+ "uv_coverage": 0.381,
+ "atlas": 4096,
+ "orm": 2048,
+ "px_per_m": 293.6,
+ "materials": {
+  "SEC_WalkwayEnd": [
+   0.0,
+   0.063,
+   0.227,
+   0.709
+  ],
+  "SEC_WalkwayMid": [
+   0.02,
+   0.428,
+   0.552
+  ]
+ }
+}

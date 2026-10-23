@@ -3444,6 +3444,57 @@ msgstr "NIGHT 5 — Gate 0"
 msgid "점검 %d / %d  ·  판정 실수 %d / 3"
 msgstr "Inspection %d / %d  ·  Judgment errors %d / 3"
 
+msgid "수하물 검색 %d   BAGGAGE INSPECTION %d"
+msgstr "BAGGAGE INSPECTION %d   SECURITY LANE %d"
+
+msgid ""
+"보안검색\n"
+"SECURITY CHECK"
+msgstr ""
+"SECURITY\n"
+"CHECK"
+
+msgid ""
+"탑승구 →\n"
+"TO GATE"
+msgstr ""
+"GATES →\n"
+"TO GATE"
+
+msgid ""
+"탑승구 1 – 12\n"
+"GATES 1 – 12"
+msgstr "GATES 1 – 12"
+
+msgid "수하물 수취 %d   BAGGAGE CLAIM %d"
+msgstr "BAGGAGE CLAIM %d   CAROUSEL %d"
+
+msgid ""
+"수하물 수취\n"
+"BAGGAGE CLAIM  →"
+msgstr "BAGGAGE CLAIM  →"
+
+msgid ""
+"수하물 수취\n"
+"Baggage Claim"
+msgstr "Baggage Claim"
+
+msgid "직원 전용  STAFF ONLY"
+msgstr "STAFF ONLY"
+
+msgid "탑승구 통로"
+msgstr "Gate Corridor"
+
+msgid "수하물 수취   Baggage Claim"
+msgstr "Baggage Claim"
+
+msgid ""
+"수하물 검색 %d\n"
+"BAGGAGE INSPECTION %d"
+msgstr ""
+"BAGGAGE INSPECTION %d\n"
+"SECURITY LANE %d"
+
 msgid ""
 "탑승이 완료되었습니다.\n"
 "\n"

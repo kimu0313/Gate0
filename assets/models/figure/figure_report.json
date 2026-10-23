@@ -1,0 +1,38 @@
+{
+ "zone": "figure",
+ "props": {
+  "FIG_PassengerSeated": {
+   "scale": 1.3006350757205667,
+   "size_m": [
+    0.57,
+    0.697,
+    1.3
+   ],
+   "spec_m": [
+    0.55,
+    0.7,
+    1.3
+   ],
+   "tris": 3258,
+   "faces": 3258,
+   "verts": 3561,
+   "src_images": [
+    "Color",
+    "FIG_PassengerSeated_p2_glb_metallic-FIG_PassengerSeated_p2_glb_roughness",
+    "Normal"
+   ],
+   "head_split_z": 1.06,
+   "file_kb": 228.2
+  }
+ },
+ "surface_m2": 2.62,
+ "uv_coverage": 0.48,
+ "atlas": 2048,
+ "orm": 1024,
+ "px_per_m": 877.7,
+ "materials": {
+  "FIG_PassengerSeated": [
+   1.0
+  ]
+ }
+}

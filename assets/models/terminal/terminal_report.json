@@ -1,0 +1,169 @@
+{
+ "zone": "terminal",
+ "props": {
+  "TRM_FIDSBoard": {
+   "scale": 8.305909617612977,
+   "size_m": [
+    8.302,
+    0.35,
+    3.293
+   ],
+   "spec_m": [
+    8.3,
+    0.2,
+    3.5
+   ],
+   "tris": 450,
+   "faces": 400,
+   "verts": 453,
+   "src_images": [
+    "Color",
+    "Normal",
+    "TRM_FIDSBoard_p2_glb_metallic-TRM_FIDSBoard_p2_glb_roughness"
+   ],
+   "file_kb": 32.2
+  },
+  "TRM_Suitcase": {
+   "scale": 0.7935618479880775,
+   "size_m": [
+    0.48,
+    0.7,
+    0.26
+   ],
+   "spec_m": [
+    0.48,
+    0.7,
+    0.26
+   ],
+   "tris": 986,
+   "faces": 986,
+   "verts": 1000,
+   "src_images": [
+    "Color.001",
+    "Normal.001",
+    "TRM_Suitcase_p2_glb_metallic-TRM_Suitcase_p2_glb_roughness"
+   ],
+   "file_kb": 57.7
+  },
+  "TRM_Monitor": {
+   "scale": 0.6362718446601942,
+   "size_m": [
+    0.636,
+    0.228,
+    0.48
+   ],
+   "spec_m": [
+    0.54,
+    0.2,
+    0.48
+   ],
+   "tris": 618,
+   "faces": 618,
+   "verts": 588,
+   "src_images": [
+    "Color.002",
+    "Normal.002",
+    "TRM_Monitor_p2_glb_metallic-TRM_Monitor_p2_glb_roughness"
+   ],
+   "file_kb": 35.2
+  },
+  "TRM_CheckinCounter": {
+   "scale": 2.8771392081736913,
+   "size_m": [
+    2.876,
+    2.82,
+    1.1
+   ],
+   "spec_m": [
+    1.68,
+    2.1,
+    1.1
+   ],
+   "tris": 1622,
+   "faces": 1622,
+   "verts": 1932,
+   "src_images": [
+    "Color.003",
+    "Normal.003",
+    "TRM_CheckinCounter_p2_glb_metallic-TRM_CheckinCounter_p2_glb_roughness"
+   ],
+   "file_kb": 117.3
+  },
+  "TRM_InfoDesk": {
+   "scale": 3.489865470852018,
+   "size_m": [
+    3.488,
+    1.2,
+    1.14
+   ],
+   "spec_m": [
+    3.8,
+    1.15,
+    1.14
+   ],
+   "tris": 679,
+   "faces": 589,
+   "verts": 739,
+   "src_images": [
+    "Color.004",
+    "Normal.004",
+    "TRM_InfoDesk_p2_glb_metallic-TRM_InfoDesk_p2_glb_roughness"
+   ],
+   "file_kb": 42.5
+  },
+  "TRM_BoardingPodium": {
+   "scale": 1.758460399703923,
+   "size_m": [
+    1.758,
+    1.612,
+    1.16
+   ],
+   "spec_m": [
+    1.4,
+    0.7,
+    1.16
+   ],
+   "tris": 1009,
+   "faces": 1009,
+   "verts": 1027,
+   "src_images": [
+    "Color.005",
+    "Normal.005",
+    "TRM_BoardingPodium_p2_glb_metallic-TRM_BoardingPodium_p2_glb_roughness"
+   ],
+   "file_kb": 65.2
+  }
+ },
+ "surface_m2": 122.21,
+ "uv_coverage": 0.463,
+ "atlas": 4096,
+ "orm": 2048,
+ "px_per_m": 252.1,
+ "materials": {
+  "TRM_FIDSBoard": [
+   0.006,
+   0.994
+  ],
+  "TRM_Suitcase": [
+   0.447,
+   0.553
+  ],
+  "TRM_Monitor": [
+   0.108,
+   0.892
+  ],
+  "TRM_CheckinCounter": [
+   0.043,
+   0.638,
+   0.319
+  ],
+  "TRM_InfoDesk": [
+   0.019,
+   0.981
+  ],
+  "TRM_BoardingPodium": [
+   0.022,
+   0.978
+  ]
+ }
+}

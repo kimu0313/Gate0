@@ -50,7 +50,10 @@ func build(num: String, with_seats := true, with_bridge := true) -> void:
 	var sign := Node3D.new()
 	add_child(sign)
 	sign.position = Vector3(0, 3.45, 0.3)
-	Geo.box(sign, Vector3.ZERO, Vector3(2.6, 0.8, 0.12), Mats.get_mat("sign_back"), false)
+	var plate := Geo.box(sign, Vector3.ZERO, Vector3(2.6, 0.8, 0.12), Mats.get_mat("sign_back"), false)
+	if TripoProps.exists("common", "CMN_WallSign"):
+		plate.visible = false        # kept as the label-fitting backing
+		Props.sign_body(sign, Vector3.ZERO, Vector2(2.6, 0.8), 0.12)
 	Geo.label(sign, "GATE " + number, Vector3(-0.5, 0.1, 0.065), 0.0, 70, Geo.SIGN_BLUE, 0.005)
 	Geo.label(sign, "탑승구 " + number, Vector3(-0.5, -0.24, 0.065), 0.0, 36, Color(0.9, 0.9, 0.9), 0.005)
 	Geo.box(sign, Vector3(0.82, 0, 0.065), Vector3(0.85, 0.6, 0.01), Mats.get_mat("screen_off"), false)
@@ -60,8 +63,11 @@ func build(num: String, with_seats := true, with_bridge := true) -> void:
 	add_child(podium)
 	podium.position = Vector3(1.8, 0, 2.6)
 	podium.rotation.y = -0.5
-	Geo.box(podium, Vector3(0, 0.55, 0), Vector3(1.3, 1.1, 0.6), Mats.get_mat("counter_front"), true)
-	Geo.box(podium, Vector3(0, 1.12, 0), Vector3(1.4, 0.04, 0.7), Mats.get_mat("counter"), false)
+	if TripoProps.exists("terminal", "TRM_BoardingPodium"):
+		TripoProps.spawn(podium, "terminal", "TRM_BoardingPodium", Vector3.ZERO, 0.0, true, null, Vector3(1.4, 1.14, 0.7))
+	else:
+		Geo.box(podium, Vector3(0, 0.55, 0), Vector3(1.3, 1.1, 0.6), Mats.get_mat("counter_front"), true)
+		Geo.box(podium, Vector3(0, 1.12, 0), Vector3(1.4, 0.04, 0.7), Mats.get_mat("counter"), false)
 	var top := Node3D.new()
 	podium.add_child(top)
 	top.position = Vector3(0, 1.16, 0.12)

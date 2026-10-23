@@ -40,22 +40,36 @@ static func panel_box(parent: Node3D, pos: Vector3, rot_y: float, size: Vector2,
 	return holder
 
 
+## Free-standing control stand (belt and walkway controls): brushed stainless base, slim column and a sloped head
+## whose dark face carries the buttons. Returns the face node (+Z = face normal; face 0.6 x 0.36, centred 0.03 below
+## the origin so a button row at y -0.03 has room for its captions).
 static func pedestal(parent: Node3D, pos: Vector3, rot_y: float, title := "") -> Node3D:
 	var holder := Node3D.new()
 	parent.add_child(holder)
 	holder.position = pos
 	holder.rotation.y = rot_y
-	var column := Geo.box(holder, Vector3(0, 0.5, 0), Vector3(0.5, 1.0, 0.35), Mats.get_mat("metal_dark"), true)
-	if TripoProps.exists("terminal", "TRM_BoardingPodium"):
-		column.visible = false
-		TripoProps.spawn(holder, "terminal", "TRM_BoardingPodium", Vector3.ZERO, 0.0, false, null, Vector3(0.5, 1.02, 0.35))
+	var steel := CarouselMesh.mat("steel")
+	for part in [[Vector3(0.4, 0.02, 0.32), 0.04, 0.0], [Vector3(0.18, 0.86, 0.14), 0.03, 0.02]]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = CarouselMesh.rounded_prism(part[0], part[1])
+		mi.material_override = steel
+		holder.add_child(mi)
+		mi.position.y = part[2]
+	Geo.box(holder, Vector3(0, 0.005, 0), Vector3(0.36, 0.01, 0.28), CarouselMesh.mat("kick"), false)
+	Geo.blocker(holder, Vector3(0, 0.55, 0), Vector3(0.6, 1.1, 0.4))
 	var top := Node3D.new()
 	holder.add_child(top)
-	top.position = Vector3(0, 1.08, 0.02)
-	top.rotation.x = -0.6
-	Geo.box(top, Vector3(0, 0, -0.03), Vector3(0.56, 0.36, 0.06), Mats.get_mat("plastic_grey"), false)
+	top.position = Vector3(0, 1.0, 0.03)
+	top.rotation.x = -0.5
+	var head := MeshInstance3D.new()
+	head.mesh = CarouselMesh.rounded_prism(Vector3(0.66, 0.08, 0.42), 0.03)
+	head.material_override = steel
+	top.add_child(head)
+	head.rotation.x = PI / 2           # the prism's top becomes the face (+Z), its body behind it
+	head.position = Vector3(0, -0.03, -0.085)
+	Geo.box(top, Vector3(0, -0.03, -0.003), Vector3(0.6, 0.36, 0.004), CarouselMesh.mat("panel"), false)   # face 1 mm behind the captions
 	if title != "":
-		Geo.label(top, title, Vector3(0, 0.14, 0.004), 0.0, 26, Geo.SIGN_BLUE, 0.0025, false, "print")
+		Geo.fit(Geo.label(top, title, Vector3(0, 0.1, 0.006), 0.0, 26, Geo.SIGN_BLUE, 0.0022, false, "print"), 0.44, 0.05)
 	return top
 
 

@@ -6,15 +6,14 @@ extends RefCounted
 ## colleague (StaffNpc) who hands each shift over in person.
 
 const DOCS := {
-	# clue id: [position, rotation, prompt, first day it can be found]
-	"log1": [Vector3(-27.4, 0.77, 5.3), 0.2, "낡은 업무일지 읽기", 1],
-	"memo_worker": [Vector3(-12.0, 1.1, 2.5), 0.4, "구겨진 메모 읽기", 1],
-	"log2": [Vector3(11.18, 1.02, -24.6), PI / 2, "사물함 속 업무일지 읽기", 3],
-	"newspaper": [Vector3(8.4, 0.49, -87.2), -0.3, "의자 위 신문 조각 읽기", 4],
-	"log3": [Vector3(20.8, 0.49, -94.6), 0.6, "의자 위에 놓인 업무일지 읽기", 4],
-	"timecard": [Vector3(-27.7, 0.93, -5.5), 0.0, "오래된 근태 카드 읽기", 5],
+	# clue id: [Terminal spot, rotation, prompt, first day it can be found]
+	"log1": ["doc_log1", 0.2, "낡은 업무일지 읽기", 1],
+	"memo_worker": ["doc_memo_worker", 0.4, "구겨진 메모 읽기", 1],
+	"log2": ["doc_log2", PI / 2, "사물함 속 업무일지 읽기", 3],
+	"newspaper": ["doc_newspaper", -0.3, "의자 위 신문 조각 읽기", 4],
+	"log3": ["doc_log3", 0.6, "의자 위에 놓인 업무일지 읽기", 4],
+	"timecard": ["doc_timecard", 0.0, "오래된 근태 카드 읽기", 5],
 }
-const LOCKER_POS := Vector3(11.55, 0.0, -24.6)
 
 var d: ShiftDirector
 
@@ -45,22 +44,23 @@ func title_lines() -> Array:
 # --- shared helpers ---------------------------------------------------------------------------
 ## Every clue that can already be found by this day and was not picked up yet.
 func place_documents() -> void:
-	Geo.box(d.t, Vector3(-27.4, 0.38, 5.35), Vector3(0.7, 0.76, 0.5), Mats.get_mat("wood"))
+	Geo.box(d.t, d.t.spot("log1_desk"), Vector3(0.7, 0.76, 0.5), Mats.get_mat("wood"))
 	if Game.cycle >= 3:
 		# staff locker beside the security checkpoint (the missing mechanic's work log)
-		Geo.box(d.t, LOCKER_POS + Vector3(0, 0.95, 0), Vector3(0.45, 1.9, 0.9), Mats.get_mat("metal_dark"))
-		Geo.box(d.t, LOCKER_POS + Vector3(-0.3, 0.99, 0), Vector3(0.24, 0.03, 0.8), Mats.get_mat("metal"), false)
+		var locker := d.t.spot("locker")
+		Geo.box(d.t, locker + Vector3(0, 0.95, 0), Vector3(0.45, 1.9, 0.9), Mats.get_mat("metal_dark"))
+		Geo.box(d.t, locker + Vector3(-0.3, 0.99, 0), Vector3(0.24, 0.03, 0.8), Mats.get_mat("metal"), false)
 	if Game.cycle >= 5:
-		Geo.box(d.t, Vector3(-27.7, 0.9, -5.6), Vector3(0.5, 0.04, 0.3), Mats.get_mat("metal_dark"), false)
+		Geo.box(d.t, d.t.spot("timecard_shelf"), Vector3(0.5, 0.04, 0.3), Mats.get_mat("metal_dark"), false)
 	for id in DOCS.keys():
 		var e: Array = DOCS[id]
 		# DAY 3: the locker stays shut until the colleague hands over its key (night3.gd places the log then)
 		if id == "log2" and Game.cycle == 3 and not Game.flag("got_locker_key"):
 			continue
 		if Game.cycle >= int(e[3]):
-			d.spawn_doc(id, e[0], e[1], e[2])
+			d.spawn_doc(id, d.t.spot(e[0]), e[1], e[2])
 	if Game.cycle >= 2 and not Game.has_clue("plaque"):
-		var pl := Pickup.create(d.t, Vector3(41.0, 0.0, -21.4), 0.0, "plaque", "덮개 아래 동판 살펴보기", "plaque")
+		var pl := Pickup.create(d.t, d.t.spot("plaque"), 0.0, "plaque", "덮개 아래 동판 살펴보기", "plaque")
 		pl.keep_after_pick = true
 		pl.picked.connect(func(_p):
 			if Game.has_clue("plaque"):
@@ -85,7 +85,7 @@ func punch_out(title := "퇴근 기록", detail := "시설관리실 [b]근태 �
 ## 00:00–01:00: the evening staff are still clocking out somewhere in the terminal.
 func handover_ambience() -> void:
 	Game.set_flag("handover", true)
-	var spots := [Vector3(-14, 1.5, 10), Vector3(12, 1.5, 8), Vector3(0, 1.5, 13), Vector3(18, 1.5, -6)]
+	var spots := [Vector3(-14, 1.5, 11), Vector3(9, 1.5, 4), Vector3(-4, 1.5, 13), Vector3(0, 1.5, -6)]
 	var chat := 0
 	while Game.flag("handover") and not d.dead and d.is_inside_tree():
 		await d.wait(randf_range(5.0, 9.0))

@@ -91,9 +91,9 @@ func _run_world() -> void:
 	var d: ShiftDirector = world.director
 	var p: Player = world.player
 	ui.fade_to(0.0, 0.01)
-	p.teleport(Transform3D(Basis(), Vector3(-8.0, 0.05, 5.0)))
+	p.teleport(Transform3D(Basis(), world.terminal.spot("view_fids")))
 	await get_tree().process_frame
-	p.look_at_point(Vector3(-11.0, 4.0, -13.5), 0.01)
+	p.look_at_point(world.terminal.spot("look_fids"), 0.01)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	await _wait(1.2)
 	# title card
@@ -107,7 +107,7 @@ func _run_world() -> void:
 	d.goal("조명 분전반 LP-1 점검", "체크인 홀 서측 벽의 분전반에서 각 구역 조명을 확인하십시오.", "hall")
 	if Game.phase == "night":
 		# a night in progress: inspection 4 of 10, one judgment mistake so far
-		d.inspections_total = NightPlan.SLOTS
+		d.inspections_total = NightPlan.slots(Game.cycle)
 		d.inspections_done = 3
 		d.mistakes = 1
 		task.slot = 4
@@ -136,15 +136,16 @@ func _run_world() -> void:
 	await _wait(0.6)
 	# staff card reader (ACT 3: ACCESS DENIED -> PASSENGER)
 	var t: Terminal = world.terminal
-	p.teleport(Transform3D(Basis(), Vector3(-20.9, 0.05, 1.55)))
+	var rd: CardReader = t.readers.office_out
+	p.teleport(Transform3D(Basis(), rd.global_position + rd.global_basis.z * 0.9 + Vector3(0, -1.2, 0)))
 	await get_tree().process_frame
-	p.look_at_point(Vector3(-21.78, 1.25, 1.55), 0.01)
+	p.look_at_point(rd.global_position, 0.01)
 	t.readers.office_out.show_result(false, "PASSENGER")
 	await _wait(0.5)
 	await _shot("14_card_reader")
-	p.teleport(Transform3D(Basis(), Vector3(-8.0, 0.05, 5.0)))
+	p.teleport(Transform3D(Basis(), world.terminal.spot("view_fids")))
 	await get_tree().process_frame
-	p.look_at_point(Vector3(-11.0, 4.0, -13.5), 0.01)
+	p.look_at_point(world.terminal.spot("look_fids"), 0.01)
 	await _wait(0.4)
 	# tablet
 	task.observed = true

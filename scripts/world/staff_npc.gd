@@ -313,38 +313,12 @@ func _footstep() -> void:
 		randf_range(0.92, 1.05), 3.0, 26.0)
 
 
-# --- routes through the terminal (floor points, clear of counters and pillars) -----------------------
-## From anywhere in the open zones to just inside the main entrance (0, 12.4).
+# --- routes through the terminal (Terminal.NAV: floor points clear of counters, pillars and carousels) ---------
+## From anywhere in the open zones to just inside the main entrance.
 static func route_to_entrance(from: Vector3) -> Array:
-	var pts: Array = []
-	if from.z < -28.0:
-		pts.append(Vector3(2.0, 0, -29.6))
-	if from.z < -14.0:
-		pts.append_array([Vector3(-1.0, 0, -15.5), Vector3(-1.0, 0, -4.0)])
-	elif from.x > 21.0:
-		pts.append_array([Vector3(21.0, 0, 0.5), Vector3(17.0, 0, 7.0)])
-	elif from.x < -16.0:
-		pts.append(Vector3(-17.5, 0, 6.5))
-	elif from.z < 5.5:
-		pts.append(Vector3(-3.0 if from.x < 0.0 else 3.0, 0, minf(from.z, -1.0)))
-	var last: Vector3 = pts[pts.size() - 1] if not pts.is_empty() else from
-	pts.append(Vector3(-3.2 if last.x < 0.0 else 3.2, 0, 9.0))
-	pts.append(Vector3(0, 0, 12.4))
-	return pts
+	return Terminal.current.route(from, "entrance_in")
 
 
 ## From the hall or security north through the corridor towards the gates (the wing shutters must be open).
 static func route_to_wing(from: Vector3) -> Array:
-	var pts: Array = []
-	if from.z > -14.0:
-		if from.x > 21.0:
-			pts.append_array([Vector3(21.0, 0, 0.5), Vector3(17.0, 0, -6.0)])
-		elif from.x < -16.0:
-			pts.append(Vector3(-17.0, 0, -3.0))
-		elif from.z > 5.5:
-			pts.append(Vector3(-3.0 if from.x < 0.0 else 3.0, 0, from.z))
-		pts.append(Vector3(-1.0, 0, -15.5))
-	if from.z > -27.0:
-		pts.append(Vector3(-1.0, 0, -26.5))
-	pts.append_array([Vector3(2.0, 0, -31.0), Vector3(2.5, 0, -50.0), Vector3(2.5, 0, -66.0)])
-	return pts
+	return Terminal.current.route(from, "cor_n")

@@ -5,7 +5,7 @@ extends Facility
 ## bag_nostop ([정지] is ignored), bag_name (story: a bag with the player's name).
 
 const SPEED := 0.5
-const BELT_Y := 0.44
+const BELT_Y := CarouselMesh.PLATE_Y
 
 var half := 4.0
 var radius := 2.3
@@ -34,35 +34,26 @@ func build() -> void:
 	observe_radius = 13.0
 	path_len = 4.0 * half + 2.0 * PI * radius
 	hatch_s = 2.0 * half + PI * radius * 0.5
-	var dark := Mats.std(Color(0.2, 0.21, 0.23), 0.4, 0.6)
-	var steel := Mats.get_mat("steel_frame")
-	# outer base + skirt
-	Geo.box(self, Vector3(0, 0.19, 0), Vector3(half * 2.0, 0.38, radius * 2.0 + 1.0), dark, false)
-	for sx in [-half, half]:
-		Geo.cyl(self, Vector3(sx, 0.19, 0), radius + 0.5, 0.38, dark, false, 32)
-	# inner island
-	Geo.box(self, Vector3(0, 0.38, 0), Vector3(half * 2.0, 0.76, radius * 2.0 - 1.05), steel, false)
-	for sx in [-half, half]:
-		Geo.cyl(self, Vector3(sx, 0.38, 0), radius - 0.52, 0.76, steel, false, 32)
-	Geo.blocker(self, Vector3(0, 0.45, 0), Vector3(half * 2.0 + radius * 2.0 + 1.0, 0.9, radius * 2.0 + 1.0))
-	# slats
-	var slat_mat := Mats.std(Color(0.2, 0.2, 0.22), 0.45, 0.5)
-	var count := int(path_len / 0.34)
+	var dark := CarouselMesh.mat("kick")
+	var steel := CarouselMesh.mat("steel")
+	# flat-plate carousel: stainless rim, skirt and island, rubber bumper (CarouselMesh), moving crescent plates
+	add_child(CarouselMesh.hull(half, radius))
+	Geo.blocker(self, Vector3(0, 0.45, 0), Vector3(half * 2.0 + radius * 2.0 + 1.3, 0.9, radius * 2.0 + 1.3))
+	var count := int(path_len / (CarouselMesh.PLATE_LEN - 0.02))
 	for i in count:
 		var mi := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.88, 0.03, 0.36)
-		mi.mesh = bm
-		mi.material_override = slat_mat
+		mi.mesh = CarouselMesh.plate()
+		mi.material_override = CarouselMesh.mat("rubber")
 		add_child(mi)
 		slats.append(mi)
 		slat_s.append(i * path_len / count)
 	_place_slats()
-	# hatch at the east end where bags emerge
+	# hatch at the east end where bags emerge: stainless housing, rubber strip curtain
 	var hatch := Node3D.new()
 	add_child(hatch)
 	hatch.position = Vector3(half + radius + 0.75, 0, 0)
-	Geo.box(hatch, Vector3(0.35, 1.0, 0), Vector3(0.9, 2.0, 1.6), dark, true)
+	Geo.box(hatch, Vector3(0.35, 1.0, 0), Vector3(0.9, 2.0, 1.6), steel, true)
+	Geo.box(hatch, Vector3(0.35, 0.06, 0), Vector3(0.94, 0.12, 1.64), dark, false)
 	Geo.box(hatch, Vector3(-0.12, 0.75, 0), Vector3(0.05, 0.9, 1.1), Mats.get_mat("black"), false)
 	for i in 6:
 		_flaps.append(Geo.box(hatch, Vector3(-0.15, 0.78, -0.45 + i * 0.18), Vector3(0.02, 0.85, 0.16), Mats.get_mat("rubber"), false))
@@ -70,7 +61,7 @@ func build() -> void:
 	_beacon = Geo.omni(hatch, Vector3(0.3, 2.3, 0.5), Color(1.0, 0.55, 0.05), 0.0, 8.0)
 	# direction arrows painted on the island
 	for side in [-1.0, 1.0]:
-		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, 0.765, side * (radius - 0.85)), 0.0, 64, Geo.SIGN_BLUE, 0.006, false, "print")
+		var arrow := Geo.label(self, "▶ ▶ ▶" if side < 0 else "◀ ◀ ◀", Vector3(0, CarouselMesh.ISLAND_Y + 0.003, side * (radius - 0.95)), 0.0, 64, Geo.SIGN_BLUE, 0.006, false, "print")
 		Geo.fit(arrow, half * 2.0, 0.5)      # painted inside the island's edge
 		arrow.rotation.x = -PI / 2
 	# carousel display
@@ -78,8 +69,13 @@ func build() -> void:
 	add_child(disp_holder)
 	disp_holder.position = Vector3(-half - radius - 0.2, 2.6, 0)
 	disp_holder.rotation.y = -PI / 2
-	Geo.box(disp_holder, Vector3(0, 0, -0.05), Vector3(1.6, 0.8, 0.1), Mats.get_mat("plastic_dark"), false)
-	Geo.cyl(disp_holder, Vector3(0, -1.5, -0.05), 0.05, 2.2, steel)
+	Geo.box(disp_holder, Vector3(0, 0, -0.05), Vector3(1.6, 0.8, 0.1), steel, false)
+	Geo.box(disp_holder, Vector3(0, 0, 0.001), Vector3(1.5, 0.7, 0.004), CarouselMesh.mat("panel"), false)
+	var pole := MeshInstance3D.new()
+	pole.mesh = CarouselMesh.rounded_prism(Vector3(0.09, 2.2, 0.09), 0.03)
+	pole.material_override = steel
+	disp_holder.add_child(pole)
+	pole.position = Vector3(0, -2.6, -0.05)
 	Geo.label(disp_holder, "B-03", Vector3(0, 0.18, 0.005), 0.0, 90, Geo.SIGN_BLUE, 0.004, true)
 	_display = Geo.label(disp_holder, "TEST", Vector3(0, -0.17, 0.005), 0.0, 50, Color(0.6, 0.65, 0.7), 0.004, true)
 	focus = self

@@ -10,7 +10,7 @@ extends PhaseScript
 
 const GATE_FRONT_Z := -92.0
 
-const POST := Vector3(2.4, 0, 8.7)   # at the information desk
+const POST := "npc_info"   # Terminal spot: at the information desk
 const TALK := [
 	["마지막 근무네요. 오늘이 개장일이에요.", ""],
 	["세 시 방송, 이름 부르는 방송, 정전. 수칙 9페이지 다시 봐 둬요.", ""],
@@ -37,9 +37,9 @@ func setup() -> void:
 	Game.set_flag("passenger")
 	d.office_mode = "passenger"
 	d.ui.tablet.boarding_mode = true
-	var reader := CardReader.create(d.t, Vector3(4.7, 1.25, -27.78), 0.0)
+	var reader := CardReader.create(d.t, d.t.spot("wing_reader"), 0.0)
 	reader.swiped.connect(func(r: CardReader): r.show_result(true, "PASSENGER"))
-	spawn_worker(POST, 0.0)
+	spawn_worker(d.t.spot(POST), 0.0)
 	d.t.triggers.emergency_out.body_entered.connect(func(b: Node3D):
 		if b.is_in_group("player") and finale and ending == "exit":
 			d.start_ending("exit"))

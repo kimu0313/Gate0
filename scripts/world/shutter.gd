@@ -1,11 +1,16 @@
 class_name Shutter
 extends Node3D
-## Roller shutter that closes off unopened zones.
+## Glass sliding partition that closes off unopened zones: frameless panels hung from a brushed steel track, a
+## frosted band printed with the closure notice. Opening slides the panels sideways into the wall pockets on
+## both jambs (a single panel goes to the +X side). Partitions in `linked` open and close with this one.
 
 var width := 4.0
 var height := 4.0
 var is_open := false
-var _curtain: MeshInstance3D
+var linked: Array = []
+var _panels: Array[Node3D] = []
+var _closed_x: Array[float] = []
+var _open_x: Array[float] = []
 var _blocker: StaticBody3D
 
 
@@ -21,74 +26,91 @@ static func create(parent: Node3D, pos: Vector3, rot_y: float, w: float, h: floa
 
 
 func _build(label_text: String) -> void:
-	var mat := Mats.shader_mat("res://shaders/wall_panel.gdshader", {
-		"color": Color(0.38, 0.39, 0.4), "seam_color": Color(0.16, 0.16, 0.17),
-		"panel_w": 100.0, "panel_h": 0.11, "roughness": 0.4, "skirting": 0.0})
-	_curtain = Geo.box(self, Vector3(0, height * 0.5, 0), Vector3(width, height, 0.08), mat, false)
+	var steel := Mats.get_mat("steel_frame")
+	var glass := Mats.get_mat("glass")
+	var frost := StandardMaterial3D.new()
+	frost.albedo_color = Color(0.9, 0.93, 0.95, 0.78)
+	frost.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	frost.roughness = 0.55
+	var red := Mats.std(Color(0.75, 0.12, 0.1), 0.5)
+	var ink := Color(0.16, 0.18, 0.22)
+	# track along the head of the opening, a flush guide in the floor
+	Geo.box(self, Vector3(0, height - 0.08, 0), Vector3(width + 0.1, 0.16, 0.2), steel, false)
+	Geo.box(self, Vector3(0, 0.004, 0), Vector3(width, 0.008, 0.1), steel, false)
 	_blocker = Geo.blocker(self, Vector3(0, height * 0.5, 0), Vector3(width, height, 0.3))
-	var face := 0.05
-	if TripoProps.exists("baggage", "BAG_ShutterFrame"):
-		face = _tripo_bays()
-	else:
-		Geo.box(self, Vector3(0, height + 0.25, 0), Vector3(width + 0.3, 0.5, 0.5), Mats.get_mat("metal_dark"), false)
-	if label_text != "":
-		for side in [0.0, PI]:
-			var z := face if side == 0.0 else -face
-			var plate := Node3D.new()
-			_curtain.add_child(plate)
-			plate.position = Vector3(0, -height * 0.5 + 1.6, z)
-			plate.rotation.y = side
-			Geo.box(plate, Vector3(0, 0, 0.005), Vector3(1.6, 0.42, 0.01), Mats.get_mat("yellow_paint"), false)
-			Geo.label(plate, label_text, Vector3(0, 0, 0.012), 0.0, 36, Color(0.08, 0.06, 0.02), 0.0045, false, "print")
+	var n := maxi(1, int(round(width / 1.5)))
+	var pw := width / n
+	var gh := height - 0.2
+	for i in n:
+		var p := Node3D.new()
+		add_child(p)
+		var x := -width * 0.5 + pw * (i + 0.5)
+		var z := 0.035 if i % 2 == 0 else -0.035      # alternate tracks so the panels can stack
+		p.position = Vector3(x, 0, z)
+		Geo.box(p, Vector3(0, 0.02 + gh * 0.5, 0), Vector3(pw - 0.02, gh, 0.02), glass, false)
+		Geo.box(p, Vector3(0, 0.05, 0), Vector3(pw - 0.02, 0.06, 0.04), steel, false)
+		for sx in [-1.0, 1.0]:
+			Geo.box(p, Vector3(sx * (pw * 0.5 - 0.08), gh - 0.03, 0), Vector3(0.1, 0.08, 0.045), steel, false)
+		# frosted manifestation band with the notice on both faces, a red rule above and below
+		Geo.box(p, Vector3(0, 1.32, 0), Vector3(pw - 0.02, 0.4, 0.026), frost, false)
+		for y in [1.1, 1.54]:
+			Geo.box(p, Vector3(0, y, 0), Vector3(pw - 0.02, 0.025, 0.028), red, false)
+		if label_text != "":
+			for side in [0.0, PI]:
+				var l := Geo.label(p, label_text + "\nAREA CLOSED", Vector3(0, 1.32, 0.0), side, 40, ink, 0.0032, false, "print")
+				l.position += Basis(Vector3.UP, side) * Vector3(0, 0, 0.015)
+				Geo.fit(l, pw - 0.16, 0.34)
+				l.set_meta("no_fit", true)
+		# pull handles on the meeting panels
+		if n > 1 and (i == n / 2 - 1 or i == n / 2):
+			var hx := (pw * 0.5 - 0.12) * (1.0 if i == n / 2 - 1 else -1.0)
+			for side in [-1.0, 1.0]:
+				Geo.box(p, Vector3(hx, 1.0, side * 0.04), Vector3(0.025, 0.7, 0.025), steel, false)
+		_panels.append(p)
+		_closed_x.append(x)
+		# open: into the pocket beyond the nearer jamb (one panel: the +X side)
+		var right := x > 0.0 or n == 1
+		var k := (n - 1 - i) if right else i                  # how deep in the stack
+		_open_x.append((width * 0.5 + pw * 0.5 + 0.03 + k * 0.02) * (1.0 if right else -1.0))
 
 
-## Tripo shutter bays (about 3 m each) across the opening: static frames (housing + guides) and their slatted
-## curtains, the curtains parented to the old curtain node (its box mesh dropped) so open/close move them all.
-## Returns the curtain's half depth for the warning plates.
-func _tripo_bays() -> float:
-	_curtain.mesh = null
-	var bays := maxi(1, int(round(width / 3.0)))
-	var bay_w := width / bays
-	var half := 0.05
-	for i in bays:
-		var x := -width * 0.5 + bay_w * (i + 0.5)
-		var frame := TripoProps.spawn(self, "baggage", "BAG_ShutterFrame", Vector3(x, 0, 0), 0.0, false, null,
-				Vector3(bay_w + 0.3 / bays, height + 0.45, 0.5))
-		frame.position.y = 0.0
-		var c := TripoProps.spawn(_curtain, "baggage", "BAG_ShutterCurtain", Vector3.ZERO, 0.0, false, null,
-				Vector3(bay_w - 0.04, height, 0.0))
-		TripoProps.centre_on(c, Vector3(x, 0, 0))
-		half = maxf(half, TripoProps.bounds(c).size.z * 0.5 + 0.01)
-	return half
+func _set_panels(opened: bool) -> void:
+	for i in _panels.size():
+		_panels[i].position.x = _open_x[i] if opened else _closed_x[i]
+
+
+func _slide(opened: bool, secs: float) -> void:
+	var t := create_tween().set_parallel(true)
+	for i in _panels.size():
+		t.tween_property(_panels[i], "position:x", _open_x[i] if opened else _closed_x[i], secs) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func open(instant := false) -> void:
+	for s in linked:
+		s.open(instant)
 	if is_open:
 		return
 	is_open = true
 	_blocker.process_mode = Node.PROCESS_MODE_DISABLED
 	_blocker.collision_layer = 0
 	if instant:
-		_curtain.position.y = height * 1.5 - 0.1
-		_curtain.scale.y = 0.04
+		_set_panels(true)
 		return
-	Snd.play_at("shutter_roll", global_position + Vector3(0, height, 0), 0.0, 1.0, 10.0)
-	var t := create_tween().set_parallel(true)
-	t.tween_property(_curtain, "position:y", height * 1.5 - 0.1, 2.4).set_trans(Tween.TRANS_SINE)
-	t.tween_property(_curtain, "scale:y", 0.04, 2.4).set_trans(Tween.TRANS_SINE)
+	Snd.play_at("door_slide", global_position + Vector3(0, 2.0, 0), -2.0, 0.8, 10.0)
+	_slide(true, 2.4)
 
 
 func close(instant := false) -> void:
+	for s in linked:
+		s.close(instant)
 	if not is_open:
 		return
 	is_open = false
 	_blocker.collision_layer = Geo.LAYER_WORLD
 	_blocker.process_mode = Node.PROCESS_MODE_INHERIT
 	if instant:
-		_curtain.position.y = height * 0.5
-		_curtain.scale.y = 1.0
+		_set_panels(false)
 		return
-	Snd.play_at("shutter_roll", global_position + Vector3(0, height, 0), 0.0, 0.9, 10.0)
-	var t := create_tween().set_parallel(true)
-	t.tween_property(_curtain, "position:y", height * 0.5, 2.0)
-	t.tween_property(_curtain, "scale:y", 1.0, 2.0)
+	Snd.play_at("door_slide", global_position + Vector3(0, 2.0, 0), -3.0, 0.75, 10.0)
+	_slide(false, 2.0)

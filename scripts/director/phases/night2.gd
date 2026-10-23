@@ -7,7 +7,7 @@ extends PhaseScript
 ## 03:00 정기 방송 (대기 수칙 p.9 ③) — 단어 하나가 평소와 다르다 → 점검 11–14는 어려운 이상현상.
 ## 06:00 퇴근 → 꺼 둔 도착 전광판에 "GATE 0 — BOARDING"이 켜지고 암전.
 
-const POST := Vector3(26.0, 0, 0.6)   # beside the B-03 control pedestal, facing the belt
+const POST := "npc_b03"   # Terminal spot: beside the B-03 control pedestal, facing the belt
 const TALK := [
 	["왔어요? 오늘부터 수하물도 보시죠. B-03 제어대가 여기예요.", ""],
 	["새 수칙 페이지요. 5페이지, 수하물 수취대. 바인더에 끼워 두세요.", "p5"],
@@ -29,7 +29,7 @@ func setup() -> void:
 	fids = d.t.facility("fids")
 	d.t.arrivals.set_powered(false)
 	place_documents()
-	spawn_worker(POST, -PI / 2)
+	spawn_worker(d.t.spot(POST), -PI / 2)
 
 
 func run() -> void:
@@ -86,7 +86,7 @@ func _broadcast() -> void:
 ## 06:00: the arrivals board that was switched off lights up by itself — then the dark.
 func end_cut() -> void:
 	await d.ui.fade_to(1.0, 0.6)
-	d.p.teleport(Transform3D(Basis(), Vector3(6.0, 0.05, -3.0)))
+	d.p.teleport(Transform3D(Basis(), d.t.spot("cut_arrivals")))
 	await d.get_tree().physics_frame
 	d.p.look_at_point(d.t.arrivals.focus_position(), 0.01)
 	d.t.set_zone_light("hall", false, true)

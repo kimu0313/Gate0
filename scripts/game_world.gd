@@ -37,6 +37,9 @@ func _ready() -> void:
 		add_child(tour)
 		ui.fade_to(0.0, 0.01)
 		return
+	if OS.get_cmdline_user_args().has("--label-audit"):
+		add_child(load("res://scripts/debug/label_audit.gd").new())
+		return
 	if OS.get_cmdline_user_args().has("--uigallery"):
 		var gal = load("res://scripts/debug/ui_gallery.gd").new()
 		gal.world = self

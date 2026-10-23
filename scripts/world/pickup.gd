@@ -34,7 +34,7 @@ func _build(prompt: String) -> void:
 		"plaque":
 			var plate := Geo.box(self, Vector3(0, 0.3, 0), Vector3(0.7, 0.5, 0.04), Mats.std(Color(0.4, 0.28, 0.12), 0.35, 0.8), false)
 			plate.rotation.x = -0.25
-			var l := Geo.label(plate, "추모\n1987. 11. 3.\n서해비행장 0편\n탑승객 41명을 기리며", Vector3(0, 0, 0.022), 0.0, 26, Color(0.15, 0.1, 0.03), 0.0035, false, "engrave")
+			var l := Geo.fit(Geo.label(plate, "추모\n1987. 11. 3.\n서해비행장 0편\n탑승객 41명을 기리며", Vector3(0, 0, 0.022), 0.0, 26, Color(0.15, 0.1, 0.03), 0.0035, false, "engrave"), 0.62, 0.42)
 			l.name = "PlaqueText"
 		_:
 			var sheet := Geo.box(self, Vector3(0, 0.002, 0), Vector3(0.21, 0.003, 0.297), Mats.get_mat("paper"), false)

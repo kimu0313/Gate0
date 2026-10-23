@@ -1,0 +1,158 @@
+{
+ "zone": "common",
+ "props": {
+  "CMN_HangingSign": {
+   "scale": 1.9337339055793994,
+   "size_m": [
+    1.933,
+    0.144,
+    1.1
+   ],
+   "spec_m": [
+    2.4,
+    0.14,
+    1.1
+   ],
+   "tris": 1142,
+   "faces": 1142,
+   "verts": 1359,
+   "src_images": [
+    "CMN_HangingSign_p2_glb_metallic-CMN_HangingSign_p2_glb_roughness",
+    "Color",
+    "Normal"
+   ],
+   "file_kb": 77.3
+  },
+  "CMN_Door": {
+   "scale": 2.501221299462628,
+   "size_m": [
+    1.21,
+    0.192,
+    2.5
+   ],
+   "spec_m": [
+    1.1,
+    0.12,
+    2.5
+   ],
+   "tris": 1206,
+   "faces": 1206,
+   "verts": 1340,
+   "src_images": [
+    "CMN_Door_p2_glb_metallic-CMN_Door_p2_glb_roughness",
+    "Color.001",
+    "Normal.001"
+   ],
+   "file_kb": 82.8
+  },
+  "CMN_DoubleDoor": {
+   "scale": 2.8013678553981434,
+   "size_m": [
+    2.187,
+    0.22,
+    2.8
+   ],
+   "spec_m": [
+    2.0,
+    0.14,
+    2.8
+   ],
+   "tris": 1630,
+   "faces": 1630,
+   "verts": 2202,
+   "src_images": [
+    "CMN_DoubleDoor_p2_glb_metallic-CMN_DoubleDoor_p2_glb_roughness",
+    "Color.002",
+    "Normal.002"
+   ],
+   "file_kb": 126.3
+  },
+  "CMN_TrofferLight": {
+   "scale": 1.2005862237420615,
+   "size_m": [
+    1.2,
+    0.542,
+    0.08
+   ],
+   "spec_m": [
+    1.2,
+    0.6,
+    0.08
+   ],
+   "tris": 550,
+   "faces": 550,
+   "verts": 800,
+   "src_images": [
+    "CMN_TrofferLight_p2_glb_metallic-CMN_TrofferLight_p2_glb_roughness",
+    "Color.003",
+    "Normal.003"
+   ],
+   "file_kb": 49.1
+  },
+  "CMN_ACCassette": {
+   "scale": 0.9504640371160518,
+   "size_m": [
+    0.938,
+    0.95,
+    0.25
+   ],
+   "spec_m": [
+    0.95,
+    0.95,
+    0.25
+   ],
+   "tris": 999,
+   "faces": 999,
+   "verts": 1469,
+   "src_images": [
+    "CMN_ACCassette_p2_glb_metallic-CMN_ACCassette_p2_glb_roughness",
+    "Color.004",
+    "Normal.004"
+   ],
+   "file_kb": 78.9
+  },
+  "CMN_WallSign": {
+   "derived_from": "CMN_HangingSign",
+   "cut_z": 0.4,
+   "tris": 810,
+   "file_kb": 52.7
+  },
+  "CMN_SignRod": {
+   "derived_from": "CMN_HangingSign",
+   "length_m": 0.696,
+   "tris": 206,
+   "file_kb": 16.3
+  },
+  "CMN_LinearLight": {
+   "derived_from": "CMN_TrofferLight",
+   "tris": 550,
+   "file_kb": 49.9
+  }
+ },
+ "surface_m2": 52.93,
+ "uv_coverage": 0.401,
+ "atlas": 4096,
+ "orm": 2048,
+ "px_per_m": 356.7,
+ "materials": {
+  "CMN_HangingSign": [
+   0.248,
+   0.752
+  ],
+  "CMN_Door": [
+   0.076,
+   0.924
+  ],
+  "CMN_DoubleDoor": [
+   0.002,
+   0.037,
+   0.961
+  ],
+  "CMN_TrofferLight": [
+   1.0
+  ],
+  "CMN_ACCassette": [
+   1.0
+  ]
+ }
+}

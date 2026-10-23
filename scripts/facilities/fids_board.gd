@@ -39,7 +39,13 @@ func build(width := 8.0, height := 3.2, with_controls := true) -> void:
 	screen = FidsScreen.new()
 	screen.size = Vector2(1600, 640)
 	viewport.add_child(screen)
-	Geo.box(self, Vector3(0, 0, -0.12), Vector3(width + 0.3, height + 0.3, 0.2), Mats.get_mat("plastic_dark"), true)
+	if TripoProps.exists("terminal", "TRM_FIDSBoard"):
+		# Tripo display cabinet; the live screen quad below sits in its bezel
+		var housing := TripoProps.spawn(self, "terminal", "TRM_FIDSBoard", Vector3.ZERO, 0.0, false, null, Vector3(width + 0.3, height + 0.3, 0.2))
+		TripoProps.centre_on(housing, Vector3(0, 0, -0.12))
+		Geo.blocker(self, Vector3(0, 0, -0.12), Vector3(width + 0.3, height + 0.3, 0.2))
+	else:
+		Geo.box(self, Vector3(0, 0, -0.12), Vector3(width + 0.3, height + 0.3, 0.2), Mats.get_mat("plastic_dark"), true)
 	var quad := MeshInstance3D.new()
 	var qm := QuadMesh.new()
 	qm.size = Vector2(width, height)

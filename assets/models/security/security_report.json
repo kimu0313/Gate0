@@ -1,0 +1,198 @@
+{
+ "zone": "security",
+ "props": {
+  "SEC_MetalDetector": {
+   "scale": 2.201074743527113,
+   "size_m": [
+    1.065,
+    0.562,
+    2.2
+   ],
+   "spec_m": [
+    0.9,
+    0.6,
+    2.2
+   ],
+   "tris": 1242,
+   "faces": 1242,
+   "verts": 1218,
+   "src_images": [
+    "Color",
+    "Normal",
+    "SEC_MetalDetector_p2_glb_metallic-SEC_MetalDetector_p2_glb_roughness"
+   ],
+   "file_kb": 72.9
+  },
+  "SEC_XrayScanner": {
+   "scale": 1.9133564013840831,
+   "size_m": [
+    1.215,
+    1.912,
+    1.35
+   ],
+   "spec_m": [
+    1.05,
+    2.0,
+    1.35
+   ],
+   "tris": 2247,
+   "faces": 2247,
+   "verts": 2451,
+   "src_images": [
+    "Color.001",
+    "Normal.001",
+    "SEC_XrayScanner_p2_glb_metallic-SEC_XrayScanner_p2_glb_roughness"
+   ],
+   "file_kb": 135.3
+  },
+  "SEC_RollerConveyor": {
+   "scale": 1.6463022508038585,
+   "size_m": [
+    0.596,
+    1.645,
+    0.75
+   ],
+   "spec_m": [
+    0.7,
+    2.2,
+    0.75
+   ],
+   "tris": 3034,
+   "faces": 3034,
+   "verts": 4050,
+   "src_images": [
+    "Color.002",
+    "Normal.002",
+    "SEC_RollerConveyor_p2_glb_metallic-SEC_RollerConveyor_p2_glb_roughness"
+   ],
+   "file_kb": 240.7
+  },
+  "SEC_InspectionTable": {
+   "scale": 1.5829951690821258,
+   "size_m": [
+    1.582,
+    0.706,
+    0.8
+   ],
+   "spec_m": [
+    1.8,
+    0.6,
+    0.8
+   ],
+   "tris": 970,
+   "faces": 970,
+   "verts": 1328,
+   "src_images": [
+    "Color.003",
+    "Normal.003",
+    "SEC_InspectionTable_p2_glb_metallic-SEC_InspectionTable_p2_glb_roughness"
+   ],
+   "file_kb": 78.6
+  },
+  "SEC_Stanchion": {
+   "scale": 1.0004885197850513,
+   "size_m": [
+    0.386,
+    0.386,
+    1.0
+   ],
+   "spec_m": [
+    0.36,
+    0.36,
+    1.0
+   ],
+   "tris": 695,
+   "faces": 695,
+   "verts": 745,
+   "src_images": [
+    "Color.004",
+    "Normal.004",
+    "SEC_Stanchion_p2_glb_metallic-SEC_Stanchion_p2_glb_roughness"
+   ],
+   "file_kb": 44.6
+  },
+  "SEC_OperatorDesk": {
+   "scale": 1.5865719819238218,
+   "size_m": [
+    1.586,
+    0.794,
+    1.2
+   ],
+   "spec_m": [
+    1.2,
+    0.6,
+    1.2
+   ],
+   "tris": 1554,
+   "faces": 1554,
+   "verts": 1690,
+   "src_images": [
+    "Color.005",
+    "Normal.005",
+    "SEC_OperatorDesk_p2_glb_metallic-SEC_OperatorDesk_p2_glb_roughness"
+   ],
+   "file_kb": 100.0
+  },
+  "SEC_OfficeChair": {
+   "scale": 0.9504640937957987,
+   "size_m": [
+    0.692,
+    0.661,
+    0.95
+   ],
+   "spec_m": [
+    0.62,
+    0.62,
+    0.95
+   ],
+   "tris": 1622,
+   "faces": 1622,
+   "verts": 1870,
+   "src_images": [
+    "Color.006",
+    "Normal.006",
+    "SEC_OfficeChair_p2_glb_metallic-SEC_OfficeChair_p2_glb_roughness"
+   ],
+   "file_kb": 105.7
+  }
+ },
+ "surface_m2": 47.04,
+ "uv_coverage": 0.5,
+ "atlas": 4096,
+ "orm": 2048,
+ "px_per_m": 422.3,
+ "materials": {
+  "SEC_MetalDetector": [
+   0.036,
+   0.005,
+   0.96
+  ],
+  "SEC_XrayScanner": [
+   0.006,
+   0.361,
+   0.633
+  ],
+  "SEC_RollerConveyor": [
+   0.059,
+   0.941
+  ],
+  "SEC_InspectionTable": [
+   0.006,
+   0.994
+  ],
+  "SEC_Stanchion": [
+   0.03,
+   0.216,
+   0.754
+  ],
+  "SEC_OperatorDesk": [
+   0.016,
+   0.984
+  ],
+  "SEC_OfficeChair": [
+   0.133,
+   0.699,
+   0.168
+  ]
+ }
+}

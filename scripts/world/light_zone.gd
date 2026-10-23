@@ -52,7 +52,10 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 	var mi := Geo.box(self, pos, Vector3(size.x, 0.06, size.y), panel_mat, false)
 	panels.append(mi)
 	# fixture housing: a pale rim around the diffuser so it reads as a troffer, not a cut-out
-	Geo.box(self, pos + Vector3(0, 0.02, 0), Vector3(size.x + 0.1, 0.05, size.y + 0.1), Mats.get_mat("plastic_white"), false)
+	if TripoProps.exists("common", "CMN_TrofferLight"):
+		_tripo_housing(pos, size)
+	else:
+		Geo.box(self, pos + Vector3(0, 0.02, 0), Vector3(size.x + 0.1, 0.05, size.y + 0.1), Mats.get_mat("plastic_white"), false)
 	if with_light:
 		var area := Geo.area_light(self, pos + Vector3(0, -0.04, 0), size, color, light_energy * AREA_GAIN, light_range, shadow)
 		add_light(area)
@@ -66,6 +69,24 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 		add_light(gi)
 		_panel_light[mi] = [area, gi]
 	return mi
+
+
+## Tripo fixture frames (troffers, or slot lights for thin strips) tiled along a panel, turned face-down with
+## the glowing panel box standing just proud of their face.
+func _tripo_housing(pos: Vector3, size: Vector2) -> void:
+	var along_x := size.x >= size.y
+	var long := maxf(size.x, size.y)
+	var short := minf(size.x, size.y)
+	var id := "CMN_TrofferLight" if short >= 0.4 else "CMN_LinearLight"
+	var count := maxi(1, int(round(long / (1.2 if short >= 0.4 else 1.6))))
+	var seg := long / count
+	for i in count:
+		var off := -long * 0.5 + seg * (i + 0.5)
+		var n := TripoProps.spawn(self, "common", id, Vector3.ZERO, 0.0 if along_x else PI / 2)
+		var h := TripoProps.bounds(n).size.y
+		TripoProps.fit(n, Vector3(seg + 0.04, h, short + 0.1))
+		n.rotate_object_local(Vector3.RIGHT, PI)
+		n.position = pos + (Vector3(off, 0, 0) if along_x else Vector3(0, 0, off)) + Vector3(0, h - 0.025, 0)
 
 
 func add_light(l: Light3D) -> void:

@@ -1,0 +1,38 @@
+{
+ "zone": "apron",
+ "props": {
+  "APR_Aircraft": {
+   "scale": 51.42688330871492,
+   "size_m": [
+    41.508,
+    51.402,
+    17.0
+   ],
+   "spec_m": [
+    58.0,
+    61.0,
+    17.0
+   ],
+   "tris": 7466,
+   "faces": 7466,
+   "verts": 7990,
+   "src_images": [
+    "APR_Aircraft_p2_glb_metallic-APR_Aircraft_p2_glb_roughness",
+    "Color",
+    "Normal"
+   ],
+   "file_kb": 471.5
+  }
+ },
+ "surface_m2": 1978.66,
+ "uv_coverage": 0.458,
+ "atlas": 4096,
+ "orm": 2048,
+ "px_per_m": 62.3,
+ "materials": {
+  "APR_Aircraft": [
+   0.087,
+   0.913
+  ]
+ }
+}

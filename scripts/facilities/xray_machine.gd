@@ -20,31 +20,43 @@ var monitor_node: Node3D
 func build() -> void:
 	observe_radius = 6.0
 	var dark := Mats.get_mat("plastic_grey")
-	# roller tables
-	for z in [2.0, -2.0]:
-		Geo.box(self, Vector3(0, 0.38, z), Vector3(0.8, 0.76, 1.6), Mats.get_mat("metal_dark"), true)
-		for i in 8:
-			Geo.cyl(self, Vector3(0, 0.78, z - 0.7 + i * 0.2), 0.03, 0.75, Mats.get_mat("metal")).rotation.z = PI / 2
-	# machine body with tunnel
-	Geo.box(self, Vector3(0, 0.39, 0), Vector3(1.1, 0.78, 2.4), dark, true)
-	Geo.box(self, Vector3(-0.47, 1.15, 0), Vector3(0.16, 0.75, 2.4), dark, true)
-	Geo.box(self, Vector3(0.47, 1.15, 0), Vector3(0.16, 0.75, 2.4), dark, true)
-	Geo.box(self, Vector3(0, 1.6, 0), Vector3(1.1, 0.16, 2.4), dark, true)
-	Geo.box(self, Vector3(0, 1.15, 0), Vector3(0.78, 0.74, 2.3), Mats.get_mat("black"), false)
-	for z in [1.18, -1.18]:
-		for i in 5:
-			Geo.box(self, Vector3(-0.3 + i * 0.15, 1.15, z), Vector3(0.14, 0.7, 0.01), Mats.get_mat("rubber"), false)
-	Geo.box(self, Vector3(0.56, 1.3, 0.6), Vector3(0.01, 0.2, 0.5), Mats.get_mat("lamp_amber"), false)
-	Geo.label(self, "X-RAY 01", Vector3(0.56, 1.0, 0.0), PI / 2, 44, Color(0.9, 0.9, 0.9), 0.004, false, "print")
+	var tripo := TripoProps.exists("security", "SEC_XrayScanner")
+	var lift := 0.06 if tripo else 0.0     # the Tripo tunnel floor sits a little higher than the old box one
+	if tripo:
+		# Tripo scanner (tunnel, strip curtains, plinth) between two Tripo roller tables
+		for z in [2.0, -2.0]:
+			TripoProps.spawn(self, "security", "SEC_RollerConveyor", Vector3(0, 0, z), 0.0, true, null, Vector3(0.8, 0.84, 1.6))
+		TripoProps.spawn(self, "security", "SEC_XrayScanner", Vector3.ZERO, 0.0, true, null, Vector3(1.2, 1.62, 2.4))
+	else:
+		# roller tables
+		for z in [2.0, -2.0]:
+			Geo.box(self, Vector3(0, 0.38, z), Vector3(0.8, 0.76, 1.6), Mats.get_mat("metal_dark"), true)
+			for i in 8:
+				Geo.cyl(self, Vector3(0, 0.78, z - 0.7 + i * 0.2), 0.03, 0.75, Mats.get_mat("metal")).rotation.z = PI / 2
+		# machine body with tunnel
+		Geo.box(self, Vector3(0, 0.39, 0), Vector3(1.1, 0.78, 2.4), dark, true)
+		Geo.box(self, Vector3(-0.47, 1.15, 0), Vector3(0.16, 0.75, 2.4), dark, true)
+		Geo.box(self, Vector3(0.47, 1.15, 0), Vector3(0.16, 0.75, 2.4), dark, true)
+		Geo.box(self, Vector3(0, 1.6, 0), Vector3(1.1, 0.16, 2.4), dark, true)
+		Geo.box(self, Vector3(0, 1.15, 0), Vector3(0.78, 0.74, 2.3), Mats.get_mat("black"), false)
+		for z in [1.18, -1.18]:
+			for i in 5:
+				Geo.box(self, Vector3(-0.3 + i * 0.15, 1.15, z), Vector3(0.14, 0.7, 0.01), Mats.get_mat("rubber"), false)
+	var side_x := 0.61 if tripo else 0.56
+	Geo.box(self, Vector3(side_x, 1.3, 0.6), Vector3(0.01, 0.2, 0.5), Mats.get_mat("lamp_amber"), false)
+	Geo.label(self, "X-RAY 01", Vector3(side_x, 1.0, 0.0), PI / 2, 44, Color(0.9, 0.9, 0.9), 0.004, false, "print")
 	# tray with test bag
 	_tray = Node3D.new()
 	add_child(_tray)
-	Geo.box(_tray, Vector3(0, 0.82, 0), Vector3(0.6, 0.06, 0.8), Mats.std(Color(0.35, 0.36, 0.4), 0.5), false)
-	Geo.box(_tray, Vector3(0, 0.98, 0), Vector3(0.45, 0.26, 0.6), Mats.std(Color(0.12, 0.13, 0.15), 0.6), false)
-	Geo.label(_tray, "TEST", Vector3(0, 1.115, 0), 0.0, 24, Color(0.95, 0.8, 0.1), 0.003, false, "print").rotation.x = -PI / 2
+	Geo.box(_tray, Vector3(0, 0.82 + lift, 0), Vector3(0.6, 0.06, 0.8), Mats.std(Color(0.35, 0.36, 0.4), 0.5), false)
+	Geo.box(_tray, Vector3(0, 0.98 + lift, 0), Vector3(0.45, 0.26, 0.6), Mats.std(Color(0.12, 0.13, 0.15), 0.6), false)
+	Geo.label(_tray, "TEST", Vector3(0, 1.115 + lift, 0), 0.0, 24, Color(0.95, 0.8, 0.1), 0.003, false, "print").rotation.x = -PI / 2
 	_set_tray(0.0)
 	# operator desk + monitor (local +X side)
-	Geo.box(self, Vector3(1.5, 0.4, 0.0), Vector3(0.7, 0.8, 1.0), Mats.get_mat("metal_dark"), true)
+	if tripo:
+		TripoProps.spawn(self, "security", "SEC_InspectionTable", Vector3(1.5, 0, 0), PI / 2, true, null, Vector3(1.0, 0.8, 0.7))
+	else:
+		Geo.box(self, Vector3(1.5, 0.4, 0.0), Vector3(0.7, 0.8, 1.0), Mats.get_mat("metal_dark"), true)
 	monitor_node = Node3D.new()
 	add_child(monitor_node)
 	monitor_node.position = Vector3(1.4, 0.82, 0.0)

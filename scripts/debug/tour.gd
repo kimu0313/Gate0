@@ -24,6 +24,9 @@ var shots := [
 	["main_power", Vector3(55.5, 0.05, 9.0), Vector3(57.78, 1.4, 9.0)],
 	["belt_pedestal", Vector3(26.2, 0.05, -1.6), Vector3(27.0, 1.0, -1.6)],
 	["xray_panel", Vector3(-2.3, 0.05, -18.6), Vector3(-2.0, 1.0, -21.0)],
+	["checkin", Vector3(-6.5, 0.05, 7.5), Vector3(-10.5, 1.0, 1.8)],
+	["gate_podium", Vector3(20.6, 0.05, -77.4), Vector3(23.4, 1.0, -80.2)],
+	["shutter", Vector3(15.5, 0.05, 4.5), Vector3(22.0, 2.6, 0.0)],
 ]
 var out_dir := ""
 var _i := 0

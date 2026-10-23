@@ -176,12 +176,19 @@ func _build_office() -> void:
 	Geo.box(self, Vector3(-33.2, 0.8, 1.4), Vector3(0.08, 0.12, 0.05), Mats.get_mat("plastic_dark"), false)
 	Geo.box(self, Vector3(-33.2, 0.89, 1.4), Vector3(0.01, 0.1, 0.01), Mats.get_mat("plastic_dark"), false)
 	# chair
-	Geo.box(self, Vector3(-32.1, 0.45, 0.4), Vector3(0.5, 0.08, 0.5), Mats.get_mat("seat"))
-	Geo.box(self, Vector3(-31.85, 0.8, 0.4), Vector3(0.06, 0.6, 0.5), Mats.get_mat("seat"), false)
+	if TripoProps.exists("security", "SEC_OfficeChair"):
+		TripoProps.spawn(self, "security", "SEC_OfficeChair", Vector3(-32.05, 0, 0.4), -PI / 2, true)
+	else:
+		Geo.box(self, Vector3(-32.1, 0.45, 0.4), Vector3(0.5, 0.08, 0.5), Mats.get_mat("seat"))
+		Geo.box(self, Vector3(-31.85, 0.8, 0.4), Vector3(0.06, 0.6, 0.5), Mats.get_mat("seat"), false)
 	# lockers (south wall)
 	for i in 6:
 		var lx := -33.2 + i * 0.62
-		Geo.box(self, Vector3(lx, 0.95, 5.55), Vector3(0.6, 1.9, 0.5), Mats.std(Color(0.42, 0.45, 0.48), 0.4, 0.6))
+		if TripoProps.exists("baggage", "BAG_NumberPillar"):
+			# the Tripo pillar box (plinth, cap) stands in as a tall locker cabinet, doors facing the room (-Z)
+			TripoProps.spawn(self, "baggage", "BAG_NumberPillar", Vector3(lx, 0, 5.55), PI, true, null, Vector3(0.6, 1.9, 0.5))
+		else:
+			Geo.box(self, Vector3(lx, 0.95, 5.55), Vector3(0.6, 1.9, 0.5), Mats.std(Color(0.42, 0.45, 0.48), 0.4, 0.6))
 		Geo.box(self, Vector3(lx + 0.2, 1.2, 5.29), Vector3(0.03, 0.12, 0.02), Mats.get_mat("metal"), false)
 		Geo.label(self, "%02d" % (i + 1), Vector3(lx, 1.7, 5.295), PI, 24, Color(0.1, 0.1, 0.1), 0.003, false, "print")
 	# whiteboard
@@ -189,7 +196,15 @@ func _build_office() -> void:
 	add_child(wb)
 	wb.position = Vector3(-33.78, 1.6, -3.0)
 	wb.rotation.y = PI / 2
-	Geo.box(wb, Vector3.ZERO, Vector3(2.0, 1.1, 0.03), Mats.get_mat("plastic_white"), false)
+	var board := Geo.box(wb, Vector3.ZERO, Vector3(2.0, 1.1, 0.03), Mats.get_mat("plastic_white"), false)
+	if TripoProps.exists("common", "CMN_TrofferLight"):
+		# the Tripo troffer's white frame and opal face read as a framed board on the wall
+		board.visible = false
+		var tb := TripoProps.spawn(wb, "common", "CMN_TrofferLight")
+		tb.rotation.x = PI / 2          # face toward the room; scale is set after so it stays in the board's own axes
+		TripoProps.fit(tb, Vector3(2.0, 0.03, 1.1))
+		TripoProps.centre_on(tb, Vector3(0, 0, -0.0))
+		tb.position.z = -0.015
 	var note := Geo.fit(Geo.label(wb, "야간 점검 근무 — 반드시 수칙 준수!!\n점검 결과는 태블릿으로 즉시 보고\n0번 게이트 ✕  (존재하지 않음)\n— 소장", Vector3(-0.12, 0.05, 0.02), 0.0, 30, Color(0.1, 0.2, 0.6), 0.0035, false, "hand"), 1.55)
 	note.rotation.z = -0.025
 	# wall clock
@@ -199,7 +214,10 @@ func _build_office() -> void:
 	Geo.cyl(clock, Vector3.ZERO, 0.18, 0.04, Mats.get_mat("plastic_white")).rotation.x = PI / 2
 	Geo.label(clock, "3:00", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true, "lcd")
 	# fax table for revision pages
-	Geo.box(self, Vector3(-23.3, 0.4, -4.6), Vector3(0.9, 0.8, 0.7), Mats.get_mat("wood"))
+	if TripoProps.exists("security", "SEC_InspectionTable"):
+		TripoProps.spawn(self, "security", "SEC_InspectionTable", Vector3(-23.3, 0, -4.6), 0.0, true, null, Vector3(0.9, 0.8, 0.7))
+	else:
+		Geo.box(self, Vector3(-23.3, 0.4, -4.6), Vector3(0.9, 0.8, 0.7), Mats.get_mat("wood"))
 	Geo.box(self, Vector3(-23.3, 0.9, -4.75), Vector3(0.45, 0.2, 0.35), Mats.get_mat("plastic_white"), false)
 	Geo.label(self, "FAX", Vector3(-23.3, 0.95, -4.57), 0.0, 20, Color(0.2, 0.2, 0.2), 0.003, false, "print")
 	# card reader door (office <-> hall)
@@ -258,8 +276,11 @@ func _build_hall() -> void:
 	_checkin_island(Vector3(-10, 0, 1.6), "A")
 	_checkin_island(Vector3(10, 0, 1.6), "B")
 	# info desk (PA console sits on it)
-	Geo.box(self, Vector3(0, 0.55, 6.4), Vector3(3.6, 1.1, 1.0), Mats.get_mat("counter_front"))
-	Geo.box(self, Vector3(0, 1.12, 6.45), Vector3(3.8, 0.05, 1.15), Mats.get_mat("counter"), false)
+	if TripoProps.exists("terminal", "TRM_InfoDesk"):
+		TripoProps.spawn(self, "terminal", "TRM_InfoDesk", Vector3(0, 0, 6.45), PI, true, null, Vector3(3.8, 1.14, 1.15))
+	else:
+		Geo.box(self, Vector3(0, 0.55, 6.4), Vector3(3.6, 1.1, 1.0), Mats.get_mat("counter_front"))
+		Geo.box(self, Vector3(0, 1.12, 6.45), Vector3(3.8, 0.05, 1.15), Mats.get_mat("counter"), false)
 	Geo.box(self, Vector3(0, 2.6, 5.9), Vector3(1.6, 0.5, 0.1), Mats.get_mat("sign_back"), false)
 	Geo.label(self, "i  안내 INFORMATION", Vector3(0, 2.6, 5.96), 0.0, 44, Color(1.0, 0.85, 0.2), 0.005)
 	Geo.cyl(self, Vector3(0, 4.0, 5.9), 0.02, 2.5, Mats.get_mat("steel_frame"))
@@ -296,17 +317,26 @@ func _checkin_island(c: Vector3, letter: String) -> void:
 	back.name = "Backdrop" + letter
 	Geo.box(self, c + Vector3(0, 2.95, -0.33), Vector3(10.0, 0.42, 0.04), Mats.get_mat("lightbox"), false)
 	Geo.label(self, "CHECK-IN   %s 01 — 08      탑승 수속" % letter, c + Vector3(0, 2.95, -0.3), 0.0, 52, Color(0.05, 0.1, 0.25), 0.006)
-	Geo.box(self, c + Vector3(0, 0.3, 0.1), Vector3(10.0, 0.6, 0.5), Mats.get_mat("rubber"))
-	Geo.box(self, c + Vector3(0, 0.525, 0.85), Vector3(10.0, 1.05, 0.7), Mats.get_mat("counter_front"))
-	Geo.box(self, c + Vector3(0, 1.07, 0.85), Vector3(10.1, 0.04, 0.8), Mats.get_mat("counter"), false)
+	var tripo := TripoProps.exists("terminal", "TRM_CheckinCounter")
+	if not tripo:
+		Geo.box(self, c + Vector3(0, 0.3, 0.1), Vector3(10.0, 0.6, 0.5), Mats.get_mat("rubber"))
+		Geo.box(self, c + Vector3(0, 0.525, 0.85), Vector3(10.0, 1.05, 0.7), Mats.get_mat("counter_front"))
+		Geo.box(self, c + Vector3(0, 1.07, 0.85), Vector3(10.1, 0.04, 0.8), Mats.get_mat("counter"), false)
 	for i in 6:
 		var x := c.x - 4.2 + i * 1.68
 		Props.monitor(self, Vector3(x, 1.2, c.z + 0.7), 0.0, Vector2(0.36, 0.22))
-		Geo.box(self, Vector3(x + 0.75, 0.12, c.z + 1.45), Vector3(0.6, 0.24, 0.6), Mats.get_mat("steel_frame"))
+		if tripo:
+			# one Tripo desk module per position: rear belt, counter, bag scale at the front right
+			TripoProps.spawn(self, "terminal", "TRM_CheckinCounter", Vector3(x, 0, c.z + 0.8), 0.0, true, null, Vector3(1.68, 1.1, 1.9))
+		else:
+			Geo.box(self, Vector3(x + 0.75, 0.12, c.z + 1.45), Vector3(0.6, 0.24, 0.6), Mats.get_mat("steel_frame"))
 		Geo.label(self, "%s%02d" % [letter, i + 1], Vector3(x, 1.75, c.z + 0.52), 0.0, 40, Color(1.0, 0.85, 0.3), 0.005)
 	for i in 6:
 		var px := c.x - 5.0 + i * 2.0
-		Geo.cyl(self, Vector3(px, 0.5, c.z + 3.2), 0.035, 1.0, Mats.get_mat("metal"))
+		if TripoProps.exists("security", "SEC_Stanchion"):
+			TripoProps.spawn(self, "security", "SEC_Stanchion", Vector3(px, 0, c.z + 3.2))
+		else:
+			Geo.cyl(self, Vector3(px, 0.5, c.z + 3.2), 0.035, 1.0, Mats.get_mat("metal"))
 		if i < 5:
 			Geo.box(self, Vector3(px + 1.0, 0.92, c.z + 3.2), Vector3(2.0, 0.06, 0.02), Mats.std(Color(0.1, 0.15, 0.4), 0.6), false)
 
@@ -365,10 +395,13 @@ func _build_baggage() -> void:
 	var deco := Node3D.new()
 	add_child(deco)
 	deco.position = Vector3(32, 0, -9)
-	Geo.box(deco, Vector3(0, 0.22, 0), Vector3(6.0, 0.44, 3.4), Mats.get_mat("metal_dark"))
-	for sx in [-3.0, 3.0]:
-		Geo.cyl(deco, Vector3(sx, 0.22, 0), 1.7, 0.44, Mats.get_mat("metal_dark"), true, 24)
-	Geo.box(deco, Vector3(0, 0.5, 0), Vector3(6.0, 0.6, 1.6), Mats.get_mat("steel_frame"), false)
+	if TripoProps.exists("baggage", "BAG_Carousel2"):
+		TripoProps.spawn(deco, "baggage", "BAG_Carousel2", Vector3.ZERO, PI / 2, true, null, Vector3(3.4, 0.6, 9.4))
+	else:
+		Geo.box(deco, Vector3(0, 0.22, 0), Vector3(6.0, 0.44, 3.4), Mats.get_mat("metal_dark"))
+		for sx in [-3.0, 3.0]:
+			Geo.cyl(deco, Vector3(sx, 0.22, 0), 1.7, 0.44, Mats.get_mat("metal_dark"), true, 24)
+		Geo.box(deco, Vector3(0, 0.5, 0), Vector3(6.0, 0.6, 1.6), Mats.get_mat("steel_frame"), false)
 	Geo.label(deco, "B-02  운영 준비 중", Vector3(0, 1.0, 0.82), 0.0, 40, Color(0.9, 0.9, 0.9), 0.006, false, "print")
 	# luggage carts
 	for i in 4:
@@ -424,10 +457,18 @@ func _build_security() -> void:
 	Props.lightbox(self, Vector3(11.78, 2.2, -17.5), -PI / 2, Vector2(2.6, 1.2), "보안검색  SECURITY", "탑승권을 준비해 주세요")
 	for i in 5:
 		Geo.box(self, Vector3(-9.0, 0.82 + i * 0.07, -16.2), Vector3(0.6, 0.06, 0.45), Mats.std(Color(0.3, 0.32, 0.36), 0.5), false)
-	Geo.box(self, Vector3(-9.0, 0.4, -16.2), Vector3(0.7, 0.8, 0.5), Mats.get_mat("metal_dark"))
+	if TripoProps.exists("security", "SEC_InspectionTable"):
+		TripoProps.spawn(self, "security", "SEC_InspectionTable", Vector3(-9.0, 0, -16.2), 0.0, true, null, Vector3(0.7, 0.8, 0.5))
+	else:
+		Geo.box(self, Vector3(-9.0, 0.4, -16.2), Vector3(0.7, 0.8, 0.5), Mats.get_mat("metal_dark"))
 
 
 func _metal_detector(p: Vector3) -> void:
+	if TripoProps.exists("security", "SEC_MetalDetector"):
+		TripoProps.spawn(self, "security", "SEC_MetalDetector", p, 0.0, false, null, Vector3(1.25, 2.31, 0.6))
+		for sx in [-0.55, 0.55]:
+			Geo.blocker(self, p + Vector3(sx, 1.05, 0), Vector3(0.14, 2.1, 0.55))
+		return
 	var m := Mats.get_mat("plastic_grey")
 	for sx in [-0.55, 0.55]:
 		Geo.box(self, p + Vector3(sx, 1.05, 0), Vector3(0.14, 2.1, 0.55), m)
@@ -571,7 +612,11 @@ func _build_service_rooms() -> void:
 	add_child(term)
 	term.position = Vector3(52, 0, 11.5)
 	term.rotation.y = PI
-	Geo.box(term, Vector3(0, 0.45, 0), Vector3(1.2, 0.9, 0.6), Mats.get_mat("metal_dark"))
+	if TripoProps.exists("terminal", "TRM_InfoDesk"):
+		TripoProps.spawn(term, "terminal", "TRM_InfoDesk", Vector3.ZERO, PI, false, null, Vector3(1.2, 0.9, 0.6))
+		Geo.blocker(term, Vector3(0, 0.45, 0), Vector3(1.2, 0.9, 0.6))
+	else:
+		Geo.box(term, Vector3(0, 0.45, 0), Vector3(1.2, 0.9, 0.6), Mats.get_mat("metal_dark"))
 	var scr := Props.monitor(term, Vector3(0, 0.95, 0.05), 0.0, Vector2(0.5, 0.32))
 	scr.material_override = Mats.emissive(Color(0.25, 0.9, 0.4), 0.7)
 	syslog_terminal = Interactable.create(term, Vector3(0, 1.0, 0.3), Vector3(0.8, 0.6, 0.4), "시스템 로그 확인", Callable())
@@ -629,6 +674,8 @@ func _aircraft(pos: Vector3, rot_y: float, gate0: bool) -> Node3D:
 	add_child(root)
 	root.position = pos
 	root.rotation.y = rot_y
+	if TripoProps.exists("apron", "APR_Aircraft"):
+		return _tripo_aircraft(root, gate0)
 	var body := Mats.get_mat("plane_body")
 	var dark := Mats.get_mat("plane_dark")
 	var fus := Geo.cyl(root, Vector3(0, 4.2, 0), 2.6, 52.0, body, false, 24)
@@ -669,6 +716,34 @@ func _aircraft(pos: Vector3, rot_y: float, gate0: bool) -> Node3D:
 		Geo.label(root, "SEOHAE", Vector3(2.62, 6.2, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02, false, "print")
 	red.light_volumetric_fog_energy = 1.0
 	green.light_volumetric_fog_energy = 1.0
+	return root
+
+
+## Tripo airliner 61 m long (nose +Z); nav lights on its wingtips, the registration on the fuselage's right side.
+func _tripo_aircraft(root: Node3D, gate0: bool) -> Node3D:
+	var n := TripoProps.spawn(root, "apron", "APR_Aircraft")
+	var bb := TripoProps.bounds(n)
+	var k := 61.0 / bb.size.z
+	n.scale = Vector3.ONE * k
+	n.position = -Vector3(bb.get_center().x, bb.position.y, bb.get_center().z) * k
+	# fuselage side: outermost vertex near mid-length, inboard of the wing roots
+	var side := Vector3(2.6, 5.0, 0)
+	for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
+		for v: Vector3 in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
+			var p := n.position + mi.transform * v * k
+			if absf(p.z - 12.0) < 1.5 and p.x > side.x and p.x < 4.5 and p.y > 3.0:
+				side = Vector3(p.x, p.y, 0)
+	var tip := bb.size.x * k * 0.5 - 0.3
+	var red := Geo.omni(root, Vector3(-tip, 3.4, 2.0), Color(1, 0.1, 0.05), 1.0, 6.0)
+	var green := Geo.omni(root, Vector3(tip, 3.4, 2.0), Color(0.1, 1, 0.2), 1.0, 6.0)
+	red.light_volumetric_fog_energy = 1.0
+	green.light_volumetric_fog_energy = 1.0
+	if gate0:
+		var cabin := Geo.omni(root, Vector3(0, side.y, 26.0), Color(1.0, 0.9, 0.7), 2.0, 10.0)
+		cabin.light_volumetric_fog_energy = 2.0
+		Geo.label(root, "SH 000", Vector3(side.x + 0.05, side.y + 0.6, 12.0), PI / 2, 200, Color(0.1, 0.1, 0.12), 0.02, false, "print")
+	else:
+		Geo.label(root, "SEOHAE", Vector3(side.x + 0.05, side.y + 0.6, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02, false, "print")
 	return root
 
 

@@ -2,7 +2,7 @@ extends Node
 ## Debug bot: `godot --path . res://scenes/game.tscn -- --day 1 --autotest <outdir> [--ending exit|board|announce]
 ## [--mistakes|--wrong] [--leave-power-off]`. Plays the dawn shifts by itself (teleporting, operating facilities, reporting, applying
 ## rulebook fixes, obeying emergency rules), prints a log and saves screenshots. Carries on across scene changes.
-## The DAY 3 ending comes from the judgment record; `--ending` seeds the record on DAY 3 so each one can be reached.
+## The DAY 5 ending comes from the judgment record; `--ending` seeds the record on DAY 5 so each one can be reached.
 
 var world: Node
 var d: ShiftDirector
@@ -37,7 +37,7 @@ func _ready() -> void:
 	mistakes = args.has("--mistakes")
 	always_wrong = args.has("--wrong")
 	Engine.time_scale = 3.0
-	if Game.cycle == 3:
+	if Game.cycle == Game.MAX_CYCLE:
 		match ending:
 			"board":
 				Game.stats["fake_followed"] = 1
@@ -136,8 +136,37 @@ func _run() -> void:
 func _do_goal(task: Task) -> void:
 	log_line("GOAL  " + task.title)
 	var title := task.title
-	if "바인더" in title:
-		await _pick("binder")
+	if "태블릿 열어 보기" in title:
+		await wait(1.0)
+		world.ui.open_tablet()
+		await wait(1.5)
+		await shot("tablet_first")
+		world.ui.close_modal()
+	elif "바인더 펼쳐 보기" in title:
+		await wait(1.0)
+		world.ui.open_binder()
+		await wait(1.5)
+		await shot("binder_first")
+		world.ui.close_modal()
+	elif "교대 근무자" in title:
+		# walk up to the colleague and step through the handover with [E]; the day's items change hands
+		var n := d.npc
+		if n:
+			var to := (p.global_position - n.global_position)
+			to.y = 0.0
+			to = to.normalized() if to.length() > 0.1 else Vector3(1, 0, 0)
+			await goto(n.global_position + to * 1.6 + Vector3(0, 0.05, 0), n.head_position())
+			var presses := 0
+			while task.state != "done" and presses < 40 and is_instance_valid(n):
+				if world.ui.modal == "doc":
+					await shot("handover_doc")
+					world.ui._close_reader()
+				n.interactable.interact()
+				presses += 1
+				await wait(1.2)
+				if presses <= 3:
+					await shot("colleague_%d" % presses)
+			log_line("  handover talk: %d presses" % presses)
 	elif "사물함" in title:
 		await _pick("log2")
 	elif "탑승동 출입" in title:
@@ -366,14 +395,15 @@ func _watch_events() -> void:
 			"broadcast":
 				log_line("EVENT 03:00 broadcast → stand still")
 				await shot("regular_broadcast")
-				await _until(func(): return d.running_event != "broadcast", 90.0)
+				# about a minute of real audio; timers here run at Engine.time_scale
+				await _until(func(): return d.running_event != "broadcast", 90.0 * Engine.time_scale)
 			"boardingcall":
 				log_line("EVENT boarding call in zone %s → leave the gate area (p.8 ④)" % p.zone)
 				await goto(Vector3(0, 0.05, -62.0), Vector3(0, 1.6, -40.0))
 				await _until(func(): return d.running_event != "boardingcall", 90.0)
 
 
-# --- DAY 3 06:00: walk to Gate 0, then follow whichever sign the record lit -----------------------------
+# --- DAY 5 06:00: walk to Gate 0, then follow whichever sign the record lit -----------------------------
 func _finale_choice() -> void:
 	await goto(Vector3(0, 0.05, -95.0), Vector3(0, 2.5, -110))
 	await shot("gate0_front")

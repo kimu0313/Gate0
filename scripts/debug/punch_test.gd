@@ -1,7 +1,7 @@
 extends Node
 ## Debug: `godot --headless --path . res://scenes/game.tscn -- --day 1 --punchtest`
 ## Clocks out at the time clock in each phase and checks the game moves on:
-## DAY 1 → morning report → DAY 2 (add `--to3` to go on to DAY 3, whose shift ends at Gate 0). Exit 0 = pass, 1 = fail.
+## DAY 1 → morning report → DAY 2 (add `--toN`, e.g. `--to5`, to go on to DAY N; DAY 5 ends at Gate 0). Exit 0 = pass, 1 = fail.
 
 var world: Node
 
@@ -10,8 +10,11 @@ func _ready() -> void:
 	await get_tree().create_timer(0.5).timeout
 	var d: ShiftDirector = world.director
 	print("[punchtest] in DAY %d" % Game.cycle)
-	# `--to3`: keep clocking out through every shift until DAY 3 (which ends at Gate 0, not at the clock)
-	var goal_day := 3 if OS.get_cmdline_user_args().has("--to3") else 2
+	# `--toN`: keep clocking out through every shift until DAY N (DAY 5 ends at Gate 0, not at the clock)
+	var goal_day := 2
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--to") and a.substr(4).is_valid_int():
+			goal_day = clampi(int(a.substr(4)), 2, Game.MAX_CYCLE)
 	if Game.cycle == goal_day:
 		print("[punchtest] PASS — reached DAY %d" % Game.cycle)
 		get_tree().quit(0)

@@ -1,11 +1,15 @@
 # GATE 0 — PA announcement voice generator (Windows SAPI TTS).
-# Usage (from project root):  powershell -ExecutionPolicy Bypass -File tools\gen_voice.ps1
+# Usage (from project root):  powershell -ExecutionPolicy Bypass -File tools\gen_voice.ps1 [-Only <id prefix>]
+#   (the file is UTF-8 without BOM; under Windows PowerShell 5.1 run it as
+#    powershell -Command "& ([scriptblock]::Create((Get-Content -Raw -Encoding UTF8 tools\gen_voice.ps1))) -Only pa_")
 # Output: assets\audio\voice\*.wav  (22.05 kHz 16-bit mono)
 # Godot routes these through the "PA" audio bus (reverb + band-pass) so the raw TTS reads as a terminal PA system.
+param([string]$Only = "")
 
 Add-Type -AssemblyName System.Speech
 
-$root = Split-Path -Parent $PSScriptRoot
+# run from the project root when invoked as a script block ($PSScriptRoot is empty then)
+$root = if ($PSScriptRoot) { Split-Path -Parent $PSScriptRoot } else { (Get-Location).Path }
 $outDir = Join-Path $root "assets\audio\voice"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
@@ -27,10 +31,6 @@ $lines = [ordered]@{
 	"pa_regular_intro_ko"      = @($KO, -2, "현재 시각, 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.")
 	# 엔딩 A (탑승) — 좌석에 앉으면
 	"pa_boarded_ko"            = @($KO, -3, "탑승이 완료되었습니다.")
-	# 00:00–01:00 인수인계: 퇴근 준비 중인 저녁 근무자들 (멀리서 들리는 대화)
-	"staff_chat_1"             = @($KO, 1, "오늘도 고생 많았어요. 먼저 갈게요.")
-	"staff_chat_2"             = @($KO, 0, "카운터 정리는 내일 아침에 하죠.")
-	"staff_chat_3"             = @($KO, 1, "새벽 근무자 왔어요? 수고하세요.")
 	# 0편 관련
 	"pa_flight0_move_ko"       = @($KO, -2, "영편 승객께서는 출국장으로 이동해 주시기 바랍니다.")
 	"pa_flight0_move_en"       = @($EN, -2, "Passengers of flight zero, please proceed to the departure area.")
@@ -57,6 +57,9 @@ $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
 $fmt = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(22050, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
 
 foreach ($id in $lines.Keys) {
+	if ($Only -and -not $id.StartsWith($Only)) {
+		continue
+	}
 	$voice, $rate, $text = $lines[$id]
 	$path = Join-Path $outDir ($id + ".wav")
 	try {
@@ -66,7 +69,12 @@ foreach ($id in $lines.Keys) {
 	}
 	$synth.Rate = $rate
 	$synth.Volume = 100
-	$synth.SetOutputToWaveFile($path, $fmt)
+	try {
+		$synth.SetOutputToWaveFile($path, $fmt)
+	} catch {
+		Write-Warning "cannot write $path"
+		continue   # never fall back to speaking through the speakers
+	}
 	$synth.Speak($text)
 	$synth.SetOutputToNull()
 	Write-Output ("{0,-28} {1,8} bytes" -f $id, (Get-Item $path).Length)

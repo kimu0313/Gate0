@@ -31,6 +31,7 @@ var _sub_text: Label
 var _sub_band: PanelContainer
 var _sub_grad: Gradient
 var _sub_time := 0.0
+var _sub_fade: Tween            # fade-out of the last line; a new line cancels it
 var _key_caps: Array = []      # [[keycap PanelContainer, action]] relabelled when keys are rebound
 # reticle, prompt, observation
 var _reticle: Control
@@ -369,9 +370,9 @@ func _process(delta: float) -> void:
 	if _sub_time > 0.0:
 		_sub_time -= delta
 		if _sub_time <= 0.0:
-			var tw := create_tween()
-			tw.tween_property(_sub_root, "modulate:a", 0.0, 0.3)
-			tw.tween_callback(func(): _sub_root.visible = false)
+			_sub_fade = create_tween()
+			_sub_fade.tween_property(_sub_root, "modulate:a", 0.0, 0.3)
+			_sub_fade.tween_callback(func(): _sub_root.visible = false)
 	# warning
 	if _warn_t > 0.0:
 		_warn_t -= delta
@@ -650,6 +651,12 @@ func _draw_reticle() -> void:
 # =========================================================================================
 # subtitles
 # =========================================================================================
+## Fades the current subtitle out now (a conversation the player has stepped to its end).
+func hide_subtitle() -> void:
+	if _sub_time > 0.0:
+		_sub_time = 0.001
+
+
 func show_subtitle(speaker: String, text: String, duration: float) -> void:
 	# whole line first (scripted "speaker|text" keys), else speaker and text separately (radio())
 	var full := UiKit.t(text)
@@ -679,6 +686,9 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 			chip = UiKit.chip("PA · 안내방송", UiKit.NAVY if _boarding else UiKit.SIGNAL_INK, _accent(), "speaker")
 		"self":
 			chip = UiKit.chip(who if who != "" else "나", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "")
+		"npc":
+			# someone standing right there (the evening-shift colleague), not a radio voice
+			chip = UiKit.chip(who, UiKit.TEXT, Color(0.16, 0.2, 0.26, 0.92), "person")
 		_:
 			chip = UiKit.chip(who if who != "" else "SYSTEM", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "info")
 	for ic in chip.find_children("*", "UiIcon", true, false):
@@ -686,6 +696,10 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 	_sub_chip_slot.add_child(chip)
 	_sub_text.add_theme_color_override("font_color", Color(0.86, 0.87, 0.9) if speaker == "self" else Color(0.97, 0.97, 0.97))
 	_sub_text.text = UiKit.keep_all(body)
+	# a line that follows straight on (the colleague talks without radio clicks in between) must not be
+	# hidden by the previous line's fade-out finishing after it appeared
+	if _sub_fade and _sub_fade.is_valid():
+		_sub_fade.kill()
 	var was := _sub_root.visible and _sub_root.modulate.a > 0.5
 	_sub_root.visible = true
 	_sub_root.modulate.a = 1.0

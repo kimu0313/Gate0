@@ -4,7 +4,7 @@ extends Node
 const SAVE_PATH := "user://save.json"
 const SETTINGS_PATH := "user://settings.cfg"
 const PHOTO_DIR := "user://photos"
-const MAX_CYCLE := 3
+const MAX_CYCLE := 5
 const PHOTOS_PER_DAY := 6
 
 const SCENE_MENU := "res://scenes/menu.tscn"
@@ -60,8 +60,8 @@ const REBINDABLE := [["move_forward", "앞으로 이동"], ["move_back", "뒤로
 
 # --- session state ---------------------------------------------------------------
 var player_name := "점검원"
-var cycle := 1             # 1..3 : DAY N = one dawn shift 00:00–06:00 (10/21 · 10/22 · 10/23, opening day)
-var phase := "night"       # always "night" now (the day shifts were cut in the 3-day scenario)
+var cycle := 1             # 1..5 : DAY N = one dawn shift 00:00–06:00 (10/19 … 10/23, opening day)
+var phase := "night"       # always "night" now (every shift is a dawn shift)
 var erosion := 0.0         # 0..100
 var clock_minutes := 0          # minutes after 00:00
 var clues := {}            # clue_id -> true
@@ -101,7 +101,9 @@ func _debug_args() -> void:
 
 
 ## Pages slipped into the binder at the start of each shift (the day's handover).
-const DAY_PAGES := {1: ["p0", "p1", "p2", "p3", "p4", "p9"], 2: ["p5", "p7", "f7"], 3: ["p6", "p8", "f4", "f8"]}
+const DAY_PAGES := {1: ["p0", "p1", "p2", "p3", "p4", "p9"], 2: ["p5"], 3: ["p7", "f7"], 4: ["p6", "p8", "f4", "f8"], 5: []}
+## From this shift on, p.3 is the water-damaged copy.
+const P3_DAMAGED_FROM := 3
 
 
 ## Binder contents a player would have when starting directly at shift `c` (before its own new pages).
@@ -109,17 +111,21 @@ func prepare_chapter(c: int, _ph := "night") -> void:
 	binder_pages = []
 	for day in range(1, c):
 		binder_pages.append_array(DAY_PAGES[day])
-	if c >= 3:
+	if c > P3_DAMAGED_FROM:
 		binder_pages.erase("p3")
 		binder_pages.append("p3_dmg")
 	set_flag("prologue_seen")
 
 
-## The day's pages arrive with the handover (DAY 2 also water-damages p.3).
-func add_day_pages(c: int) -> void:
+## The day's pages arrive with the handover (DAY 3 also water-damages p.3).
+## `part`: "all" | "official" (what the colleague hands over) | "fake" (the pages nobody handed over —
+## found in the binder afterwards, together with the water damage).
+func add_day_pages(c: int, part := "all") -> void:
 	for id in DAY_PAGES.get(c, []):
-		add_binder_page(id)
-	if c >= 2 and binder_pages.has("p3"):
+		var fake := str(id).begins_with("f")
+		if part == "all" or (part == "fake") == fake:
+			add_binder_page(id)
+	if part != "official" and c >= P3_DAMAGED_FROM and binder_pages.has("p3"):
 		remove_binder_page("p3")
 		add_binder_page("p3_dmg")
 
@@ -421,7 +427,7 @@ func load_game() -> bool:
 		return false
 	reset_session()
 	player_name = str(data.get("player_name", "점검원"))
-	cycle = clampi(int(data.get("cycle", 1)), 1, MAX_CYCLE)   # saves from the 5-day build carry on at the last shift
+	cycle = clampi(int(data.get("cycle", 1)), 1, MAX_CYCLE)
 	phase = "night"
 	erosion = float(data.get("erosion", 0.0))
 	clues = data.get("clues", {})

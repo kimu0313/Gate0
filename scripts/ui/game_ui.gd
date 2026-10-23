@@ -182,6 +182,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("tablet"):
 		get_viewport().set_input_as_handled()
+		if Game.cycle == 1 and not Game.flag("got_tablet"):
+			# DAY 1: the evening-shift colleague hands the tablet over first
+			Events.notify.emit("아직 점검 태블릿을 받지 않았습니다.", "info")
+			return
 		open_tablet()
 	elif event.is_action_pressed("binder"):
 		get_viewport().set_input_as_handled()

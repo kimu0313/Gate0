@@ -1,5 +1,5 @@
 extends Node3D
-## Root of a playable dawn shift (DAY 1–3): builds the terminal, player, UI and the shift director.
+## Root of a playable dawn shift (DAY 1–5): builds the terminal, player, UI and the shift director.
 
 var atmosphere: Atmosphere
 var terminal: Terminal
@@ -66,10 +66,10 @@ func _begin() -> void:
 	if Game.cycle == 1 and not Game.flag("prologue_seen"):
 		Game.set_flag("prologue_seen")
 		await ui.typewriter([
-			"서해국제공항 정식 개장 이틀 전, 자정.",
+			"서해국제공항 정식 개장 나흘 전, 자정.",
 			"",
 			"구인 사이트의 단기 계약직 공고.",
-			"새벽 시설 점검원 · 00:00 – 06:00 · 사흘 근무.",
+			"새벽 시설 점검원 · 00:00 – 06:00 · 닷새 근무.",
 			"",
 			"지급품: 점검 태블릿, 무전기,",
 			"그리고 두꺼운 근무 수칙 바인더 한 권.",
@@ -85,7 +85,7 @@ func _begin() -> void:
 	director.start()
 
 
-## 00:00 the evening staff are still clocking out: every zone is lit until 01:00 (ShiftDirector.ev_staff_leave).
+## 00:00 the evening staff are still clocking out: every zone is lit until 01:00 (ShiftDirector.ev_lights_down).
 func _initial_lights() -> void:
 	for zn in terminal.zones.keys():
 		terminal.set_zone_light(zn, true, true)

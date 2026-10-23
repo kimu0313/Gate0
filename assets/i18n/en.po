@@ -3568,7 +3568,7 @@ msgid ""
 "1. 근무 시간은 [b]00:00 ~ 06:00[/b]입니다. 00:00 ~ 01:00은 인수인계 시간으로 저녁 근무자가 남아 있습니다.\n"
 "   01:00부터는 혼자 근무합니다.\n"
 "\n"
-"2. 점검은 태블릿에 표시되는 지시 순서대로 수행합니다. 하루 점검은 [b]14회[/b]입니다.\n"
+"2. 점검은 태블릿에 표시되는 지시 순서대로 수행합니다. 하루 점검은 [b]14회[/b]입니다. (첫 근무일은 교육 근무로 8회)\n"
 "\n"
 "3. 시설을 가동하고 직접 관찰한 뒤, 태블릿으로 [b][정상][/b] 또는 [b][이상][/b]을 즉시 보고하십시오.\n"
 "   [이상]을 보고했다면 해당 시설의 수칙에 따라 제한 시간 안에 대응하십시오.\n"
@@ -3586,7 +3586,7 @@ msgstr ""
 "1. Shift hours are [b]00:00 – 06:00[/b]. 00:00 – 01:00 is handover; the evening staff are still in the building.\n"
 "   From 01:00 you work alone.\n"
 "\n"
-"2. Carry out inspections in the order of the work orders shown on the tablet. A shift has [b]14[/b] inspections.\n"
+"2. Carry out inspections in the order of the work orders shown on the tablet. A shift has [b]14[/b] inspections (the first shift is a training shift with 8).\n"
 "\n"
 "3. Operate the facility and observe it directly, then report [b][NORMAL][/b] or [b][ANOMALY][/b] on the tablet immediately.\n"
 "   If you report [ANOMALY], respond within the time limit according to that facility's rules.\n"
@@ -4119,3 +4119,294 @@ msgstr "%s power has been restored. (Breaker panel)"
 
 msgid " (시설관리실 배전반에서 전원을 다시 올리십시오)"
 msgstr " (Switch its power back on at the Facility Office breaker panel)"
+
+msgid "서해국제공항 정식 개장 나흘 전, 자정."
+msgstr "Seohae International Airport, four days before the grand opening. Midnight."
+
+msgid "새벽 시설 점검원 · 00:00 – 06:00 · 닷새 근무."
+msgstr "Dawn facility inspector · 00:00 – 06:00 · five shifts."
+
+msgid "인수인계 · 출발 전광판 확인"
+msgstr "Handover · Check the departures board"
+
+msgid "체크인 홀 [b]출발 전광판[/b] 앞에서 정상 목록(TEST MODE, SH 101~804)과 시계를 익힌 뒤 보고하십시오."
+msgstr "At the [b]departures board[/b] in the check-in hall, learn the normal list (TEST MODE, SH 101–804) and the clock, then report."
+
+msgid "방송이 끝났다. 수칙대로 끝까지 움직이지 않았다."
+msgstr "The announcement ended. You stayed still to the end, as the rules say."
+
+msgid "10월 19일 · 00:00 · 첫 근무 (교육)"
+msgstr "October 19 · 00:00 · First shift (training)"
+
+msgid "오늘은 여기까지. 다 정상이었죠? 첫날은 원래 그래요. 사무실 근태 기록기에 퇴근 찍고 가세요."
+msgstr "That's it for tonight. All normal, right? First nights always are. Clock out at the time clock in the office."
+
+msgid "곧 세 시 정기 방송이에요. 수칙 9페이지 3번 — 방송이 끝날 때까지 그 자리에서 움직이지 마세요."
+msgstr "The 3 AM scheduled announcement is coming up. Rules page 9, item 3 — don't move from where you stand until it ends."
+
+msgid "잘했어요. 정기 방송은 매일 세 시에 나와요."
+msgstr "Well done. That announcement plays at three every night."
+
+msgid "…SH 000? 저런 편이 있었나."
+msgstr "…SH 000? Was that flight there before?"
+
+msgid "10월 20일 · 00:00 · 수하물 수취 구역"
+msgstr "October 20 · 00:00 · Baggage claim"
+
+msgid "어제 퇴근할 때 출발 전광판 봤어요? …아니에요. 아무것도."
+msgstr "Did you look at the departures board when you clocked out yesterday? …Never mind. Nothing."
+
+msgid "왔어요? 오늘부터 수하물도 보시죠. B-03 제어대가 여기예요."
+msgstr "There you are. You're on baggage from today, right? The B-03 controls are here."
+
+msgid "가동 누르면 노란 TEST 태그 가방이 세 개 나와요. 딱 세 개. 그게 정상이에요."
+msgstr "Press Start and three bags with yellow TEST tags come out. Exactly three. That's normal."
+
+msgid "네, 접수됐어요. 오늘부터는 진짜 이상한 게 섞여 있을 수 있어요."
+msgstr "Got it, logged. From tonight, there may be real anomalies mixed in."
+
+msgid "이제 혼자예요. 판정 실수 세 번이면 근무 무효, 기억하죠?"
+msgstr "You're on your own now. Three judgment errors and the shift is void, remember?"
+
+msgid "10월 21일 · 00:00 · 보안검색 구역"
+msgstr "October 21 · 00:00 · Security"
+
+msgid "10월 22일 · 00:00 · 탑승동 · 탑승 게이트"
+msgstr "October 22 · 00:00 · Boarding wing · Gates"
+
+msgid "오늘은 탑승동까지 다 보셔야 해요, 승객분. …아, 점검원님."
+msgstr "You'll be covering the boarding wing today, passenger. …I mean, inspector."
+
+msgid "보안검색 구역 북쪽 끝 [b]탑승동 출입문[/b] 옆 카드 리더에 출입카드를 태그하십시오."
+msgstr "Tap your access card on the reader beside the [b]boarding wing door[/b] at the north end of Security."
+
+msgid "…끝났어요. 퇴근 찍으세요, 승객분. 내일이 개장일이에요."
+msgstr "…Done. Clock out, passenger. Tomorrow is opening day."
+
+msgid "퇴근 기록을 찍자, 근태 기록기가 한 줄을 더 뱉어 냈다."
+msgstr "When you clocked out, the time clock printed one more line."
+
+msgid "10월 23일 · 00:00 · 개장일 · 마지막 근무"
+msgstr "October 23 · 00:00 · Opening day · Last shift"
+
+msgid "마지막 근무네요, 승객분. …오늘은 개장일이에요. 전 구역 다 봐야 해요."
+msgstr "Last shift, passenger. …It's opening day. You cover every zone tonight."
+
+msgid "마지막 근무네요. 오늘이 개장일이에요."
+msgstr "Last shift, huh. Today's opening day."
+
+msgid "세 시 방송, 이름 부르는 방송, 정전. 수칙 9페이지 다시 봐 둬요."
+msgstr "The three o'clock announcement, an announcement calling a name, a blackout. Read rules page 9 again."
+
+msgid "이제 혼자예요, 승객분. …마지막이에요."
+msgstr "You're on your own now, passenger. …Last time."
+
+msgid "…방금 방송, 누구 이름이었어요? 제 쪽에선 잡음만 들렸어요."
+msgstr "…Whose name was that on the PA just now? All I got was static."
+
+msgid "06:00 · 닷새간의 판정 기록 — 정확도 %d%% · 놓친 이상 %d · 수칙 위반 %d · 따른 가짜 수칙 %d"
+msgstr "06:00 · Five-day judgment record — accuracy %d%% · missed %d · rule violations %d · fake rules followed %d"
+
+msgid "DAY 1 — 첫 근무 · 인수인계"
+msgstr "DAY 1 — First Shift · Handover"
+
+msgid "DAY 2 — 수하물 수취대 · FLIGHT 000"
+msgstr "DAY 2 — Baggage Claim · FLIGHT 000"
+
+msgid "DAY 3 — 보안검색 · 당신의 가방"
+msgstr "DAY 3 — Security · Your Bag"
+
+msgid "DAY 4 — 탑승동 · PASSENGER ACCESS ONLY"
+msgstr "DAY 4 — Boarding Wing · PASSENGER ACCESS ONLY"
+
+msgid "DAY 5 — 개장일 · GATE 0"
+msgstr "DAY 5 — Opening Day · GATE 0"
+
+msgid "교대 근무자"
+msgstr "Evening Staff"
+
+msgid "무전기요. 소장님은 이걸로만 연락해요. 얼굴 보기 힘든 분이에요."
+msgstr "The radio. The Chief only ever talks to you through this. You'll hardly ever see them in person."
+
+msgid "그리고 근무 수칙 바인더. 이게 제일 중요해요. [B]로 펼쳐 봐요."
+msgstr "And the rule binder. This is the most important one. Open it with [B]."
+
+msgid "무전이랑 수칙이 다르면, 수칙이 먼저예요. 꼭이요."
+msgstr "If the radio and the rules disagree, the rules come first. Always."
+
+msgid "그럼 전 퇴근할게요. 오늘은 교육 근무라 별일 없을 거예요."
+msgstr "I'll clock out, then. Tonight's a training shift — nothing should happen."
+
+msgid "점검 태블릿 수령 — [Tab]으로 열기"
+msgstr "Inspection tablet received — open it with [Tab]"
+
+msgid "무전기 수령 — 소장의 지시는 무전으로 옵니다"
+msgstr "Radio received — the Chief's orders come over the radio"
+
+msgid "근무 수칙 바인더 수령 — [B]로 펼치기"
+msgstr "Rule binder received — open it with [B]"
+
+msgid "첫 번째는 조명 분전반이에요. 사무실 문 바로 옆 벽. 구역 스위치를 올려서 조명을 켜 봐요."
+msgstr "First, the lighting panel. On the wall right next to the office door. Flip the zone switches up to turn the lights on."
+
+msgid "켠 구역이 전부 고르게 밝으면 정상이에요. 분전반을 보고 있으면 관찰 표시가 차요. 다 차면 [Tab] 태블릿에서 보고."
+msgstr "If every zone you switched on is evenly lit, that's normal. Keep looking at the panel and the observation ring fills up. When it's full, report on the tablet [Tab]."
+
+msgid "다음은 출발 전광판. 체크인 홀 북쪽 벽이요."
+msgstr "Next, the departures board. North wall of the check-in hall."
+
+msgid "맨 위에 TEST MODE, 테스트 편 여덟 개. 이 목록이랑 시계 잘 봐 둬요. 내일부터는 이거랑 비교하는 거예요."
+msgstr "TEST MODE at the top, eight test flights. Take a good look at the list and the clock — from tomorrow you compare against them."
+
+msgid "마지막은 안내방송. 안내 데스크 콘솔에서 [테스트 송출]을 눌러요."
+msgstr "Last, the PA. Press [Test Broadcast] on the console at the information desk."
+
+msgid "교대 근무자와 대화하기"
+msgstr "Talk to the evening staff"
+
+msgid "…들려요? 시설운영팀 소장입니다. 오늘부터 닷새, 새벽 점검 부탁해요. 첫날은 교육이라고 생각하세요."
+msgstr "…Can you hear me? This is the Chief, Facility Operations. Five dawn shifts starting today — thanks in advance. Think of tonight as training."
+
+msgid "점검 태블릿 열어 보기"
+msgstr "Open the inspection tablet"
+
+msgid "[b][Tab][/b]으로 점검 태블릿을 열어 보십시오."
+msgstr "Open the inspection tablet with [b][Tab][/b]."
+
+msgid "먼저 태블릿부터. [Tab]으로 열어 봐요. 점검 지시랑 보고가 전부 여기서 돼요."
+msgstr "Tablet first. Open it with [Tab]. Work orders and reports all go through it."
+
+msgid "근무 수칙 바인더 펼쳐 보기"
+msgstr "Open the rule binder"
+
+msgid "[b][B][/b]로 근무 수칙 바인더를 펼쳐 보십시오. 1페이지 총칙부터 읽어 두십시오."
+msgstr "Open the rule binder with [b][B][/b]. Start by reading page 1, General."
+
+msgid "다음은 바인더. [B]로 펼쳐요. 1페이지 총칙은 꼭 읽어 두세요."
+msgstr "Now the binder. Open it with [B]. Make sure you read page 1, General."
+
+msgid "좋아요. 이제 점검이에요. 태블릿에 지시가 하나씩 떠요. 오늘은 여덟 번. 현장 가서 직접 보고, [정상]이든 [이상]이든 바로 보고하면 돼요."
+msgstr "Good. Now the inspections. Work orders show up on the tablet one at a time. Eight tonight. Go and look for yourself, then report [Normal] or [Anomaly] right away."
+
+msgid "네, 접수됐어요. 그렇게 하면 돼요."
+msgstr "Got it, logged. That's how you do it."
+
+msgid "01시예요. 다른 저녁 근무자들도 다 나갔어요. 이제 조명 절반은 자동으로 꺼져요."
+msgstr "It's 1 AM. The rest of the evening staff have gone. Half the lights switch off automatically now."
+
+msgid "여기서부터 혼자예요. 판정을 세 번 틀리면 그날 근무는 무효고요. 수칙 1페이지에 있어요."
+msgstr "From here you're on your own. Three wrong judgments and the shift is void. It's on page 1 of the rules."
+
+msgid "아직 점검 태블릿을 받지 않았습니다."
+msgstr "You haven't received the inspection tablet yet."
+
+msgid "문안은 수칙 4페이지랑 똑같아야 해요. 끝까지 듣고 보고하세요."
+msgstr "The wording has to match page 4 of the rules exactly. Listen to the end, then report."
+
+msgid "계속 듣기"
+msgstr "Keep listening"
+
+msgid "아, 오늘부터 새벽 근무 하시는 분이죠? 반가워요. 저는 저녁 근무예요."
+msgstr "Oh, you're the new dawn shift, right? Nice to meet you. I'm on evenings."
+
+msgid "퇴근 전에 장비부터 넘겨 드릴게요. 이건 점검 태블릿. 점검 지시가 여기로 와요. [Tab]으로 열고, 보고도 여기서 해요."
+msgstr "Let me hand over the equipment before I clock out. This is the inspection tablet. Work orders come in here. Open it with [Tab] — you report on it too."
+
+msgid "시설관리실에 있는 [b]저녁 근무자[/b]에게 다가가 [E]로 말을 거십시오. ([E]를 누를 때마다 다음 말로 넘어갑니다)"
+msgstr "Walk up to the [b]evening staff[/b] in the Facility Office and talk to them with [E]. (Each [E] moves the conversation on)"
+
+msgid "새 수칙 페이지요. 5페이지, 수하물 수취대. 바인더에 끼워 두세요."
+msgstr "New rule page. Page 5, baggage claim. Put it in your binder."
+
+msgid "둘째 날이네요. 오늘부터 수하물 수취대도 봐야 해요. 교대 근무자가 B-03 앞에서 기다리고 있어요."
+msgstr "Second night. From today you cover baggage claim too. The evening staff are waiting for you at B-03."
+
+msgid "수하물 수취대 [b]B-03 제어대[/b] 앞의 저녁 근무자에게 [E]로 인수인계를 받으십시오."
+msgstr "Get the handover with [E] from the evening staff at the [b]B-03 controls[/b] in baggage claim."
+
+msgid "근무 수칙 p.5 수하물 수취대 (추록) 수령 — 바인더에 끼움"
+msgstr "Rule page p.5 Baggage Claim (addendum) received — filed in the binder"
+
+msgid "01시예요. 저녁 근무자들 다 나갔어요."
+msgstr "It's 1 AM. The evening staff have all gone."
+
+msgid "7페이지 추록이요. 정상 판독 화면은 노트북, 물병, 열쇠, 케이블. 그게 다예요."
+msgstr "Page 7, the addendum. A normal scan shows a laptop, a bottle, keys and a cable. That's all."
+
+msgid "그리고 이거, 검색대 옆 사물함 열쇠. 전에 있던 정비사분 물건이 남아 있대요."
+msgstr "And this — the key to the locker by the checkpoint. The last mechanic's things are still in it."
+
+msgid "어느 날부터 안 나오셨대요. …먼저 들어갈게요. 사물함 일지는, 끝까지 읽지 마요."
+msgstr "One day he just stopped coming in. …I'm heading off. That log in the locker — don't read it to the end."
+
+msgid "셋째 날이에요. 오늘은 보안검색대까지 봐야 해요. 교대 근무자가 X-ray 쪽에 있어요."
+msgstr "Third night. Today you cover security too. The evening staff are over by the X-ray."
+
+msgid "보안검색 구역 [b]X-ray 1번[/b] 옆의 저녁 근무자에게 [E]로 인수인계를 받으십시오."
+msgstr "Get the handover with [E] from the evening staff beside [b]X-ray 1[/b] in Security."
+
+msgid "바인더를 펼치자, 받은 적 없는 7페이지가 한 장 더 끼워져 있다. 3페이지는 젖어서 글자가 번져 있다."
+msgstr "When you open the binder there is a second page 7 nobody gave you. Page 3 is soaked, the ink running."
+
+msgid "근무 수칙 p.7 보안검색 X-ray (추록) 수령 — 바인더에 끼움"
+msgstr "Rule page p.7 Security X-ray (addendum) received — filed in the binder"
+
+msgid "사물함 열쇠 수령 — 보안검색 구역 동쪽 벽 직원 사물함"
+msgstr "Locker key received — staff locker on the east wall of Security"
+
+msgid "6페이지, 8페이지 추록이요. 무빙워크랑 탑승구."
+msgstr "Pages 6 and 8, the addenda. Moving walkway and gates."
+
+msgid "탑승동 출입카드도 새로 나왔대요. 저 문 옆 리더에 찍으면 돼요."
+msgstr "There's a new boarding-wing access card, too. Just tap it on the reader by that door."
+
+msgid "게이트 대기석에 누가 앉아 있어도 다가가지 마요. 수칙 8페이지. …그럼, 먼저 갈게요."
+msgstr "If someone's sitting in the gate seats, don't go near them. Rules page 8. …Well, I'm off."
+
+msgid "넷째 날이에요. 오늘은 탑승동까지 전부예요. 교대 근무자가 탑승동 출입문 앞에 있어요."
+msgstr "Fourth night. Today it's everything, boarding wing included. The evening staff are at the boarding wing door."
+
+msgid "보안검색 구역 북쪽 끝 [b]탑승동 출입문[/b] 앞의 저녁 근무자에게 [E]로 인수인계를 받으십시오."
+msgstr "Get the handover with [E] from the evening staff at the [b]boarding wing door[/b], north end of Security."
+
+msgid "바인더에 같은 번호가 두 장인 페이지가 또 있다. 받은 적 없는 페이지다."
+msgstr "Again there are two pages with the same number in the binder. Nobody gave you this one."
+
+msgid "…방금 받은 카드인데, 안 찍힌다."
+msgstr "…I only just got this card, and it won't read."
+
+msgid "근무 수칙 p.6 무빙워크 · p.8 탑승구 (추록) 수령 — 바인더에 끼움"
+msgstr "Rule pages p.6 Moving Walkway · p.8 Gates (addenda) received — filed in the binder"
+
+msgid "탑승동 출입카드 수령 — 출입문 옆 카드 리더에 태그"
+msgstr "Boarding-wing access card received — tap it on the reader by the door"
+
+msgid "01시예요, 승객분. …저녁 근무자들 다 나갔어요."
+msgstr "It's 1 AM, passenger. …The evening staff have all gone."
+
+msgid "아, 이거. 아까 바닥에 떨어져 있었어요. …당신 이름이던데요."
+msgstr "Oh, this. It was on the floor earlier. …It has your name on it."
+
+msgid "체크인 홀 [b]안내 데스크[/b] 앞의 저녁 근무자에게 [E]로 인수인계를 받으십시오."
+msgstr "Get the handover with [E] from the evening staff at the [b]information desk[/b] in the check-in hall."
+
+msgid "탑승권 — FLIGHT 000"
+msgstr "Boarding pass — FLIGHT 000"
+
+msgid "PASSENGER　%s\nFLIGHT　SH 000\nFROM　SEOHAE · 서해\nTO　HOME · 집\nGATE　0\nBOARDING　06:00\nSEAT　—\n\n탑승이 확인되었습니다."
+msgstr "PASSENGER　%s\nFLIGHT　SH 000\nFROM　SEOHAE\nTO　HOME\nGATE　0\nBOARDING　06:00\nSEAT　—\n\nBoarding confirmed."
+
+msgid "01시예요, 승객분. 저녁 근무자들 다 나갔어요. …근데 아까 누구랑 얘기했어요? 오늘 저녁 근무자 명단엔 이름이 없는데."
+msgstr "It's 1 AM, passenger. The evening staff have all gone. …But who were you talking to earlier? There's no name on tonight's evening roster."
+
+msgid "교대 근무자와 이야기하기"
+msgstr "Talk to the evening staff"
+
+msgid "먼저 갈게요. 오늘도 수칙 꼭 지키세요."
+msgstr "I'm off. Stick to the rules tonight too."
+
+msgid "오늘은 보안검색대까지네요. 엑스레이는 가방 투입을 누르고 판독 화면을 보면 돼요."
+msgstr "Security today, then. For the X-ray, press Load Bag and watch the screening monitor."
+
+msgid "그럼… 게이트에서 봬요."
+msgstr "Well… see you at the gate."

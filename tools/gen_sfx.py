@@ -1654,6 +1654,56 @@ for _v in (1, 2, 3, 4):
     _make_metal(_v)
 
 
+# -----------------------------------------------------------------------------
+# the evening-shift colleague: talk you cannot make out through a face mask (the line
+# itself is the subtitle). The radio_chatter formant voice, a little higher, no radio.
+# -----------------------------------------------------------------------------
+def _make_murmur(v):
+    @reg("npc_murmur_%d" % v, 3.2, peak_db=-3.0, fade_out=0.15)
+    def _fn(rng):
+        n = ns(3.2)
+        f0 = [190.0] * n
+        av = zeros(n)
+        F = [[500.0] * n, [1500.0] * n, [2500.0] * n]
+        fric = zeros(n)
+        hi_p, lo_p = rng.uniform(200.0, 215.0), rng.uniform(165.0, 178.0)
+        t = 0.05
+        while t < 3.0:
+            dur = rng.uniform(0.09, 0.2)
+            base = hi_p + (lo_p - hi_p) * (t / 3.1)
+            accent = rng.choice((0.0, 0.0, 14.0, 24.0))
+            i0, i1 = ns(t), min(n, ns(t + dur))
+            m = i1 - i0
+            f0[i0:i1] = [base + accent * _sin(PI * j / m) for j in range(m)]
+            vow = rng.choice(VOWELS)
+            for k in range(3):
+                F[k][i0:i1] = [vow[k] * rng.uniform(1.04, 1.1)] * m
+            e = env_pts(m, [(0, 0), (0.015, 1.0), (dur - 0.03, 0.75), (dur, 0.0)])
+            av[i0:i1] = [max(a, b) for a, b in zip(av[i0:i1], e)]
+            if rng.random() < 0.25:                       # fricative before
+                cn = ns(rng.uniform(0.03, 0.06))
+                fx = bp(white(cn, rng), rng.uniform(2600.0, 4200.0), 1.5)
+                fx = mul(fx, env_pts(cn, [(0, 0), (cn / SR * 0.4, 1.0), (cn / SR, 0.0)]))
+                mix(fric, nrm(fx), max(0, i0 - cn + ns(0.01)), 0.35)
+            # mostly syllables run together; now and then a short pause between phrases
+            t += dur + (rng.uniform(0.01, 0.05) if rng.random() > 0.15 else rng.uniform(0.18, 0.3))
+        F = [lp1(lp1(fk, 25.0), 25.0) for fk in F]
+        jit = smooth_rand(n, 60, rng)
+        f0 = [f * (1.0 + 0.012 * j) for f, j in zip(lp1(f0, 20.0), jit)]
+        x = addv(mul(saw_var(f0), av), mul(white(n, rng), [0.06 * a for a in av]))
+        vt = zeros(n)
+        for k, (q, g) in enumerate(((5.0, 1.0), (8.0, 0.55), (10.0, 0.25))):
+            vt = addv(vt, svf(x, F[k], q, "bp"), g)
+        voice = addv(nrm(addv(vt, x, 0.03)), fric, 0.5)
+        voice = lp(lp(voice, 1900.0), 2400.0)             # muffled by the mask
+        return verb(voice, 0.18, 1.0, rt60=0.6, size=0.6, damp=4500.0)
+    return _fn
+
+
+for _v in (1, 2, 3):
+    _make_murmur(_v)
+
+
 # ------------------------------------------------------------------ doors & machines
 
 @reg("door_slide", 1.4, fade_out=0.08)

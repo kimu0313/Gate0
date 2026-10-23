@@ -14,12 +14,13 @@ signal radio_free
 signal action_seen(action: String, target: String)
 signal office_denied
 signal main_power_pulled
+signal npc_next                 # [E] on the colleague during a conversation
 
 const MAX_MISTAKES := 3
-## DAY 3 06:00 ending from the 3-day record: 정상 개장 needs this accuracy and no rule violations;
+## DAY 5 06:00 ending from the five-day record: 정상 개장 needs this accuracy and no rule violations;
 ## following a fake page or missing this many anomalies means 탑승.
 const EXIT_ACCURACY := 0.8
-const BOARD_MISSES := 4
+const BOARD_MISSES := 6
 const DIM_STEPS := [1.0, 0.7, 0.48]
 ## Correct detections make the radio a little stranger each time (1–2 lines a night).
 const RADIO_ODD := [
@@ -72,6 +73,7 @@ var _pa_slow_total := 0.0
 var _pa_slow_away := 0.0
 var _task_counter := 0
 var _figure: Node3D
+var npc: StaffNpc               # the evening-shift colleague during the handover (null once they have left)
 
 
 func setup(world_node: Node) -> void:
@@ -155,6 +157,84 @@ func radio(text: String, speaker := "소장", extra := 0.0) -> void:
 ## Radio line that does not block the caller.
 func radio_async(text: String, speaker := "소장") -> void:
 	radio(text, speaker)
+
+
+## The colleague's conversation, stepped through by the player: each [E] on them shows the next line as a
+## subtitle while they murmur through the mask (no voice). A line may hand something over: `give` is
+## awaited with that item id (lines = [[text, item or ""], ...]). Holds the radio's turn throughout, so the
+## manager never talks over them. Returns after the last line has been dismissed with [E].
+func npc_talk(lines: Array, give: Callable) -> void:
+	var n := npc
+	if n == null or not is_instance_valid(n):
+		return
+	while _radio_busy:
+		await radio_free
+	_radio_busy = true
+	n.on_talk = func(): npc_next.emit()
+	n.interactable.prompt = "교대 근무자와 이야기하기"
+	await npc_next
+	n.interactable.prompt = "계속 듣기"
+	for l in lines:
+		if dead or not is_instance_valid(n):
+			break
+		var text: String = l[0]
+		n.face(p.global_position)
+		Events.subtitle.emit("npc", "%s|%s" % [StaffNpc.NAME, text], 600.0)
+		n.murmur(clampf(0.6 + text.length() * 0.045, 1.0, 3.0))
+		if l.size() > 1 and str(l[1]) != "":
+			await give.call(str(l[1]))
+		await wait(0.35)   # a press that came with the previous line does not skip this one
+		await npc_next
+	ui.hud.hide_subtitle()
+	if is_instance_valid(n):
+		n.on_talk = Callable()
+		n.interactable.enabled = false
+	_radio_busy = false
+	radio_free.emit()
+
+
+## After the handover they clock out: walk off along the way out and are gone the moment nobody is
+## watching (or at the end of it). way: "office" (out of the office door) | "entrance" | "wing" (DAY 5).
+func npc_leave(way := "entrance") -> void:
+	var n := npc
+	if n == null or not is_instance_valid(n):
+		return
+	n.interactable.enabled = false
+	var route: Array
+	match way:
+		"office":
+			route = [Vector3(-23.4, 0, 0), Vector3(-20.4, 0, 0)]
+		"wing":
+			route = StaffNpc.route_to_wing(n.global_position)
+		_:
+			route = StaffNpc.route_to_entrance(n.global_position)
+			route.append(Vector3(0, 0, 16.8))
+	n.walk(route)
+	var e := 0.0
+	var door_opened := false
+	while is_instance_valid(n) and n.walking and e < 60.0:
+		await wait(0.25)
+		e += 0.25
+		if not is_instance_valid(n):
+			break
+		if not door_opened and way == "office" and n.global_position.x > -24.2:
+			door_opened = true
+			_open_door_briefly(t.doors.office, 2.0)
+		elif not door_opened and way == "entrance" and n.global_position.z > 11.0:
+			door_opened = true
+			_open_door_briefly(t.doors.entrance, 2.0)
+		if e > 2.0 and way != "office" and not n.is_seen():
+			break
+	if is_instance_valid(n):
+		n.queue_free()
+	if npc == n:
+		npc = null
+	if way == "entrance" and not door_opened:
+		Snd.play_at("distant_door", t.doors.entrance.global_position + Vector3(0, 1.2, 0), -6.0, 1.0, 40.0)
+
+
+func npc_near(dist := 7.0) -> bool:
+	return npc != null and is_instance_valid(npc) and npc.global_position.distance_to(p.global_position) <= dist
 
 
 func say(text: String, dur := 3.0) -> void:
@@ -572,7 +652,7 @@ func _process(delta: float) -> void:
 	_update_pressure(delta)
 
 
-## Several facilities started at once (DAY 3): whichever of them the player goes to look at becomes the active order.
+## Several facilities started at once (DAY 4): whichever of them the player goes to look at becomes the active order.
 func _maybe_switch_group() -> void:
 	if current == null or current.group == "" or current.state != "active" or current.observed or current.progress > 0.0:
 		return
@@ -713,7 +793,7 @@ func _update_pressure(delta: float) -> void:
 		start_ending("announce")
 		return
 	if night and ambient_enabled and running_event == "":
-		_ambient_timer -= delta * (1.0 + e * 2.0 + (Game.cycle - 1) * 0.4)
+		_ambient_timer -= delta * (1.0 + e * 2.0 + maxf(0.0, Game.cycle - 2) * 0.3)
 		if _ambient_timer <= 0.0:
 			_ambient_timer = randf_range(28.0, 55.0)
 			_ambient_scare(false)
@@ -726,6 +806,8 @@ func _ambient_scare(strong: bool) -> void:
 	if dead or ending_started:
 		return
 	var roll := randi() % (6 if strong else 5)
+	if Game.cycle == 1:
+		roll = [0, 1, 3][randi() % 3]   # the training shift: only far-off sounds of an empty terminal
 	var away := p.global_position - p.forward() * randf_range(10.0, 18.0)
 	away.y = 1.0
 	match roll:
@@ -910,14 +992,22 @@ func ev_slow_broadcast(lethal := false) -> void:
 		notify("방송이 끝났다.", "good")
 
 
-## 01:00: the last evening worker clocks out. Zones outside the night plan go dark, the rest run at half light.
-func ev_staff_leave(line := "먼저 들어갈게요. 수칙 꼭 지키세요.") -> void:
-	Game.set_flag("handover", false)
-	Snd.play_at("distant_door", t.doors.entrance.global_position + Vector3(0, 1.2, 0), -4.0, 1.0, 40.0)
-	await radio(line, "저녁 근무자")
+## 01:00: the rest of the evening staff have gone. The manager says so on the radio, a door closes far off,
+## and the terminal goes to night lighting. `after` (optional) is the next radio line.
+func ev_lights_down(line: String, after := "") -> void:
+	await radio(line)
 	if dead:
 		return
+	Snd.play_at("distant_door", t.doors.entrance.global_position + Vector3(0, 1.2, 0), -4.0, 1.0, 40.0)
 	await wait(1.0)
+	night_lights_down()
+	if after != "" and not dead:
+		await radio(after)
+
+
+## 01:00, the handover is over: zones outside the night plan go dark, the rest run at half light.
+func night_lights_down() -> void:
+	Game.set_flag("handover", false)
 	for zn in Game.night_lights.keys():
 		if t.zones.has(zn):
 			if Game.night_lights[zn]:
@@ -928,15 +1018,16 @@ func ev_staff_leave(line := "먼저 들어갈게요. 수칙 꼭 지키세요.") 
 	notify("구역 조명 절반이 자동으로 꺼졌다. 여기서부터는 혼자다.", "info")
 
 
-## 03:00 정기 방송 (수칙 p.9 ③): stand still until it ends. One word is not what it usually is.
-func ev_regular_broadcast(lethal := false) -> void:
+## 03:00 정기 방송 (수칙 p.9 ③): stand still until it ends. From DAY 2 one word is not what it usually is.
+func ev_regular_broadcast(lethal := false, odd := true) -> void:
 	if dead:
 		return
 	running_event = "broadcast"
 	event_tension = 0.7
-	Snd.pa_announce(["pa_regular_intro_ko", "pa_test_anom_b_ko", "pa_test_normal_en"], {"tag": "regular",
+	Snd.pa_announce(["pa_regular_intro_ko", "pa_test_anom_b_ko" if odd else "pa_test_normal_ko", "pa_test_normal_en"], {"tag": "regular",
 		"subs": ["현재 시각, 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.",
-			"안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 승객 외에는 출입을 삼가 주시기 바랍니다. 감사합니다.",
+			"안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 승객 외에는 출입을 삼가 주시기 바랍니다. 감사합니다." if odd
+				else "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다.",
 			"Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. Thank you."]})
 	await get_tree().process_frame
 	var moved := 0.0
@@ -953,11 +1044,13 @@ func ev_regular_broadcast(lethal := false) -> void:
 		return
 	if moved > 0.35:
 		_violation("03:00 정기 방송 중에 움직였습니다. (수칙 p.9 ③)", lethal)
-	else:
+	elif odd:
 		notify("방송이 끝났다. …'관계자'가 아니라 '승객'이라고 했던 것 같다.", "info")
+	else:
+		notify("방송이 끝났다. 수칙대로 끝까지 움직이지 않았다.", "good")
 
 
-## DAY 3: FLIGHT 000 boarding call while you stand at the gates. p.9 ③ says freeze during broadcasts;
+## DAY 5: FLIGHT 000 boarding call while you stand at the gates. p.9 ③ says freeze during broadcasts;
 ## the later 추록 p.8 ④ says leave the gate area at once — and p.1 5 says the later 추록 wins.
 func ev_boarding_call(lethal := false) -> void:
 	if dead:
@@ -1062,7 +1155,7 @@ func end_phase() -> void:
 	Game.start_phase(Game.cycle + 1, "night")
 
 
-## DAY 3 06:00: the three days' judgment record picks the ending (플레이 시나리오 · 엔딩).
+## DAY 5 06:00: the five days' judgment record picks the ending (플레이 시나리오 · 엔딩).
 ## Today's inspections are not in Game.stats yet (no morning report on the last day).
 func decide_ending() -> String:
 	var done := int(Game.stats.get("inspections", 0)) + inspections_done
@@ -1075,7 +1168,7 @@ func decide_ending() -> String:
 	return "announce"
 
 
-## Accuracy over the three days so far, in percent (for the finale's tablet line).
+## Accuracy over the shifts so far, in percent (for the finale's tablet line).
 func record_accuracy() -> int:
 	var done := int(Game.stats.get("inspections", 0)) + inspections_done
 	var right := int(Game.stats.get("judged_right", 0)) + int(night_log.get("correct", 0)) + int(night_log.get("cleared", 0))
@@ -1164,7 +1257,7 @@ func _on_keypad_code(code: String) -> void:
 
 
 func _on_syslog() -> void:
-	if Game.cycle >= 3:
+	if Game.cycle >= 5:
 		Game.add_clue("syslog")
 		var c: Dictionary = RulesDB.CLUES.syslog
 		await ui.read_doc(c.title, tr(str(c.body)) % Game.player_name, "mono")
@@ -1214,12 +1307,13 @@ func until_action(action: String, target := "") -> void:
 			return
 
 
-## Zones open one per day: DAY 1 체크인 · DAY 2 +수하물·보안검색 · DAY 3 +탑승동 통로·탑승 게이트.
+## Zones open one per day: DAY 1 체크인 · DAY 2 +수하물 · DAY 3 +보안검색 · DAY 4 +탑승동 통로·탑승 게이트.
 func set_shutters_for_cycle(c: int) -> void:
 	if c >= 2:
 		t.shutters.baggage.open(true)
-		t.shutters.security.open(true)
 	if c >= 3:
+		t.shutters.security.open(true)
+	if c >= 4:
 		t.shutters.corridor.open(true)
 		t.shutters.gates.open(true)
 
@@ -1263,7 +1357,7 @@ func run_inspections(plan: Array, beats := {}, custom := {}) -> void:
 
 ## The shift clock follows the inspections (01:00 handover over, 03:00 broadcast, 05:30 last check).
 func _advance_clock() -> void:
-	var target := NightPlan.clock_after(inspections_done)
+	var target := NightPlan.clock_after(inspections_done, Game.cycle)
 	if target > Game.clock_minutes:
 		Game.clock_minutes = target
 		Events.clock_changed.emit(target)

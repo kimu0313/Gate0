@@ -159,17 +159,17 @@ const DATA := {
 	},
 }
 
-## Anomaly pools per facility and the first day they may appear on (3-day schedule):
-## DAY 1 체크인 (조명·FIDS·방송) → DAY 2 +수하물·X-ray → DAY 3 +무빙워크·탑승 게이트.
+## Anomaly pools per facility and the first day they may appear on (5-day schedule):
+## DAY 1 is the training shift (no anomalies) → DAY 2 체크인 + 수하물 → DAY 3 +X-ray → DAY 4 +무빙워크·탑승 게이트.
 ## Story/autonomous anomalies (fids_gate04, pa_auto, bag_name, xray_mybag, auto_run) are placed by the day plans.
 const POOLS := {
-	"lights": [["light_flicker", 1], ["light_dark", 1], ["light_red", 2]],
-	"fids": [["fids_extra", 1], ["fids_changed", 1], ["fids_clock", 1]],
-	"pa": [["pa_word", 1], ["pa_extra", 1], ["pa_slow", 2]],
-	"baggage": [["bag_extra", 2], ["bag_reverse", 2], ["bag_nostop", 2]],
-	"xray": [["xray_figure", 2], ["xray_heart", 2]],
-	"walkway": [["walk_reverse", 3], ["walk_fast", 3]],
-	"gate": [["gate_open", 3], ["gate_seats", 3], ["gate_passenger", 3]],
+	"lights": [["light_flicker", 2], ["light_dark", 2], ["light_red", 3]],
+	"fids": [["fids_extra", 2], ["fids_changed", 2], ["fids_clock", 2]],
+	"pa": [["pa_word", 2], ["pa_extra", 2], ["pa_slow", 4]],
+	"baggage": [["bag_extra", 2], ["bag_reverse", 2], ["bag_nostop", 3]],
+	"xray": [["xray_figure", 3], ["xray_heart", 3]],
+	"walkway": [["walk_reverse", 4], ["walk_fast", 4]],
+	"gate": [["gate_open", 4], ["gate_seats", 4], ["gate_passenger", 4]],
 }
 ## Easy anomalies are obvious at a glance (early in the dawn); the rest need a careful comparison (late).
 const EASY := ["light_flicker", "light_dark", "light_red", "fids_clock", "bag_reverse", "bag_nostop", "xray_heart",

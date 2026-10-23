@@ -284,7 +284,7 @@ func _run_world() -> void:
 		if c != ui._fade:
 			c.queue_free()
 	# prologue
-	ui.typewriter(["서해국제공항 정식 개장 사흘 전.", "", "구인 사이트의 단기 계약직 공고.", "야간 수당 높음. 정규직 전환 조건."], 0.03)
+	ui.typewriter(["서해국제공항 정식 개장 나흘 전.", "", "구인 사이트의 단기 계약직 공고.", "야간 수당 높음. 정규직 전환 조건."], 0.03)
 	await _wait(2.4)
 	await _shot("92_prologue")
 	get_tree().quit()

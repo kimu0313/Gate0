@@ -95,6 +95,9 @@ func _draw() -> void:
 				if animated:
 					hh *= 0.55 + 0.45 * absf(sin(_t * 7.0 + i * 1.3))
 				draw_line(Vector2(5 + i * 6.5, 25), Vector2(5 + i * 6.5, 25 - hh * 1.4), c, w + 0.8)
+		"person":
+			draw_arc(Vector2(15, 9), 5.0, 0, TAU, 24, c, w, true)
+			draw_arc(Vector2(15, 28), 10.5, PI * 1.1, PI * 1.9, 20, c, w, true)
 		"speaker":
 			draw_colored_polygon(PackedVector2Array([Vector2(3, 11), Vector2(9, 11), Vector2(16, 5), Vector2(16, 25), Vector2(9, 19), Vector2(3, 19)]), c)
 			var k := 1.0 if not animated else 0.5 + 0.5 * absf(sin(_t * 5.0))

@@ -1,114 +1,94 @@
 extends PhaseScript
-## DAY 3 — 10/23, 개장일 새벽 · 마지막 근무. 탑승동 통로 + 탑승 게이트 + Gate 0.
-## 출근: 탑승동 출입문이 직원 카드를 "PASSENGER ACCESS ONLY"로 거부한다 → 보안검색대 승객 통로로 돌아서 들어간다.
-## 새벽 전반 (점검 4–6): 시설 셋이 동시에 혼자 켜진다. 어느 것부터 볼지는 플레이어가 정한다. 무전은 점점 "승객분".
-## 새벽 후반 (점검 12 직후): 수칙끼리 충돌 — 방송 중에는 움직이지 마라(p.9 ③) vs 탑승 안내가 나오면 즉시
-## 게이트를 떠나라(p.8 ④, 더 늦은 추록 → p.1 5에 따라 우선).
-## 06:00 직전 Gate 0으로 가는 통로가 처음 열리고, 3일간의 판정 기록이 엔딩을 고른다:
-##   정상 개장 — EXIT 표시가 켜지고 비상구로 나간다 · 탑승 — BOARD 표시를 따라 Gate 0으로 · 안내방송 — 당신의 목소리.
+## DAY 3 — 10/21 · +보안검색대. 교대 근무자가 X-ray 옆에서 p.7 추록과 검색대 옆 사물함 열쇠를 건네고 퇴근한다.
+## 그 뒤 바인더에는 받은 적 없는 첫 가짜 수칙(f7: 붉은 도장 없는 손글씨 7페이지)이 끼워져 있고, p.3은 젖어 번졌다.
+## 사물함에서 사라진 정비사의 업무일지를 찾는다.
+## 새벽 전반 (점검 6): 무전 돌발 호출 — 빈 벨트 위에 캐리어 하나, 이름표에 당신의 이름. 하루의 가장 큰 판정.
+## 새벽 후반 (점검 11): X-ray 판독 화면에 당신의 가방이 승객 수하물로 찍힌다.
+## 마지막 장면: 업무일지 마지막 줄 — "수칙 7번은 내가 쓴 게 아니다."
 
-const GATE_FRONT_Z := -92.0
 
-var finale := false
-var ending := ""
-var _reader: CardReader
+const POST := Vector3(-2.0, 0, -18.4)   # between the X-ray lanes, by the lane 1 monitor desk
+const TALK := [
+	["오늘은 보안검색대까지네요. 엑스레이는 가방 투입을 누르고 판독 화면을 보면 돼요.", ""],
+	["7페이지 추록이요. 정상 판독 화면은 노트북, 물병, 열쇠, 케이블. 그게 다예요.", "p7"],
+	["그리고 이거, 검색대 옆 사물함 열쇠. 전에 있던 정비사분 물건이 남아 있대요.", "key"],
+	["어느 날부터 안 나오셨대요. …먼저 들어갈게요. 사물함 일지는, 끝까지 읽지 마요.", ""],
+]
 
 
 func title_lines() -> Array:
-	return ["DAY 3", "10월 23일 · 00:00 · 마지막 근무"]
+	return ["DAY 3", "10월 21일 · 00:00 · 보안검색 구역"]
 
 
 func setup() -> void:
-	# the boarding wing stays shut until the airport lets you in — as a passenger
-	d.set_shutters_for_cycle(2)
-	d.t.shutters.gates.open(true)
+	d.set_shutters_for_cycle(3)
 	d.clock_speed = 0.1
-	Game.add_day_pages(3)
 	place_documents()
-	_reader = CardReader.create(d.t, Vector3(4.7, 1.25, -27.78), 0.0)
-	_reader.swiped.connect(_on_wing_reader)
-	for x in [2.0, -8.0]:   # either walk-through detector is a passenger lane
-		var lane := Geo.area(d.t, Vector3(x, 1.0, -21.0), Vector3(1.4, 2.0, 1.0))
-		lane.body_entered.connect(_on_passenger_lane)
-	d.t.triggers.emergency_out.body_entered.connect(func(b: Node3D):
-		if b.is_in_group("player") and finale and ending == "exit":
-			d.start_ending("exit"))
+	spawn_worker(POST, StaffNpc.yaw_for(Vector3(-1.5, 0, -2.6)))
 
 
 func run() -> void:
-	if OS.get_cmdline_user_args().has("--finale"):   # debug: skip the shift, straight to 05:50 at Gate 0
-		Game.set_flag("passenger_lane")
-		d.t.shutters.corridor.open(true)
-		await d.wait(1.0)
-		await _finale()
-		return
 	handover_ambience()
-	await night_briefing("마지막 근무네요. 오늘은 탑승동까지 전부예요.")
-	d.notify("바인더에 새 페이지가 끼워져 있다. 같은 번호가 두 장인 페이지가 또 있다.", "info")
-	var g := d.goal("탑승동 출입", "보안검색 구역 남쪽 [b]탑승동 출입문[/b] 옆 카드 리더에 출입카드를 태그하십시오.", "security")
-	await d.until(func(): return Game.flag("card_denied"))
+	await night_briefing("셋째 날이에요. 오늘은 보안검색대까지 봐야 해요. 교대 근무자가 X-ray 쪽에 있어요.")
+	await colleague_handover("보안검색 구역 [b]X-ray 1번[/b] 옆의 저녁 근무자에게 [E]로 인수인계를 받으십시오.", "security", TALK, _give)
+	if d.dead:
+		return
+	# once they are gone: a page nobody handed over, and p.3 soaked through
+	await d.wait(2.0)
+	Game.add_day_pages(3, "fake")
+	d.notify("바인더를 펼치자, 받은 적 없는 7페이지가 한 장 더 끼워져 있다. 3페이지는 젖어서 글자가 번져 있다.", "info")
+	await d.radio("새 페이지들 확인해 두세요. …7페이지가 두 장이네요? 한 장은 손글씨인데.")
+	var g := d.goal("보안검색대 옆 사물함 확인", "보안검색 구역 동쪽 벽 [b]직원 사물함[/b]에 전 정비 담당자의 물건이 남아 있습니다. 확인하십시오.", "security")
+	d.radio_async("검색대 옆 사물함에 전 정비 담당자 짐이 남아 있대요. 한번 봐 줄래요?")
+	await d.until(func(): return Game.has_clue("log2"))
 	d.complete_goal(g)
-	d.say("…카드가 안 찍힌다.", 2.5)
-	await d.radio("안 열려요? …PASSENGER ACCESS ONLY? 그럴 리가 없는데.")
-	await d.radio("일단 검색대 승객 통로로 돌아서 들어가 봐요. 거긴 열려 있을 거예요.")
-	var g2 := d.goal("승객 통로로 돌아서 들어가기", "보안검색대의 [b]금속 탐지 게이트[/b]를 지나 탑승동으로 들어가십시오.", "security")
-	await d.until(func(): return Game.flag("passenger_lane"))
-	d.complete_goal(g2)
-	await d.radio("…열렸네요. 그럼 시작하죠, 승객분. …아, 점검원님.")
+	await d.radio("…정비 담당자요? 지난주에 그만뒀다던데. 연락이 안 된대요.")
 	var plan := NightPlan.build(3)
-	await d.run_inspections(plan, {3: _staff_leave, 10: _broadcast, 12: _boarding_call},
-		{4: _all_at_once, 12: _gate_before_call})
+	await d.run_inspections(plan, {3: _lights_down, 6: _after_bag, 10: _broadcast}, {6: _name_bag_call, 11: _xray_mybag})
 	if d.dead:
 		return
-	await _finale()
+	await d.radio("…오늘도 끝났네요. 퇴근 찍어요.")
+	await punch_out()
 
 
-func _on_wing_reader(r: CardReader) -> void:
-	if Game.flag("passenger_lane"):
-		r.show_result(true, "PASSENGER")
-		return
-	r.show_result(false, "PASSENGER\nACCESS ONLY")
-	d.ui.postfx.pulse_glitch(0.4)
-	Game.set_flag("card_denied")
+func _give(item: String) -> void:
+	match item:
+		"p7":
+			hand_pages(["p7"], "근무 수칙 p.7 보안검색 X-ray (추록) 수령 — 바인더에 끼움")
+		"key":
+			d.npc.present("key", 3.0)
+			Game.set_flag("got_locker_key")
+			Snd.play("button_press", -6.0, 1.3)
+			d.notify("사물함 열쇠 수령 — 보안검색 구역 동쪽 벽 직원 사물함", "good")
+			var e: Array = DOCS["log2"]
+			d.spawn_doc("log2", e[0], e[1], e[2])
 
 
-## The walk-through detector is the passenger way in: it lets you through and the wing opens.
-func _on_passenger_lane(body: Node3D) -> void:
-	if not body.is_in_group("player") or not Game.flag("card_denied") or Game.flag("passenger_lane"):
-		return
-	Game.set_flag("passenger_lane")
-	Game.set_flag("passenger")
-	Snd.play("pa_chime_wrong", -10.0, 1.1, "SFX")
-	d.notify("검색대 화면: 탑승객 확인 · PASSENGER — FLIGHT 000", "alert")
-	d.office_mode = "passenger"
-	d.ui.tablet.boarding_mode = true
-	d.t.shutters.corridor.open()
-	_reader.show_result(true, "PASSENGER")
+func _lights_down() -> void:
+	await d.ev_lights_down("01시예요. 저녁 근무자들 다 나갔어요.")
 
 
-func _staff_leave() -> void:
-	await d.ev_staff_leave("…승객분, 먼저 들어갈게요. 수칙 꼭 지키세요.")
-	if d.dead:
-		return
-	await d.radio("이제 혼자예요, 승객분. …점검원님.")
+## 새벽 전반 · 돌발 호출: an empty conveyor, one suitcase going round. Its tag has your name on it.
+func _name_bag_call(_slot: Dictionary) -> Task:
+	await d.radio("수하물 쪽 벨트 돌아가는 소리 나는데, 확인 좀 해 주세요.")
+	var belt: BaggageBelt = d.t.facility("baggage")
+	d.t.breaker.restore_for(belt)   # it runs by itself — even if its circuit was cut for an earlier response
+	belt.reset_for_inspection()
+	belt.set_anomaly("bag_name")
+	belt.start(false)
+	Snd.play_at("power_up", belt.global_position, -6.0, 0.8, 18.0)
+	return d.inspect("baggage", "⚠ 수하물 B-03 — 혼자 도는 벨트",
+		"아무도 가동하지 않은 [b]B-03[/b]이 돌고 있습니다. 현장에서 벨트 위를 끝까지 확인하고 보고하십시오. (수칙 p.5)",
+		"bag_name", {"urgent": true, "slot": 6})
 
 
-## 새벽 전반: three facilities switch on by themselves at once; which one to look at first is up to you.
-func _all_at_once(_slot: Dictionary) -> Array:
-	await d.radio("…잠깐만요, 승객분. 지금 세 군데서 동시에 신호가 들어와요.")
-	var gate_id: String = NightPlan.GATES[randi() % NightPlan.GATES.size()]
-	var made: Array = []
-	for e in [["pa", "pa_auto"], ["walkway", "auto_run"], [gate_id, "gate_open"]]:
-		var f := d.t.facility(e[0])
-		d.t.breaker.restore_for(f)
-		f.set_anomaly(e[1])
-		if e[1] == "gate_open":
-			Snd.play_at("door_heavy", f.focus_position(), -4.0, 0.8, 30.0)
-		var txt: Array = NightPlan.AUTO_TEXT[e[0]]
-		made.append(d.inspect(e[0], txt[0], txt[1], e[1], {"urgent": true, "group": "day3_auto", "slot": 4 + made.size()}))
-	d.event_tension = 1.0
-	d.notify("시설 세 곳이 동시에 혼자 켜졌다. 어느 것부터 볼지는 당신이 정한다.", "alert")
-	return made
+func _after_bag() -> void:
+	await d.radio("…가방이요? 이 시간에 수하물이 나올 리가 없는데. 이름표는… 아니, 말하지 마요.")
+
+
+## 새벽 후반: the X-ray scans your bag as a passenger's (수칙 p.7 ③ vs the fake handwritten f7 ③).
+func _xray_mybag(slot: Dictionary) -> Task:
+	return d.inspect("xray", slot.title, slot.detail, "xray_mybag", {"slot": 11})
 
 
 func _broadcast() -> void:
@@ -116,88 +96,13 @@ func _broadcast() -> void:
 	await d.ev_regular_broadcast(false)
 
 
-## 점검 12 is at a gate — so the boarding call finds you standing in the gate area.
-func _gate_before_call(slot: Dictionary) -> Task:
-	return d.inspect(slot.fac, slot.title, slot.detail, "", {"slot": 12})
-
-
-func _boarding_call() -> void:
-	await d.wait(1.2)
-	await d.ev_boarding_call(false)
-	if d.dead:
-		return
-	await d.radio("…승객분, 방금 방송 들었어요? 다들 기다리고 있대요.")
-
-
-# --- 06:00 · Gate 0 -------------------------------------------------------------------------------
-func _finale() -> void:
-	finale = true
-	d.jump_clock(5 * 60 + 50)
-	d.t.facility("fids").set_story("final", ["SH 000", "GATE 0", "BOARDING"])
-	Snd.play("sub_boom", 0.0, 0.8, "SFX")
-	d.p.add_shake(0.4)
-	d.t.reveal_gate0()   # builds Gate 0 and its jet bridge trigger
-	d.t.triggers.board_door.body_entered.connect(func(b: Node3D):
-		if b.is_in_group("player") and finale and ending == "board":
-			d.start_ending("board"))
-	var g0: BoardingGate = d.t.gates["0"]
-	g0._set_status("FLIGHT 000\nBOARDING", Color(1.0, 0.3, 0.25))
-	d.t.set_zone_light("gates", true)
-	await d.radio("05시 50분이에요, 승객분. 0번 게이트로 가는 통로가 열렸대요. 가 보세요.")
-	var g := d.goal("0번 게이트 앞으로", "탑승 게이트 구역 북쪽, 처음 보는 [b]0번 게이트[/b] 앞으로 가십시오.", "gates")
-	await d.until(func(): return d.p.global_position.z < GATE_FRONT_Z and absf(d.p.global_position.x) < 9.0)
-	d.complete_goal(g)
-	if d.dead or d.ending_started:
-		return
-	Game.clock_minutes = 6 * 60
-	Events.clock_changed.emit(Game.clock_minutes)
-	ending = d.decide_ending()
-	d.notify(tr("06:00 · 3일간의 판정 기록 — 정확도 %d%% · 놓친 이상 %d · 수칙 위반 %d · 따른 가짜 수칙 %d") % [d.record_accuracy(),
-		int(Game.stats.get("missed", 0)), int(Game.stats.get("violations", 0)), int(Game.stats.get("fake_followed", 0))], "info")
-	await d.wait(2.0)
-	match ending:
-		"exit":
-			await _exit_lights()
-		"board":
-			await _board_sign()
-		_:
-			await _your_voice()
-
-
-## 정상 개장: the EXIT signs light up and the chained emergency door opens.
-func _exit_lights() -> void:
-	Game.set_flag("main_power_cut")   # ShiftDirector._on_exit_door opens the door once this is set
-	d.t.emergency_light_root.visible = true
-	for i in 3:
-		var ch := d.t.get_node_or_null("Chain%d" % i)
-		if ch:
-			ch.visible = false
-	d.t.exit_door_use.prompt = "비상구로 나가기"
-	d.t.doors.emergency.open()
-	Snd.play("beep_ok", -4.0, 0.9)
-	d.notify("체크인 홀 쪽에서 초록 EXIT 표시에 불이 들어왔다.", "good")
-	d.objective("EXIT 표시를 따라 나가십시오. (체크인 홀 남측 비상구)")
-
-
-## 탑승: only one sign is lit — BOARD, into Gate 0.
-func _board_sign() -> void:
-	var g0: BoardingGate = d.t.gates["0"]
-	g0._set_status("BOARD  →", Geo.SIGN_BLUE)
-	g0.open_door(true)
-	d.notify("0번 게이트 위에 BOARD 표시가 켜졌다. 다른 표시는 모두 꺼져 있다.", "alert")
-	d.objective("BOARD 표시를 따라가십시오.")
-	while finale and not d.dead and not d.ending_started:
-		await d.pa(["pa_final_call_ko", "pa_final_call_en"], {"wrong": true, "tag": "final",
-			"subs": ["영편 최종 탑승 안내입니다. 아직 탑승하지 않으신 승객께서는, 지금 즉시 영번 게이트로 오시기 바랍니다.",
-				"This is the final boarding call for flight zero. Remaining passenger, please proceed to gate zero immediately."]})
-		await d.wait(18.0)
-
-
-## 세 번째 엔딩: the PA comes on — in your own voice.
-func _your_voice() -> void:
-	d.p.controls_enabled = false
-	d.notify("안내 데스크 마이크에 불이 들어왔다. 터미널에 울리는 목소리는 — 당신의 것이다.", "alert")
-	await d.pa(["name_call"], {"wrong": true, "pitch": 0.94, "no_end": true,
-		"subs": [tr("%s 승객님. %s 승객님. 영번 게이트로 오시기 바랍니다. 기다리고 있습니다.") % [Game.player_name, Game.player_name]]})
-	await d.wait(1.0)
-	d.start_ending("announce")
+## The work log's last page — a line that was not there when you first opened it.
+func end_cut() -> void:
+	await d.ui.fade_to(1.0, 0.8)
+	Game.add_clue("log2_last")
+	await d.ui.typewriter([
+		"사물함에서 가져온 업무일지.",
+		"처음 펼쳤을 때는 분명 비어 있던 마지막 장.",
+		"",
+		"\"수칙 7번은 내가 쓴 게 아니다.\"",
+	])

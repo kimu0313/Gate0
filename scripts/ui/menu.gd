@@ -327,7 +327,7 @@ func _build_name_panel() -> void:
 func _build_chapter_panel() -> void:
 	_chapter_panel = PanelContainer.new()
 	_chapter_panel.add_theme_stylebox_override("panel", UiKit.sign_panel())
-	UiKit.center(_chapter_panel, Vector2(960, 470))
+	UiKit.center(_chapter_panel, Vector2(960, 594))
 	_chapter_panel.visible = false
 	add_child(_chapter_panel)
 	var v := VBoxContainer.new()
@@ -343,9 +343,11 @@ func _build_chapter_panel() -> void:
 	gap.custom_minimum_size = Vector2(0, 8)
 	v.add_child(gap)
 	var items := [
-		[1, "night", "D1", "DAY 1 — 체크인 카운터 · FLIGHT 000"],
-		[2, "night", "D2", "DAY 2 — 수하물 · 보안검색 · 당신의 가방"],
-		[3, "night", "D3", "DAY 3 — 탑승 게이트 · GATE 0"],
+		[1, "night", "D1", "DAY 1 — 첫 근무 · 인수인계"],
+		[2, "night", "D2", "DAY 2 — 수하물 수취대 · FLIGHT 000"],
+		[3, "night", "D3", "DAY 3 — 보안검색 · 당신의 가방"],
+		[4, "night", "D4", "DAY 4 — 탑승동 · PASSENGER ACCESS ONLY"],
+		[5, "night", "D5", "DAY 5 — 개장일 · GATE 0"],
 	]
 	var grid := GridContainer.new()
 	grid.columns = 1

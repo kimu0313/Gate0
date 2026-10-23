@@ -1,17 +1,18 @@
 class_name PhaseScript
 extends RefCounted
-## Base for the per-shift story scripts (night1.gd … night3.gd = DAY 1–3, each one dawn shift 00:00–06:00).
+## Base for the per-shift story scripts (night1.gd … night5.gd = DAY 1–5, each one dawn shift 00:00–06:00).
 ## setup() configures the world before the player gains control; run() is the scripted coroutine.
-## Shared helpers below place the documents and pickups that recur across days.
+## Shared helpers below place the documents and pickups that recur across days, and the evening-shift
+## colleague (StaffNpc) who hands each shift over in person.
 
 const DOCS := {
 	# clue id: [position, rotation, prompt, first day it can be found]
 	"log1": [Vector3(-27.4, 0.77, 5.3), 0.2, "낡은 업무일지 읽기", 1],
 	"memo_worker": [Vector3(-12.0, 1.1, 2.5), 0.4, "구겨진 메모 읽기", 1],
-	"log2": [Vector3(11.18, 1.02, -24.6), PI / 2, "사물함 속 업무일지 읽기", 2],
-	"newspaper": [Vector3(8.4, 0.49, -87.2), -0.3, "의자 위 신문 조각 읽기", 3],
-	"log3": [Vector3(20.8, 0.49, -94.6), 0.6, "의자 위에 놓인 업무일지 읽기", 3],
-	"timecard": [Vector3(-27.7, 0.93, -5.5), 0.0, "오래된 근태 카드 읽기", 3],
+	"log2": [Vector3(11.18, 1.02, -24.6), PI / 2, "사물함 속 업무일지 읽기", 3],
+	"newspaper": [Vector3(8.4, 0.49, -87.2), -0.3, "의자 위 신문 조각 읽기", 4],
+	"log3": [Vector3(20.8, 0.49, -94.6), 0.6, "의자 위에 놓인 업무일지 읽기", 4],
+	"timecard": [Vector3(-27.7, 0.93, -5.5), 0.0, "오래된 근태 카드 읽기", 5],
 }
 const LOCKER_POS := Vector3(11.55, 0.0, -24.6)
 
@@ -45,14 +46,17 @@ func title_lines() -> Array:
 ## Every clue that can already be found by this day and was not picked up yet.
 func place_documents() -> void:
 	Geo.box(d.t, Vector3(-27.4, 0.38, 5.35), Vector3(0.7, 0.76, 0.5), Mats.get_mat("wood"))
-	if Game.cycle >= 2:
+	if Game.cycle >= 3:
 		# staff locker beside the security checkpoint (the missing mechanic's work log)
 		Geo.box(d.t, LOCKER_POS + Vector3(0, 0.95, 0), Vector3(0.45, 1.9, 0.9), Mats.get_mat("metal_dark"))
 		Geo.box(d.t, LOCKER_POS + Vector3(-0.3, 0.99, 0), Vector3(0.24, 0.03, 0.8), Mats.get_mat("metal"), false)
-	if Game.cycle >= 3:
+	if Game.cycle >= 5:
 		Geo.box(d.t, Vector3(-27.7, 0.9, -5.6), Vector3(0.5, 0.04, 0.3), Mats.get_mat("metal_dark"), false)
 	for id in DOCS.keys():
 		var e: Array = DOCS[id]
+		# DAY 3: the locker stays shut until the colleague hands over its key (night3.gd places the log then)
+		if id == "log2" and Game.cycle == 3 and not Game.flag("got_locker_key"):
+			continue
 		if Game.cycle >= int(e[3]):
 			d.spawn_doc(id, e[0], e[1], e[2])
 	if Game.cycle >= 2 and not Game.has_clue("plaque"):
@@ -64,19 +68,6 @@ func place_documents() -> void:
 			Game.add_clue("plaque")
 			var c: Dictionary = RulesDB.CLUES.plaque
 			d.ui.read_doc(c.title, c.body, "serif"))
-
-
-## DAY 1: the rule binder waits on the office desk (later days start with it in hand).
-func binder_pickup() -> void:
-	if Game.binder_pages.has("p0"):
-		Game.set_flag("got_binder")
-		return
-	var pk := Pickup.create(d.t, Vector3(-33.0, 0.77, 0.3), PI / 2, "binder", "근무 수칙 바인더 챙기기", "binder")
-	pk.picked.connect(func(_p):
-		Game.add_day_pages(1)
-		Game.set_flag("got_binder")
-		Snd.play("binder_open", -4.0)
-		Events.notify.emit("근무 수칙 바인더 획득 — [B]로 펼치기", "good"))
 
 
 ## The usual end of a shift: a clock-out order, the time clock, then the morning report.
@@ -107,8 +98,39 @@ func handover_ambience() -> void:
 			1:
 				Snd.play_at("distant_door", at, -10.0, randf_range(0.9, 1.1), 30.0)
 			_:
+				# someone talking at the far end of the hall — too far to make out a word
 				chat = chat % 3 + 1
-				Snd.play_at("staff_chat_%d" % chat, at, -12.0, randf_range(0.92, 1.04), 24.0)
+				Snd.play_at("npc_murmur_%d" % chat, at, -10.0, randf_range(0.82, 1.1), 18.0)
+
+
+## The evening-shift colleague, waiting at today's post; they wave you over when you first see them.
+func spawn_worker(pos: Vector3, rot_y: float) -> StaffNpc:
+	var n := StaffNpc.create(d.t, pos, rot_y)
+	n.director = d
+	n.player = d.p
+	n.beckon = true
+	d.npc = n
+	return n
+
+
+## Every shift opens with the colleague's handover: a work order to go and talk to them, the talk itself
+## (stepped through with [E]; the day's items change hands on the way — `give` is called with each item id),
+## then they clock out and walk off (`way`, see ShiftDirector.npc_leave) while you get to work.
+func colleague_handover(detail: String, location: String, lines: Array, give: Callable, way := "entrance") -> void:
+	var g := d.goal("교대 근무자와 대화하기", detail, location)
+	await d.npc_talk(lines, give)
+	d.complete_goal(g)
+	d.npc_leave(way)
+
+
+## The colleague hands over rule pages: into the binder they go.
+func hand_pages(ids: Array, note: String) -> void:
+	if d.npc:
+		d.npc.present("page", 3.0)
+	for id in ids:
+		Game.add_binder_page(id)
+	Snd.play("page_flip", -4.0)
+	d.notify(note, "good")
 
 
 ## Standard opening of a shift: the first radio line, then the control guide.

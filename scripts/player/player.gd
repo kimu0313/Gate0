@@ -35,10 +35,14 @@ var still_time := 0.0           # continuous seconds standing still
 var _pitch := 0.0
 var _yaw := 0.0
 var _bob_t := 0.0
-var _step_dist := 0.0
 var _shake := 0.0
 var _shake_t := 0.0
 var _feet: AudioStreamPlayer3D
+var _feet_pool: Array[AudioStreamPlayer3D] = []
+var _feet_i := 0
+## Level of each step set by surface: the room-recorded steps carry long tails, so their strike sits lower than the
+## dry steps they replaced (most of all the metal treads).
+const STEP_DB := {"tile": 2.0, "tileroom": 3.0, "carpet": 0.0, "metal": 4.0}
 var _breath: AudioStreamPlayer
 var _fl_target := Basis()
 var _forced_look: Tween
@@ -78,11 +82,18 @@ func _ready() -> void:
 	flashlight.shadow_enabled = true
 	flashlight.light_volumetric_fog_energy = 0.5
 	flashlight.visible = false
-	_feet = AudioStreamPlayer3D.new()
-	add_child(_feet)
-	_feet.position = Vector3(0, 0.05, 0)
-	_feet.unit_size = 4.0
-	_feet.bus = "SFX"
+	# footsteps carry their own room (recorded in the space), so they skip the engine reverb zones; three players
+	# take turns so each step's echo rings out under the next one
+	for i in 3:
+		var f := AudioStreamPlayer3D.new()
+		f.unit_size = 4.0
+		Snd.setup_3d(f, false)
+		f.area_mask = 0
+		add_child(f)
+		f.position = Vector3(0, 0.05, 0)
+		f.bus = "SFX"
+		_feet_pool.append(f)
+	_feet = _feet_pool[0]
 	_breath = AudioStreamPlayer.new()
 	_breath.bus = "SFX"
 	add_child(_breath)
@@ -139,7 +150,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func toggle_flashlight(force := -1) -> void:
 	flashlight_on = not flashlight_on if force < 0 else force == 1
 	flashlight.visible = flashlight_on
-	flashlight.light_energy = 2.6 if flashlight_on else 0.0
+	flashlight.light_energy = 1.7 if flashlight_on else 0.0      # bright enough in the dark, does not burn out signs up close
 	Snd.play("button_press", -10.0, 1.6, "SFX")
 
 
@@ -194,11 +205,11 @@ func _physics_process(delta: float) -> void:
 	# --- head bob + footsteps ---
 	var hspeed := Vector2(move_vel.x, move_vel.z).length()
 	if is_on_floor() and hspeed > 0.4:
-		_bob_t += delta * hspeed * 2.3
-		_step_dist += hspeed * delta
-		var stride := 1.8 if sprinting else 1.5
-		if _step_dist >= stride * 0.5:
-			_step_dist = 0.0
+		# one head dip per step (bob = -|sin|, lowest at PI/2 + k*PI) and the step sounds at the dip, where the heel
+		# lands: ~1.9 steps/s walking, ~3.1 sprinting
+		var before := floori(_bob_t / PI + 0.5)
+		_bob_t += delta * hspeed * (2.2 if sprinting else 2.65)
+		if floori(_bob_t / PI + 0.5) > before:
 			_footstep(sprinting)
 	else:
 		_bob_t = lerpf(_bob_t, roundf(_bob_t / PI) * PI, delta * 4.0)
@@ -255,16 +266,18 @@ func _footstep(sprinting: bool) -> void:
 				surface = "tile" if absf(p.x) < 3.0 else "carpet"
 			"bridge0":
 				surface = "carpet"
-			"storage", "maint":
-				surface = "tile"
+			"office", "storage", "maint":
+				surface = "tileroom"
 	if conveyor_vel.length() > 0.01 or _on_metal():
 		surface = "metal"
-	var s := Snd.stream(Snd.random_variant("footstep_" + surface, 4))
+	var s := Snd.stream(Snd.variant("footstep_" + surface))
 	if s == null:
 		return
+	_feet_i = (_feet_i + 1) % _feet_pool.size()
+	_feet = _feet_pool[_feet_i]
 	_feet.stream = s
-	_feet.volume_db = (-6.0 if sprinting else -11.0) + randf_range(-1.5, 1.0)
-	_feet.pitch_scale = randf_range(0.92, 1.08)
+	_feet.volume_db = (-4.0 if sprinting else -8.0) + STEP_DB.get(surface, 0.0) + randf_range(-1.5, 1.0)
+	_feet.pitch_scale = randf_range(0.95, 1.05)
 	_feet.play()
 
 

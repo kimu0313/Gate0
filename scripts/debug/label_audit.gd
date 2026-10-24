@@ -6,6 +6,7 @@ extends Node
 
 const DEPTH := 0.03        # how far behind the text the backing is looked for
 const SLACK := 0.01        # metres a corner may overhang before it counts
+const MARGIN_SLACK := 0.004   # the audit allows this much under Geo.label_margin before a label counts as tight
 
 
 func _ready() -> void:
@@ -18,6 +19,13 @@ func _ready() -> void:
 			meshes.append(mi)
 	var checked := 0
 	var bad := 0
+	var clipped := 0
+	var tight := 0
+	var solid: Array = []      # [world AABB, mesh] of everything chunky enough to bury text
+	for mi in meshes:
+		var wb := mi.global_transform * mi.get_aabb()
+		if wb.size.x >= 0.05 and wb.size.y >= 0.05 and wb.size.z >= 0.05:
+			solid.append([wb, mi])
 	for n in get_tree().root.find_children("*", "Label3D", true, false):
 		var l := n as Label3D
 		if not l.is_visible_in_tree() or l.text.strip_edges() == "":
@@ -33,6 +41,7 @@ func _ready() -> void:
 		var backing: AABB
 		var found := false
 		var best := INF
+		var gap := INF          # smallest distance from the text box to the backing's edge (in the face plane)
 		for mi in meshes:
 			var bb := (mi.global_transform * mi.get_aabb()).grow(SLACK)
 			if not bb.has_point(c + back):
@@ -47,11 +56,47 @@ func _ready() -> void:
 			if over < best:
 				best = over
 				backing = bb
+				gap = INF
+				# measured along the text's own left-right and up-down directions (world axis they lie closest to)
+				var axes := [_major(right), _major(up)]
+				for p: Vector3 in corners:
+					var q := p + back
+					for ax: int in axes:
+						gap = minf(gap, minf(q[ax] - bb.position[ax], bb.end[ax] - q[ax]))
 		if not found:
 			continue
 		checked += 1
+		var want := Geo.label_margin(backing.size[_major(right)], backing.size[_major(up)]) - MARGIN_SLACK
+		if best <= 0.0 and gap < want and not l.has_meta("tight_ok"):
+			tight += 1
+			print("LABEL TIGHT %.3fm  %s  at %s  [%s]" % [gap, l.text.replace("
+", " / ").left(40), str(c.snapped(Vector3.ONE * 0.01)), l.get_path()])
 		if best > 0.0:
 			bad += 1
 			print("LABEL OVERFLOW %.2fm  %s  at %s  [%s]" % [best, l.text.replace("\n", " / ").left(40), str(c.snapped(Vector3.ONE * 0.01)), l.get_path()])
-	print("LABEL AUDIT labels=%d meshes=%d checked=%d overflow=%d" % [get_tree().root.find_children("*", "Label3D", true, false).size(), meshes.size(), checked, bad])
+		# text running into other geometry (a sign pushed into a side wall or a column)
+		var text_box := AABB(c, Vector3.ZERO)
+		for p: Vector3 in corners:
+			text_box = text_box.expand(p)
+		for e in solid:
+			var ob: AABB = e[0]
+			var mi: MeshInstance3D = e[1]
+			if not ob.intersects(text_box.grow(0.01)) or ob.grow(SLACK).has_point(c + back):
+				continue          # far away, or the backing / something the label sits on
+			for p: Vector3 in corners:
+				if ob.grow(-0.03).has_point(p):
+					clipped += 1
+					print("LABEL CLIP  %s  into %s  at %s" % [l.text.replace("\n", " / ").left(40), _name(mi), str(p.snapped(Vector3.ONE * 0.01))])
+					break
+	print("LABEL AUDIT labels=%d meshes=%d checked=%d overflow=%d clipped=%d tight=%d" % [get_tree().root.find_children("*", "Label3D", true, false).size(), meshes.size(), checked, bad, clipped, tight])
 	get_tree().quit(0 if bad == 0 else 1)
+
+
+func _major(v: Vector3) -> int:
+	var a := v.abs()
+	return 0 if a.x >= a.y and a.x >= a.z else (1 if a.y >= a.z else 2)
+
+
+func _name(mi: MeshInstance3D) -> String:
+	var size := mi.get_aabb().size
+	return "%s(%s)" % [mi.get_parent().name if mi.get_parent() else mi.name, str(size.snapped(Vector3.ONE * 0.01))]

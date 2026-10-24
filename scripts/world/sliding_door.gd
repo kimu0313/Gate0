@@ -42,7 +42,8 @@ func _build(glass: bool) -> void:
 			Geo.box(leaf_node, Vector3(0, height * 0.5 - 0.03, 0), Vector3(width * 0.5, 0.06, 0.07), frame, false)
 			Geo.box(leaf_node, Vector3(0, -height * 0.5 + 0.05, 0), Vector3(width * 0.5, 0.1, 0.07), frame, false)
 			Geo.box(leaf_node, Vector3(0, 0, 0), Vector3(width * 0.5 - 0.1, 0.05, 0.06), Mats.get_mat("plastic_dark"), false)
-	Geo.box(self, Vector3(0, height + 0.12, 0), Vector3(width + 0.3, 0.24, 0.3), Mats.get_mat("metal_dark"), false)
+	# header: its underside 5 mm below the opening top, so it never shares a plane with the wall lintel above
+	Geo.box(self, Vector3(0, height + 0.115, 0), Vector3(width + 0.3, 0.24, 0.3), Mats.get_mat("metal_dark"), false)
 	_blocker = Geo.blocker(self, Vector3(0, height * 0.5, 0), Vector3(width, height, 0.25))
 	if auto:
 		_sensor = Geo.area(self, Vector3(0, 1.0, 0), Vector3(width + 0.6, 2.0, 4.0))

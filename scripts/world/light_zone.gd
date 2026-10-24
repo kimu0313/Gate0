@@ -2,7 +2,7 @@ class_name LightZone
 extends Node3D
 ## One switchable lighting zone: ceiling panels (shared emissive material) + area lights + hum.
 
-const AREA_GAIN := 1.2         # area light energy per unit of the panel's old omni energy
+const AREA_GAIN := 1.05        # area light energy per unit of the panel's old omni energy
 const GI_DIRECT := 0.3         # share of the bounce omni's light that also lands directly
 const NO_GI_DIRECT := 0.6      # without SDFGI the omni stands in for the bounce with direct light
 

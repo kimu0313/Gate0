@@ -98,8 +98,9 @@ static func _quad(st: SurfaceTool, q: Array, n: Vector3, uv: Array, col: Array =
 
 
 ## Upright prism with rounded vertical edges (`size` = w, h, d; corner radius `r`), base at y = 0, centred on X/Z.
-## Brushing runs up the sides (U = height) and across the top.
-static func rounded_prism(size: Vector3, r: float) -> ArrayMesh:
+## Brushing runs up the sides (U = height) and across the top. `bottom` also closes the base (parts seen from below
+## or, turned on their side, from behind).
+static func rounded_prism(size: Vector3, r: float, bottom := false) -> ArrayMesh:
 	var hw := size.x * 0.5 - r
 	var hd := size.z * 0.5 - r
 	var ring: Array[Vector3] = []
@@ -128,6 +129,8 @@ static func rounded_prism(size: Vector3, r: float) -> ArrayMesh:
 		per += l
 		var top := Vector3.UP * size.y
 		_quad(st, [top, a + top, b + top, top], Vector3.UP, [Vector2(0, 0), Vector2(a.x, a.z), Vector2(b.x, b.z), Vector2(0, 0)])
+		if bottom:
+			_quad(st, [Vector3.ZERO, b, a, Vector3.ZERO], Vector3.DOWN, [Vector2(0, 0), Vector2(b.x, b.z), Vector2(a.x, a.z), Vector2(0, 0)])
 	st.generate_tangents()
 	return st.commit()
 

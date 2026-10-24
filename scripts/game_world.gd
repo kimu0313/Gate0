@@ -35,6 +35,17 @@ func _ready() -> void:
 		add_child(tour)
 		ui.fade_to(0.0, 0.01)
 		return
+	if OS.get_cmdline_user_args().has("--xray-sheet"):
+		var xs = load("res://scripts/debug/xray_sheet.gd").new()
+		xs.world = self
+		add_child(xs)
+		return
+	if OS.get_cmdline_user_args().has("--fids-sheet"):
+		add_child(load("res://scripts/debug/fids_sheet.gd").new())
+		return
+	if OS.get_cmdline_user_args().has("--zfight-audit"):
+		add_child(load("res://scripts/debug/zfight_audit.gd").new())
+		return
 	if OS.get_cmdline_user_args().has("--label-audit"):
 		add_child(load("res://scripts/debug/label_audit.gd").new())
 		return
@@ -43,6 +54,12 @@ func _ready() -> void:
 		ls.level = terminal
 		ls.player = player
 		add_child(ls)
+		ui.fade_to(0.0, 0.01)
+		return
+	if OS.get_cmdline_user_args().has("--audio-walk"):
+		var aw = load("res://scripts/debug/audio_walk.gd").new()
+		aw.world = self
+		add_child(aw)
 		ui.fade_to(0.0, 0.01)
 		return
 	if OS.get_cmdline_user_args().has("--shutter-clip"):
@@ -81,7 +98,9 @@ func _begin() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	player.controls_enabled = false
 	Snd.set_music("", 1.0)
-	Snd.set_ambience("amb_night_loop", 0.0, 3.0)
+	Snd.set_ambience("amb_night_loop", -2.0, 3.0)      # quiet enough that your own steps carry
+	Snd.set_scatter(true)
+	Snd.set_beds(true)
 	if Game.cycle == 1 and not Game.flag("prologue_seen"):
 		Game.set_flag("prologue_seen")
 		await ui.typewriter([

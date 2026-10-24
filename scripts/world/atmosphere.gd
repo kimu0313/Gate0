@@ -29,7 +29,7 @@ func setup(p: String) -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.glow_enabled = true
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
-	env.glow_hdr_threshold = 0.9
+	env.glow_hdr_threshold = 1.15    # only lamps and screens bloom, not lit white walls
 	env.ssao_enabled = true
 	env.ssao_radius = 1.4
 	env.ssao_intensity = 1.8
@@ -74,9 +74,9 @@ func _night(high: bool) -> void:
 	env.ambient_light_color = Color(0.055, 0.065, 0.09)
 	env.ambient_light_energy = 0.45
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env.tonemap_exposure = 1.05
-	env.glow_intensity = 0.75
-	env.glow_bloom = 0.06
+	env.tonemap_exposure = 0.9       # lit whites (kiosks, signs, the FIDS frame) stay below clipping
+	env.glow_intensity = 0.5
+	env.glow_bloom = 0.02
 	env.adjustment_contrast = 1.08
 	env.adjustment_saturation = 0.8
 	env.volumetric_fog_density = 0.016

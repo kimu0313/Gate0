@@ -1,6 +1,8 @@
 class_name XrayScreen
 extends Control
-## False-colour X-ray scan image drawn procedurally.
+## The X-ray operator monitor: a real dual-energy scan image (generated art in assets/textures/xray: organics orange,
+## mixed green, metals blue) on the scanner's white field, between the operator's header and status bars. The bag
+## is drawn in line by line as it passes the detector (scan_progress); anomalies are overlaid on the scan.
 ## content: "" (idle) | "bag" | "figure" | "heart" | "mybag" (your own bag, scanned as a passenger's)
 
 var content := ""
@@ -10,9 +12,22 @@ var scan_progress := 1.0  # 0..1 reveal sweep
 var _t := 0.0
 var mono: Font
 
-const ORANGE := Color(1.0, 0.55, 0.15)
-const BLUE := Color(0.2, 0.45, 1.0)
-const GREEN := Color(0.25, 0.85, 0.35)
+const SCANS := {
+	"bag": "res://assets/textures/xray/xray_bag.png",
+	"heart": "res://assets/textures/xray/xray_bag.png",
+	"mybag": "res://assets/textures/xray/xray_mybag.png",
+	"figure": "res://assets/textures/xray/xray_figure.png",
+}
+const SCAN_PX := Vector2(1536, 1024)          # the scan art's own pixel space (overlay positions below use it)
+const FIGURE_EYES := [Vector2(352, 355), Vector2(372, 392)]
+const HEART_AT := Vector2(1040, 560)          # among the folded clothes of xray_bag
+const FIELD := Color(0.96, 0.97, 0.96)        # the scanner's empty (fully transparent) field
+const BAR := Color(0.07, 0.09, 0.12)
+const INK := Color(0.66, 0.74, 0.82)
+const ORANGE := Color(0.86, 0.45, 0.12)
+const BLUE := Color(0.12, 0.28, 0.75)
+
+var _tex := {}
 
 
 func _ready() -> void:
@@ -25,97 +40,86 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _scan(id: String) -> Texture2D:
+	if not _tex.has(id):
+		_tex[id] = load(SCANS[id]) if SCANS.has(id) and ResourceLoader.exists(SCANS[id]) else null
+	return _tex[id]
+
+
 func _draw() -> void:
 	var w := size.x
 	var h := size.y
 	if not powered:
 		draw_rect(Rect2(0, 0, w, h), Color.BLACK)
 		return
-	draw_rect(Rect2(0, 0, w, h), Color(0.02, 0.03, 0.06))
-	draw_string(mono, Vector2(16, 30), "X-RAY 01   SEOHAE SEC   %s" % Game.clock_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.6, 0.7, 0.8))
-	draw_string(mono, Vector2(16, h - 16), "kV 160  mA 0.8  DUAL-ENERGY", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.4, 0.5, 0.6))
+	var top := 34.0
+	var bottom := 30.0
+	var field := Rect2(0, top, w, h - top - bottom)
+	draw_rect(field, FIELD)
+	# operator bars
+	draw_rect(Rect2(0, 0, w, top), BAR)
+	draw_rect(Rect2(0, h - bottom, w, bottom), BAR)
+	draw_string(mono, Vector2(12, 23), "X-RAY 01  ·  SEOHAE SEC", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, INK)
+	if content != "mybag":                 # the passenger notice takes the clock's place there
+		draw_string(mono, Vector2(0, 23), Game.clock_text() + "  ", HORIZONTAL_ALIGNMENT_RIGHT, w - 8, 17, INK)
+	var mode := "HI-PEN  ·  OS  ·  ZOOM 1.0"
+	draw_string(mono, Vector2(12, h - 10), "kV 160  mA 0.8  DUAL-ENERGY", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(INK, 0.75))
+	draw_string(mono, Vector2(0, h - 10), mode + "  ", HORIZONTAL_ALIGNMENT_RIGHT, w - 8, 14, Color(INK, 0.75))
+	# belt direction
+	var ax := w * 0.5
+	draw_colored_polygon(PackedVector2Array([Vector2(ax - 8, h - 22), Vector2(ax + 8, h - 15), Vector2(ax - 8, h - 8)]), Color(INK, 0.6))
 	if content == "":
-		draw_string(mono, Vector2(0, h * 0.5), "NO OBJECT", HORIZONTAL_ALIGNMENT_CENTER, w, 34, Color(0.4, 0.5, 0.6))
+		draw_string(mono, Vector2(0, field.get_center().y + 10), "NO OBJECT", HORIZONTAL_ALIGNMENT_CENTER, w, 26, Color(0.55, 0.6, 0.66))
+		_scanlines(field)
 		return
-	var cx := w * 0.5
-	var cy := h * 0.52
-	# bag shell
-	var bag := Rect2(cx - 220, cy - 130, 440, 260)
-	draw_rect(bag, Color(0.95, 0.5, 0.15, 0.18))
-	draw_rect(bag, Color(1.0, 0.6, 0.2, 0.6), false, 4.0)
-	draw_rect(Rect2(cx - 50, cy - 160, 100, 30), Color(0.3, 0.5, 1.0, 0.5), false, 4.0)
+	# the scan, fitted into the field
+	var tex := _scan(content)
+	var k := minf(field.size.x / SCAN_PX.x, field.size.y / SCAN_PX.y)
+	var img := Rect2(field.get_center() - SCAN_PX * k * 0.5, SCAN_PX * k)
+	if tex:
+		draw_texture_rect(tex, img, false)
+	else:
+		draw_rect(img.grow(-20), Color(ORANGE, 0.3))
 	match content:
-		"bag":
-			_draw_normal_contents(cx, cy)
 		"figure":
-			_draw_figure(cx, cy)
-		"mybag":
-			_draw_normal_contents(cx, cy)
-			_draw_passenger_tag(cx, cy)
+			if stare > 0.05:
+				# the sockets darken and a pale glint wakes in each, as dense as metal would read
+				for e: Vector2 in FIGURE_EYES:
+					var p := img.position + e * k
+					draw_circle(p, 6.0 * k * 2.4, Color(0.04, 0.08, 0.22, 0.55 * stare))
+					draw_circle(p, 2.0 * k * 2.4, Color(0.92, 0.96, 1.0, 0.85 * stare))
 		"heart":
-			_draw_normal_contents(cx, cy)
+			# an organic mass among the clothes that beats (dense core blue, tissue orange)
 			var beat := 1.0 + 0.18 * maxf(0.0, sin(_t * 7.5)) + 0.1 * maxf(0.0, sin(_t * 7.5 - 1.2))
-			draw_circle(Vector2(cx + 90, cy + 40), 34.0 * beat, Color(1.0, 0.45, 0.12, 0.85))
-			draw_circle(Vector2(cx + 66, cy + 22), 22.0 * beat, Color(1.0, 0.5, 0.15, 0.8))
-			draw_circle(Vector2(cx + 112, cy + 22), 22.0 * beat, Color(1.0, 0.5, 0.15, 0.8))
-			draw_line(Vector2(cx + 90, cy + 5), Vector2(cx + 100, cy - 40), Color(0.2, 0.5, 1.0, 0.8), 6.0)
-	# reveal sweep
+			var c := img.position + HEART_AT * k
+			var r := 95.0 * k
+			draw_circle(c, r * beat, Color(ORANGE, 0.55))
+			draw_circle(c + Vector2(-r * 0.55, -r * 0.45) * beat, r * 0.62 * beat, Color(ORANGE, 0.5))
+			draw_circle(c + Vector2(r * 0.55, -r * 0.45) * beat, r * 0.62 * beat, Color(ORANGE, 0.5))
+			draw_circle(c, r * 0.45 * beat, Color(0.55, 0.28, 0.08, 0.55))
+			draw_line(c + Vector2(0, -r * 0.6), c + Vector2(r * 0.25, -r * 1.6), Color(BLUE, 0.7), 4.0)
+		"mybag":
+			_draw_passenger_tag(img, k)
+	# the bag is drawn in line by line as it passes the detector
 	if scan_progress < 1.0:
-		var x := w * scan_progress
-		draw_rect(Rect2(x, 0, w - x, h), Color(0.02, 0.03, 0.06))
-		draw_line(Vector2(x, 0), Vector2(x, h), Color(0.6, 0.9, 1.0, 0.8), 3.0)
-	for sy in range(0, int(h), 3):
-		draw_line(Vector2(0, sy), Vector2(w, sy), Color(0, 0, 0, 0.15), 1.0)
+		var x := field.position.x + field.size.x * scan_progress
+		draw_rect(Rect2(x, field.position.y, field.end.x - x, field.size.y), FIELD)
+		draw_line(Vector2(x, field.position.y), Vector2(x, field.end.y), Color(0.3, 0.55, 0.9, 0.7), 2.0)
+	_scanlines(field)
 
 
-func _draw_normal_contents(cx: float, cy: float) -> void:
-	draw_rect(Rect2(cx - 190, cy - 100, 220, 150), Color(0.2, 0.45, 1.0, 0.65))      # laptop
-	draw_rect(Rect2(cx - 180, cy - 90, 200, 130), Color(0.3, 0.6, 1.0, 0.35), false, 3.0)
-	draw_rect(Rect2(cx + 60, cy - 90, 50, 150), Color(1.0, 0.55, 0.15, 0.55))       # bottle
-	draw_circle(Vector2(cx + 85, cy - 95), 14.0, Color(0.2, 0.45, 1.0, 0.8))
-	for i in 3:                                                                       # keys
-		draw_line(Vector2(cx + 140 + i * 12, cy + 60), Vector2(cx + 150 + i * 12, cy + 100), BLUE, 6.0)
-	draw_circle(Vector2(cx + 150, cy + 55), 12.0, Color(0.2, 0.45, 1.0, 0.9))
-	var pts := PackedVector2Array()                                                     # cable
-	for i in 20:
-		pts.append(Vector2(cx - 170 + i * 14, cy + 80 + sin(i * 0.9) * 12.0))
-	draw_polyline(pts, Color(0.3, 0.9, 0.4, 0.8), 4.0)
+func _scanlines(field: Rect2) -> void:
+	for sy in range(int(field.position.y), int(field.end.y), 3):
+		draw_line(Vector2(0, sy), Vector2(size.x, sy), Color(0, 0, 0, 0.035), 1.0)
 
 
 ## A baggage tag on the handle: the airport scanned your bag as a passenger's (DAY 2 · 수칙 p.7 ③).
-func _draw_passenger_tag(cx: float, cy: float) -> void:
-	var red := Color(1.0, 0.32, 0.25)
-	draw_string(mono, Vector2(0, 30), "PASSENGER BAGGAGE   ", HORIZONTAL_ALIGNMENT_RIGHT, size.x - 16, 20, red)
-	var tag := Rect2(cx + 60, cy - 214, 230, 70)
-	draw_line(Vector2(cx + 30, cy - 160), tag.position + Vector2(20, 70), Color(0.95, 0.85, 0.4, 0.8), 3.0)
-	draw_rect(tag, Color(0.95, 0.85, 0.4, 0.22))
-	draw_rect(tag, Color(0.95, 0.85, 0.4, 0.8), false, 3.0)
-	draw_string(mono, tag.position + Vector2(12, 28), "PAX  " + Game.player_name, HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 20, 22, Color(1, 0.95, 0.75))
-	draw_string(mono, tag.position + Vector2(12, 56), "FLT 000  -> HOME", HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 20, 20, red)
-
-
-func _draw_figure(cx: float, cy: float) -> void:
-	var c := Color(1.0, 0.55, 0.15, 0.75)
-	var bone := Color(0.3, 0.55, 1.0, 0.85)
-	# curled body (fetal position)
-	draw_circle(Vector2(cx - 120, cy - 40), 52.0, c)                     # head
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(cx - 90, cy - 10), Vector2(cx + 40, cy - 70), Vector2(cx + 150, cy - 30),
-		Vector2(cx + 160, cy + 40), Vector2(cx + 60, cy + 90), Vector2(cx - 60, cy + 60)]), c)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(cx - 40, cy + 40), Vector2(cx + 20, cy + 110), Vector2(cx - 100, cy + 115), Vector2(cx - 110, cy + 70)]), c)
-	# spine and ribs
-	var spine := PackedVector2Array()
-	for i in 14:
-		var a := float(i) / 13.0
-		spine.append(Vector2(cx - 80 + a * 220, cy - 40 + sin(a * PI) * -30 + a * 60))
-	draw_polyline(spine, bone, 7.0)
-	for i in range(2, 10):
-		var p := spine[i]
-		draw_line(p, p + Vector2(-10, 35), bone, 3.0)
-	draw_circle(Vector2(cx - 135, cy - 45), 30.0, Color(0.35, 0.6, 1.0, 0.5))   # skull
-	# eyes open as it "notices" the viewer
-	if stare > 0.05:
-		var e := Color(1, 1, 1, clampf(stare, 0.0, 1.0))
-		draw_circle(Vector2(cx - 148, cy - 52), 6.0 * stare, e)
-		draw_circle(Vector2(cx - 120, cy - 55), 6.0 * stare, e)
+func _draw_passenger_tag(img: Rect2, _k: float) -> void:
+	var red := Color(0.85, 0.12, 0.1)
+	draw_string(mono, Vector2(0, 23), "PASSENGER BAGGAGE   " + Game.clock_text() + "  ", HORIZONTAL_ALIGNMENT_RIGHT, size.x - 8, 17, Color(1.0, 0.4, 0.32))
+	var tag := Rect2(img.end.x - 250, img.position.y + 6, 236, 64)
+	draw_rect(tag, Color(1.0, 0.97, 0.85, 0.92))
+	draw_rect(tag, Color(0.75, 0.6, 0.2), false, 2.0)
+	draw_line(tag.position + Vector2(18, 64), tag.position + Vector2(-10, 110), Color(0.7, 0.55, 0.2, 0.8), 2.0)
+	draw_string(mono, tag.position + Vector2(10, 26), "PAX  " + Game.player_name, HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 16, 20, Color(0.15, 0.15, 0.18))
+	draw_string(mono, tag.position + Vector2(10, 52), "FLT 000  -> HOME", HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 16, 18, red)

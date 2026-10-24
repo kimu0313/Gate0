@@ -115,8 +115,9 @@ func _build() -> void:
 	interactable = Interactable.create(self, Vector3(0, 0.95, 0), Vector3(0.8, 1.9, 0.8), "교대 근무자와 이야기하기", _on_talk)
 	interactable.press_sound = ""
 	_voice = AudioStreamPlayer3D.new()
-	_voice.bus = "SFX"
 	_voice.unit_size = 3.5
+	Snd.setup_3d(_voice)
+	_voice.bus = "SFX"
 	_voice.max_distance = 30.0
 	_head.add_child(_voice)
 
@@ -309,8 +310,10 @@ func _animate(delta: float, moving: bool) -> void:
 
 func _footstep() -> void:
 	var surface := "carpet" if global_position.z < -76.0 else "tile"
-	Snd.play_at("footstep_%s_%d" % [surface, randi_range(1, 4)], global_position + Vector3(0, 0.1, 0), -15.0,
-		randf_range(0.92, 1.05), 3.0, 26.0)
+	var p := Snd.play_at(Snd.variant("footstep_" + surface), global_position + Vector3(0, 0.1, 0), -15.0,
+		randf_range(0.95, 1.05), 3.0, 26.0)
+	if p:
+		p.area_mask = 0   # the step recordings carry their own room, like the player's
 
 
 # --- routes through the terminal (Terminal.NAV: floor points clear of counters, pillars and carousels) ---------

@@ -5,6 +5,10 @@ signal pa_started(tag: String)
 signal pa_finished(cancelled: bool)
 
 const SFX_DIR := "res://assets/audio/sfx/"
+## Makeup gain on the SFX bus: the ElevenLabs set (and its room-recorded footsteps) plays quieter than the procedural
+## set it replaced; this brings the world back to the old loudness (~-23.5 LUFS in the audio walk). The radio and PA
+## buses take the same off so the voices keep their level.
+const WORLD_GAIN := 2.5
 const VOICE_DIR := "res://assets/audio/voice/"
 
 var _cache := {}
@@ -31,6 +35,31 @@ var _tension := 0.0
 var bus_master := 0
 var _muffle_fx_index := -1
 
+## Distant one-shots scattered around the listener during a shift (creaks, duct ticks, a far beep…), sparse and
+## quiet, never during a PA announcement. More often as the dread rises.
+const SCATTER := ["amb_creak_1", "amb_creak_2", "amb_tick_1", "amb_knock_1", "amb_far_beep_1", "amb_rattle_1", "amb_cart_1"]
+var _scatter_on := false
+var _scatter_t := 0.0
+var _scatter_last := ""
+
+## Zone ambience beds layered over the global room tone (Events.zone_entered): [bed, bed dB, how much the big-hall
+## tone ducks there] (closed rooms hear less of the hall).
+const BEDS := {
+	"office": ["amb_office_loop", -8.0, -9.0], "storage": ["amb_service_loop", -9.0, -8.0], "maint": ["amb_service_loop", -6.0, -10.0],
+	"baggage": ["amb_baggage_loop", -7.0, -4.0], "security": ["amb_baggage_loop", -12.0, -2.0],
+	"corridor": ["amb_corridor_loop", -7.0, -4.0], "gates": ["amb_gates_loop", -6.0, -5.0], "bridge0": ["amb_gates_loop", -13.0, -8.0],
+}
+var _beds_on := false
+var _bed_a: AudioStreamPlayer
+var _bed_b: AudioStreamPlayer
+var _bed_current: AudioStreamPlayer
+var _bed_name := ""
+var _amb_target_db := -6.0
+var _amb_duck := 0.0
+
+var _occluders: Array = []
+var _occ_t := 0.0
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -49,6 +78,9 @@ func _ready() -> void:
 	_whisper = _make_player("SFX")
 	_pa = _make_player("PA")
 	_radio_static = _make_player("Radio")
+	_bed_a = _make_player("Ambience")
+	_bed_b = _make_player("Ambience")
+	Events.zone_entered.connect(_on_zone)
 	Game.apply_settings()
 
 
@@ -75,6 +107,9 @@ func _setup_buses() -> void:
 	_add_bus("SFX", "Master")
 	_add_bus("UI", "Master")
 	_add_bus("Ambience", "SFX")
+	var makeup := AudioEffectAmplify.new()
+	makeup.volume_db = WORLD_GAIN
+	AudioServer.add_bus_effect(AudioServer.get_bus_index("SFX"), makeup)
 
 	var pa := _add_bus("PA", "SFX")
 	var hp := AudioEffectHighPassFilter.new()
@@ -102,7 +137,7 @@ func _setup_buses() -> void:
 	rev.wet = 0.38
 	rev.predelay_msec = 70.0
 	AudioServer.add_bus_effect(pa, rev)
-	AudioServer.set_bus_volume_db(pa, -2.0)
+	AudioServer.set_bus_volume_db(pa, -2.0 - WORLD_GAIN)
 
 	var radio := _add_bus("Radio", "SFX")
 	var rhp := AudioEffectHighPassFilter.new()
@@ -115,23 +150,32 @@ func _setup_buses() -> void:
 	dist.mode = AudioEffectDistortion.MODE_OVERDRIVE
 	dist.drive = 0.25
 	AudioServer.add_bus_effect(radio, dist)
+	AudioServer.set_bus_volume_db(radio, -WORLD_GAIN)
 
-	var hall := _add_bus("RevHall", "SFX")
-	var hrev := AudioEffectReverb.new()
-	hrev.room_size = 0.95
-	hrev.damping = 0.25
-	hrev.dry = 0.0
-	hrev.wet = 0.6
-	hrev.predelay_msec = 45.0
-	AudioServer.add_bus_effect(hall, hrev)
-
-	var room := _add_bus("RevRoom", "SFX")
-	var rrev := AudioEffectReverb.new()
-	rrev.room_size = 0.35
-	rrev.damping = 0.6
-	rrev.dry = 0.0
-	rrev.wet = 0.35
-	AudioServer.add_bus_effect(room, rrev)
+	# Reverb sends for the Terminal's reverb zones (Area3D), one per kind of space. Wet only: the dry sound
+	# stays on SFX. hipass keeps the low end out of the tails so big rooms do not boom; no predelay feedback
+	# (it repeats the early echo into a metallic flutter) and a low-pass so the tail is softer than the sound.
+	for r in [
+		["RevHall", 0.7, 0.6, 22.0, 0.5, 0.2],          # double-height check-in lobby: big stone room
+		["RevLong", 0.78, 0.5, 30.0, 0.5, 0.22],        # long glass corridor and gate lounge: longer tail
+		["RevMid", 0.5, 0.65, 12.0, 0.42, 0.22],        # security and baggage halls: wide but low ceilings
+		["RevRoom", 0.25, 0.75, 4.0, 0.35, 0.28],       # office, storage, maintenance: small and dull
+		["RevTight", 0.15, 0.6, 2.0, 0.4, 0.3],         # jet bridge: narrow tube
+	]:
+		var bus := _add_bus(r[0], "SFX")
+		var zrev := AudioEffectReverb.new()
+		zrev.room_size = r[1]
+		zrev.damping = r[2]
+		zrev.predelay_msec = r[3]
+		zrev.predelay_feedback = 0.0
+		zrev.dry = 0.0
+		zrev.wet = r[4]
+		zrev.hipass = r[5]
+		zrev.spread = 0.9
+		var soft := AudioEffectLowPassFilter.new()
+		soft.cutoff_hz = 4500.0
+		AudioServer.add_bus_effect(bus, soft)
+		AudioServer.add_bus_effect(bus, zrev)
 
 
 func _add_bus(bus_name: String, send: String) -> int:
@@ -185,6 +229,23 @@ func random_variant(base: String, count: int) -> String:
 	return "%s_%d" % [base, randi_range(1, count)]
 
 
+var _variants := {}
+
+## A random existing take of `base` (base_1, base_2 … however many the sound set has), never the same twice in a row.
+func variant(base: String) -> String:
+	if not _variants.has(base):
+		var n := 0
+		while ResourceLoader.exists(SFX_DIR + "%s_%d.wav" % [base, n + 1]):
+			n += 1
+		_variants[base] = [maxi(1, n), 0]
+	var v: Array = _variants[base]
+	var k := randi_range(1, v[0])
+	if v[0] > 1 and k == v[1]:
+		k = k % v[0] + 1
+	v[1] = k
+	return "%s_%d" % [base, k]
+
+
 # --- one-shots ---------------------------------------------------------------------------
 func play(sound_name: String, volume_db := 0.0, pitch := 1.0, bus := "UI") -> AudioStreamPlayer:
 	var s := stream(sound_name)
@@ -201,6 +262,19 @@ func play(sound_name: String, volume_db := 0.0, pitch := 1.0, bus := "UI") -> Au
 	return p
 
 
+## Every world sound goes through here: reverb zones (area_mask), air absorption over distance, and occlusion
+## (muffled and quieter when a wall stands between it and the listener, see _update_occlusion).
+func setup_3d(p: AudioStreamPlayer3D, occlude := true) -> void:
+	p.area_mask = Geo.LAYER_AUDIO
+	p.attenuation_filter_cutoff_hz = 7000.0
+	p.attenuation_filter_db = -14.0
+	p.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_DISABLED
+	if occlude:
+		p.set_meta("occ_unit", p.unit_size)
+		p.set_meta("occ", 0.0)
+		_occluders.append(p)
+
+
 func play_at(sound_name: String, pos: Vector3, volume_db := 0.0, pitch := 1.0, unit_size := 6.0, max_dist := 60.0) -> AudioStreamPlayer3D:
 	var s := stream(sound_name)
 	var scene := get_tree().current_scene
@@ -213,8 +287,10 @@ func play_at(sound_name: String, pos: Vector3, volume_db := 0.0, pitch := 1.0, u
 	p.unit_size = unit_size
 	p.max_distance = max_dist
 	p.bus = "SFX"
+	setup_3d(p)
 	scene.add_child(p)
 	p.global_position = pos
+	_occlude(p, 1.0)
 	p.play()
 	p.finished.connect(p.queue_free)
 	return p
@@ -228,6 +304,7 @@ func make_loop(sound_name: String, parent: Node3D, volume_db := 0.0, unit_size :
 	p.unit_size = unit_size
 	p.max_distance = max_dist
 	p.bus = "SFX"
+	setup_3d(p)
 	parent.add_child(p)
 	return p
 
@@ -240,7 +317,8 @@ func set_ambience(sound_name: String, volume_db := -6.0, fade := 2.0) -> void:
 		next.stream = stream(sound_name)
 		next.volume_db = -60.0
 		next.play()
-		create_tween().tween_property(next, "volume_db", volume_db, fade)
+		_amb_target_db = volume_db
+		create_tween().tween_property(next, "volume_db", volume_db + _amb_duck, fade)
 		_amb_current = next
 	else:
 		_amb_current = null
@@ -275,6 +353,8 @@ func _process(delta: float) -> void:
 	_update_layer(_drone, "drone_loop", _tension, -34.0, -9.0, 0.08, delta)
 	_update_layer(_heart, "heartbeat_loop", clampf((_tension - 0.6) / 0.4, 0.0, 1.0), -30.0, -8.0, 0.0, delta)
 	_update_layer(_whisper, "whisper_loop", clampf((_tension - 0.45) / 0.55, 0.0, 1.0), -36.0, -14.0, 0.0, delta)
+	_update_scatter(delta)
+	_update_occlusion(delta)
 	# eyes-closed muffle
 	if _muffle_fx_index >= 0:
 		var fx := AudioServer.get_bus_effect(bus_master, _muffle_fx_index) as AudioEffectLowPassFilter
@@ -302,6 +382,104 @@ func _update_layer(p: AudioStreamPlayer, sound_name: String, amount: float, min_
 	p.volume_db = move_toward(p.volume_db, target, delta * 12.0)
 
 
+## Zone beds on/off (a shift in the terminal); off fades them out.
+func set_beds(on: bool) -> void:
+	_beds_on = on
+	if not on:
+		_set_bed("", 0.0, 0.0, 2.0)
+
+
+func _on_zone(zone: String) -> void:
+	if not _beds_on:
+		return
+	var b: Array = BEDS.get(zone, ["", 0.0, 0.0])
+	_set_bed(b[0], b[1], b[2], 2.5)
+
+
+func _set_bed(sound_name: String, volume_db: float, duck: float, fade: float) -> void:
+	_amb_duck = duck
+	if _amb_current:
+		create_tween().tween_property(_amb_current, "volume_db", _amb_target_db + duck, fade)
+	if sound_name == _bed_name:
+		if _bed_current:
+			create_tween().tween_property(_bed_current, "volume_db", volume_db, fade)
+		return
+	_bed_name = sound_name
+	var prev := _bed_current
+	_bed_current = null
+	if sound_name != "":
+		var next := _bed_b if prev == _bed_a else _bed_a
+		next.stream = stream(sound_name)
+		if next.stream:
+			next.volume_db = -60.0
+			next.play(randf() * maxf(0.0, next.stream.get_length() - 1.0))
+			create_tween().tween_property(next, "volume_db", volume_db, fade)
+			_bed_current = next
+	if prev:
+		var t := create_tween()
+		t.tween_property(prev, "volume_db", -60.0, fade)
+		t.tween_callback(prev.stop)
+
+
+## Occlusion: every ~0.12 s a ray from the listener to each world sound; a wall in between (not the sound's own
+## machine: hits within 1.2 m of it are ignored) muffles it (low-pass) and pulls it back (smaller unit size).
+func _update_occlusion(delta: float) -> void:
+	_occ_t -= delta
+	if _occ_t > 0.0:
+		return
+	_occ_t = 0.12
+	var keep: Array = []
+	for p: Variant in _occluders:
+		if is_instance_valid(p) and (p as Node).is_inside_tree():
+			keep.append(p)
+	_occluders = keep
+	for p: AudioStreamPlayer3D in _occluders:
+		if p.playing:
+			_occlude(p, 0.35)
+
+
+func _occlude(p: AudioStreamPlayer3D, rate: float) -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or not p.is_inside_tree():
+		return
+	var from := cam.global_position
+	var to := p.global_position
+	var target := 0.0
+	if from.distance_to(to) > 1.5:
+		var q := PhysicsRayQueryParameters3D.create(from, to, Geo.LAYER_WORLD)
+		var hit := cam.get_world_3d().direct_space_state.intersect_ray(q)
+		if not hit.is_empty() and (hit.position as Vector3).distance_to(to) > 1.2:
+			target = 1.0
+	var occ: float = lerpf(p.get_meta("occ", 0.0), target, rate)
+	p.set_meta("occ", occ)
+	p.attenuation_filter_cutoff_hz = lerpf(7000.0, 900.0, occ)
+	p.unit_size = float(p.get_meta("occ_unit", p.unit_size)) * lerpf(1.0, 0.45, occ)
+
+
+func set_scatter(on: bool) -> void:
+	_scatter_on = on
+	_scatter_t = randf_range(10.0, 20.0)
+
+
+func _update_scatter(delta: float) -> void:
+	if not _scatter_on or get_tree().paused or pa_busy:
+		return
+	_scatter_t -= delta
+	if _scatter_t > 0.0:
+		return
+	_scatter_t = randf_range(22.0, 48.0) * lerpf(1.0, 0.55, _tension)
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var pick: String = SCATTER[randi() % SCATTER.size()]
+	if pick == _scatter_last:
+		pick = SCATTER[(SCATTER.find(pick) + 1) % SCATTER.size()]
+	_scatter_last = pick
+	var a := randf() * TAU
+	var pos := cam.global_position + Vector3(cos(a), 0, sin(a)) * randf_range(14.0, 30.0) + Vector3(0, randf_range(1.0, 4.5), 0)
+	play_at(pick, pos, randf_range(-4.0, 0.0), randf_range(0.88, 1.04), 8.0, 60.0)
+
+
 func set_muffle(amount: float) -> void:
 	_muffle_amount = clampf(amount, 0.0, 1.0)
 
@@ -315,6 +493,13 @@ func stop_all_world() -> void:
 	_amb_current = null
 	_tension = 0.0
 	_muffle_amount = 0.0
+	_scatter_on = false
+	_beds_on = false
+	_bed_name = ""
+	_amb_duck = 0.0
+	for p in [_bed_a, _bed_b]:
+		p.stop()
+	_bed_current = null
 
 
 # --- radio ---------------------------------------------------------------------------------------

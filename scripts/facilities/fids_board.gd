@@ -28,24 +28,38 @@ var _story_mode := ""
 var _hum: AudioStreamPlayer3D
 
 
+const SCREEN_W := 1600       # screen texture width (px); its height follows the board so the lettering is not stretched
+
+
+static func screen_px(width: float, height: float) -> Vector2i:
+	return Vector2i(SCREEN_W, int(roundf(SCREEN_W * height / width)))
+
+
 func build(width := 8.0, height := 3.2, with_controls := true) -> void:
 	needs_running = false
 	observe_radius = 16.0
 	viewport = SubViewport.new()
-	viewport.size = Vector2i(1600, 640)
+	viewport.size = screen_px(width, height)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.transparent_bg = false
 	add_child(viewport)
 	screen = FidsScreen.new()
-	screen.size = Vector2(1600, 640)
+	screen.size = Vector2(viewport.size)
 	viewport.add_child(screen)
-	if TripoProps.exists("terminal", "TRM_FIDSBoard"):
-		# Tripo display cabinet; the live screen quad below sits in its bezel
-		var housing := TripoProps.spawn(self, "terminal", "TRM_FIDSBoard", Vector3.ZERO, 0.0, false, null, Vector3(width + 0.3, height + 0.3, 0.2))
-		TripoProps.centre_on(housing, Vector3(0, 0, -0.12))
-		Geo.blocker(self, Vector3(0, 0, -0.12), Vector3(width + 0.3, height + 0.3, 0.2))
-	else:
-		Geo.box(self, Vector3(0, 0, -0.12), Vector3(width + 0.3, height + 0.3, 0.2), Mats.get_mat("plastic_dark"), true)
+	# cabinet: anodised box with rounded edges and a 15 cm bezel round the screen (the Tripo display mesh had a
+	# slanted bottom edge the wall cut off), a thin lip framing the panel and a status LED strip under it
+	var cab := MeshInstance3D.new()
+	cab.mesh = CarouselMesh.rounded_prism(Vector3(width + 0.3, 0.2, height + 0.3), 0.06, true)
+	cab.material_override = Mats.std(Color(0.22, 0.23, 0.245), 0.4, 0.6)
+	add_child(cab)
+	cab.rotation.x = PI / 2            # prism top = the front (+Z), its body behind
+	cab.position = Vector3(0, 0, -0.22)
+	var lip := Mats.std(Color(0.05, 0.05, 0.055), 0.5)
+	for side in [-1.0, 1.0]:
+		Geo.box(self, Vector3(0, side * (height * 0.5 + 0.02), -0.012), Vector3(width + 0.08, 0.04, 0.012), lip, false)
+		Geo.box(self, Vector3(side * (width * 0.5 + 0.02), 0, -0.012), Vector3(0.04, height, 0.012), lip, false)
+	Geo.box(self, Vector3(width * 0.5 - 0.25, -height * 0.5 - 0.09, -0.017), Vector3(0.2, 0.012, 0.006), Mats.emissive(Color(0.25, 0.9, 0.5), 1.2), false)
+	Geo.blocker(self, Vector3(0, 0, -0.12), Vector3(width + 0.3, height + 0.3, 0.2))
 	var quad := MeshInstance3D.new()
 	var qm := QuadMesh.new()
 	qm.size = Vector2(width, height)
@@ -56,7 +70,8 @@ func build(width := 8.0, height := 3.2, with_controls := true) -> void:
 	screen_mat.emission_texture = viewport.get_texture()
 	screen_mat.emission = Color.BLACK
 	screen_mat.emission_energy_multiplier = 1.5
-	screen_mat.roughness = 0.2
+	screen_mat.roughness = 0.6           # anti-glare panel: no white hotspot from the ceiling lights
+	screen_mat.metallic_specular = 0.15
 	quad.material_override = screen_mat
 	add_child(quad)
 	quad.position = Vector3(0, 0, -0.015)
@@ -66,7 +81,7 @@ func build(width := 8.0, height := 3.2, with_controls := true) -> void:
 	focus = quad
 	_hum = Snd.make_loop("machine_hum_loop", self, -18.0, 3.0, 12.0)
 	if with_controls:
-		var box := Props.panel_box(self, Vector3(width * 0.5 - 0.45, -height * 0.5 - 1.75, 0.05), 0.0, Vector2(0.6, 0.5), "FIDS 제어함")
+		var box := Props.panel_box(self, Vector3(width * 0.5 - 0.45, -height * 0.5 - 1.75, -0.16), 0.0, Vector2(0.6, 0.5), "FIDS 제어함")   # on the wall below
 		Props.button(box, Vector3(-0.12, -0.04, 0), 0.0, "button_blue", "RESET", "전광판 RESET", _on_reset)
 		Geo.label(box, "SEOHAE FIDS-01", Vector3(0.13, -0.04, 0.006), 0.0, 18, Color(0.7, 0.75, 0.8), 0.0022, false, "print")
 	_rows = NORMAL_ROWS.duplicate(true)

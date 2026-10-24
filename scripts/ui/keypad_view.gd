@@ -1,20 +1,22 @@
 class_name KeypadView
 extends Control
-## 4-digit door lock. The whole device is generated art (assets/ui/keypad_full.png): invisible hit areas
-## sit on the painted keys, presses darken the key, and the LCD digits and LED are drawn on top.
+## 4-digit door lock. The whole device is generated art (assets/ui/keypad_staff.png, the staff-door access keypad;
+## keypad_full.png is the older stainless one): invisible hit areas sit on the painted keys, presses darken the key,
+## and the LCD digits and LED are drawn on top.
 
 signal submitted(code: String)
 signal closed
 
 const ART := Vector2(1024, 1536)                    # coordinates below are in this space
-const ART_LCD := Rect2(191, 284, 645, 213)
-const ART_LED := Vector2(782, 193)
-const ART_KEY0 := Vector2(250, 594)
-const ART_KEY_STEP := Vector2(181.5, 181.3)
-const ART_KEY_SIZE := Vector2(160, 158)
+const ART_LCD := Rect2(232, 236, 580, 181)          # measured on keypad_staff (debug: keypad r2 measure.py)
+const ART_LED := Vector2(784, 134)
+const ART_KEY0 := Vector2(243, 493)
+const ART_KEY_STEP := Vector2(197.5, 194.0)
+const ART_KEY_SIZE := Vector2(159, 144)
 const KEYS := ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "OK"]
 const K := 0.48
 const LCD_GREEN := Color(0.45, 1.0, 0.55)
+const LCD_IDLE := Color(0.72, 0.9, 1.0)              # cool backlit LCD segments while typing
 ## Lit segments per character (a top, b upper right, c lower right, d bottom, e lower left, f upper left, g middle).
 const SEGMENTS := {"8": "abcdefg", "0": "abcdef", "O": "abcdef", "E": "adefg", "r": "eg", "P": "abefg", "n": "ceg",
 	"-": "g", "_": "d", " ": ""}
@@ -22,7 +24,7 @@ const SEGMENTS := {"8": "abcdefg", "0": "abcdef", "O": "abcdef", "E": "adefg", "
 var _rig: Control
 var _lcd: Control
 var _lcd_chars := "_   "
-var _lcd_color := LCD_GREEN
+var _lcd_color := LCD_IDLE
 var _led_color := Color(0.35, 0.05, 0.04)
 var _code := ""
 var _hover := -1
@@ -102,7 +104,7 @@ func _process(delta: float) -> void:
 
 
 func _draw_device() -> void:
-	var tex := UiArt.tex("keypad_full")
+	var tex := UiArt.tex("keypad_staff")
 	var full := Rect2(Vector2.ZERO, ART * K)
 	if tex:
 		_rig.draw_texture_rect(tex, full, false)
@@ -112,7 +114,7 @@ func _draw_device() -> void:
 			_rig.draw_style_box(UiKit.box(Color("2c3138"), Color(0, 0, 0, 0), 8, 0, 0), _key_rect(i))
 	# LCD glass: faint backlight and a reflection band over the painted black window
 	var lcd := Rect2(ART_LCD.position * K, ART_LCD.size * K).grow(-6)
-	_rig.draw_rect(lcd, Color(0.03, 0.09, 0.05, 0.85))
+	_rig.draw_rect(lcd, Color(0.06, 0.09, 0.11, 0.9))
 	_rig.draw_colored_polygon(PackedVector2Array([lcd.position, lcd.position + Vector2(lcd.size.x * 0.45, 0),
 		lcd.position + Vector2(lcd.size.x * 0.3, lcd.size.y), lcd.position + Vector2(0, lcd.size.y)]), Color(1, 1, 1, 0.025))
 	# key feedback: hover lifts, press sinks
@@ -190,7 +192,7 @@ func _refresh() -> void:
 	_lcd_chars = ""
 	for i in 4:
 		_lcd_chars += "-" if i < _code.length() else ("_" if i == _code.length() else " ")
-	_lcd_color = LCD_GREEN
+	_lcd_color = LCD_IDLE
 	_lcd.queue_redraw()
 
 
@@ -223,7 +225,7 @@ func _draw_digit(box: Rect2, lit: String) -> void:
 			_lcd.draw_rect(r.grow(3.0), Color(_lcd_color, 0.12))
 			_lcd.draw_rect(r, _lcd_color)
 		else:
-			_lcd.draw_rect(r, Color(LCD_GREEN, 0.07))
+			_lcd.draw_rect(r, Color(LCD_IDLE, 0.06))
 
 
 func _unhandled_input(event: InputEvent) -> void:

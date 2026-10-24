@@ -36,7 +36,7 @@ static func panel_box(parent: Node3D, pos: Vector3, rot_y: float, size: Vector2,
 		plate.visible = false
 		sign_body(holder, Vector3(0, 0, -depth * 0.5), size, depth)
 	if title != "":
-		Geo.fit(Geo.label(holder, title, Vector3(0, size.y * 0.5 - 0.07, 0.006), 0.0, 30, Geo.SIGN_BLUE, 0.0025, false, "print"), size.x - 0.08)
+		Geo.fit(Geo.label(holder, title, Vector3(0, size.y * 0.5 - 0.09, 0.006), 0.0, 30, Geo.SIGN_BLUE, 0.0025, false, "print"), size.x - 0.08)
 	return holder
 
 
@@ -121,10 +121,14 @@ static func hanging_sign(parent: Node3D, pos: Vector3, rot_y: float, size: Vecto
 	var labels: Array[Label3D] = []
 	for side in [0.0, PI]:
 		for line in lines:
-			# line: [text, font_size, color, Vector2 offset]
+			# line: [text, font_size, color, Vector2 offset]; ["@icon_departures", height m, color, offset] = pictogram
 			var off: Vector2 = line[3] if line.size() > 3 else Vector2.ZERO
 			var z := 0.075 if side == 0.0 else -0.075
 			var x := off.x if side == 0.0 else -off.x
+			if str(line[0]).begins_with("@"):
+				var ic := LevelKit.icon_sprite(holder, str(line[0]).substr(1), Vector3(x, off.y, z * 1.02), float(line[1]), line[2])
+				ic.rotation.y = side
+				continue
 			var l := Geo.fit(Geo.label(holder, str(line[0]), Vector3(x, off.y, z), side, int(line[1]), line[2], 0.006), size.x * 0.92)
 			labels.append(l)
 	if ceiling_y > pos.y:

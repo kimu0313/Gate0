@@ -1,6 +1,6 @@
 class_name LightPanel
 extends Facility
-## 조명 분전반 — wall panel with one lever per lighting zone.
+## 조명 분전반 — distribution board (Equipment.board) with one breaker per lighting zone.
 ## Anomalies: light_flicker (rhythmic blink in a zone), light_red (one panel glows red),
 ## light_dark (one panel stays dark in a lit zone).
 
@@ -15,13 +15,14 @@ func build(zone_map: Dictionary, zone_order: Array, panel_title := "조명 분�
 	zones = zone_map
 	needs_running = false
 	observe_radius = 30.0
-	var w := 0.22 * zone_order.size() + 0.3
-	var holder := Props.panel_box(self, Vector3.ZERO, 0.0, Vector2(w, 0.7), panel_title)
-	focus = holder
-	for i in zone_order.size():
+	var n := zone_order.size()
+	var w := 0.15 * n + 0.3
+	var face := Equipment.board(self, Vector2(w, 0.7), panel_title)
+	focus = face
+	for i in n:
 		var zn: String = zone_order[i]
 		var z: LightZone = zones[zn]
-		var s := ToggleSwitch.create(holder, Vector3(-w * 0.5 + 0.26 + i * 0.22, -0.05, 0.0), z.display_name, z.is_on)
+		var s := ToggleSwitch.create(face, Vector3((i - (n - 1) * 0.5) * 0.15, -0.02, 0.0), z.display_name, z.is_on)
 		s.on_prompt = "조명 켜기"
 		s.off_prompt = "조명 끄기"
 		s._refresh(true)

@@ -173,15 +173,20 @@ def onsets(a: np.ndarray) -> list:
 
 
 def step_cuts(a: np.ndarray, step: float) -> list:
-    """Single footsteps: from each onset to where it decays 40 dB (at most `step` s), each faded out."""
+    """Single footsteps: from each onset to where it decays 40 dB (at most `step` s, and always before the next
+    step starts, so a long room tail never carries a second footstep), each faded out."""
     cuts = []
-    for o in onsets(a):
-        seg = a[o: o + int(step * SR)]
+    ons = onsets(a)
+    for k, o in enumerate(ons):
+        limit = int(step * SR)
+        if k + 1 < len(ons):
+            limit = min(limit, ons[k + 1] - o - int(0.03 * SR))
+        seg = a[o: o + limit]
         if len(seg) < int(0.12 * SR):
             continue
         e = env(seg, 0.005)
         pk = int(np.argmax(e))
-        below = np.where(e[pk:] < e[pk] * 10 ** (-40 / 20))[0]
+        below = np.where(e[pk:] < e[pk] * 10 ** (-50 / 20))[0]
         end = pk + (below[0] if len(below) else len(e) - pk)
         seg = seg[: max(int(0.12 * SR), min(len(seg), end + int(0.03 * SR)))]
         cuts.append(fades(seg, 0.002, min(0.08, len(seg) / SR * 0.4)))
@@ -273,8 +278,12 @@ def build(s: dict, raw: str, take: int) -> None:
         if not cuts:
             print("  no steps for", s["name"])
             return
-        pk = np.array([db(np.abs(c).max()) for c in cuts])
-        keep = sorted(np.argsort(np.abs(pk - np.median(pk)))[: int(s["slice"])])
+        # one consistent step shape: prefer cuts whose impact is right at the start (not a scuff before a heel-toe
+        # double), then the ones closest to the median level
+        early = [i for i, c in enumerate(cuts) if np.argmax(env(c, 0.005)) < int(0.05 * SR)]
+        pool = early if len(early) >= int(s["slice"]) else list(range(len(cuts)))
+        pk = np.array([db(np.abs(cuts[i]).max()) for i in pool])
+        keep = sorted(pool[j] for j in np.argsort(np.abs(pk - np.median(pk)))[: int(s["slice"])])
         old = [os.path.join(BACKUP, f"{s['name']}_{k}.wav") for k in range(1, 5)]
         refs = [active_rms_db(read_wav(p)) for p in old if os.path.exists(p)]
         ref = float(np.mean(refs)) if refs else -18.0

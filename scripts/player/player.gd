@@ -276,8 +276,9 @@ func _footstep(sprinting: bool) -> void:
 	_feet_i = (_feet_i + 1) % _feet_pool.size()
 	_feet = _feet_pool[_feet_i]
 	_feet.stream = s
-	_feet.volume_db = (-4.0 if sprinting else -8.0) + STEP_DB.get(surface, 0.0) + randf_range(-1.5, 1.0)
-	_feet.pitch_scale = randf_range(0.95, 1.05)
+	# steady steps: only a light touch of variation on top of the takes themselves
+	_feet.volume_db = (-4.0 if sprinting else -8.0) + STEP_DB.get(surface, 0.0) + randf_range(-0.6, 0.6)
+	_feet.pitch_scale = randf_range(0.97, 1.03)
 	_feet.play()
 
 

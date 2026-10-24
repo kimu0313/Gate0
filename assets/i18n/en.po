@@ -4479,3 +4479,15 @@ msgid ""
 "자재창고\n"
 "STORAGE"
 msgstr "STORAGE"
+
+msgid "근태 기록기  TIME CLOCK"
+msgstr "TIME CLOCK"
+
+msgid "감전 주의  DANGER"
+msgstr "DANGER · ELECTRIC SHOCK"
+
+msgid "위험 · 고압  DANGER"
+msgstr "DANGER · HIGH VOLTAGE"
+
+msgid "터미널 전체 전원 차단"
+msgstr "Shuts off all terminal power"

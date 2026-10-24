@@ -40,7 +40,7 @@ func _build(prompt: String) -> void:
 			var sheet := Geo.box(self, Vector3(0, 0.002, 0), Vector3(0.21, 0.003, 0.297), Mats.get_mat("paper"), false)
 			sheet.rotation.y = randf_range(-0.2, 0.2)
 			for i in 6:
-				Geo.box(sheet, Vector3(-0.02, 0.002, -0.1 + i * 0.03), Vector3(0.15, 0.001, 0.006), Mats.std(Color(0.3, 0.3, 0.32), 0.9), false)
+				Geo.box(sheet, Vector3(-0.02, 0.0025, -0.1 + i * 0.03), Vector3(0.15, 0.001, 0.006), Mats.std(Color(0.3, 0.3, 0.32), 0.9), false)   # on the sheet, not buried in it
 	interactable = Interactable.create(self, Vector3(0, 0.1, 0), Vector3(0.45, 0.3, 0.45) if kind != "plaque" else Vector3(0.8, 0.7, 0.3), prompt, _on_used)
 	interactable.press_sound = "page_flip" if kind != "plaque" else ""
 	_glint = Geo.omni(self, Vector3(0, 0.35, 0), Color(1.0, 0.95, 0.8), 0.12, 1.2)

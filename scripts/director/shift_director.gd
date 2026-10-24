@@ -876,6 +876,7 @@ func ev_blackout(duration := 12.0, lethal := false, hint := false) -> void:
 	var roll := AudioStreamPlayer3D.new()
 	roll.stream = Snd.stream("luggage_roll_loop")
 	roll.unit_size = 4.0
+	Snd.setup_3d(roll)
 	roll.bus = "SFX"
 	t.add_child(roll)
 	var start_angle := randf() * TAU

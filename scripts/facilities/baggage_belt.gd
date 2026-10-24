@@ -76,8 +76,8 @@ func build() -> void:
 	pole.material_override = steel
 	disp_holder.add_child(pole)
 	pole.position = Vector3(0, -2.6, -0.05)
-	Geo.label(disp_holder, "B-03", Vector3(0, 0.18, 0.005), 0.0, 90, Geo.SIGN_BLUE, 0.004, true)
-	_display = Geo.label(disp_holder, "TEST", Vector3(0, -0.17, 0.005), 0.0, 50, Color(0.6, 0.65, 0.7), 0.004, true)
+	Geo.label(disp_holder, "B-03", Vector3(0, 0.13, 0.005), 0.0, 70, Geo.SIGN_BLUE, 0.004, true)
+	_display = Geo.label(disp_holder, "TEST", Vector3(0, -0.18, 0.005), 0.0, 42, Color(0.6, 0.65, 0.7), 0.004, true)
 	focus = self
 	_motor = Snd.make_loop("belt_loop", self, -6.0, 5.0, 26.0)
 	_motor.position = Vector3(0, 0.5, 0)

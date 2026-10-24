@@ -1,7 +1,9 @@
 class_name UiIcon
 extends Control
-## Stroke pictograms drawn in code (no image assets), in the spirit of airport signage.
+## Stroke pictograms drawn in code, in the spirit of airport signage (the plane is the airport pictogram texture).
 ## Drawn on a 30 x 30 grid and scaled to the control size.
+
+const PLANE := preload("res://assets/textures/level/icon_plane.png")
 
 @export var icon := "order"
 @export var color := Color("e8eaed")
@@ -130,7 +132,11 @@ func _draw() -> void:
 			draw_line(Vector2(3, 15), Vector2(26, 15), c, w + 0.8)
 			draw_polyline(PackedVector2Array([Vector2(18, 7), Vector2(26.5, 15), Vector2(18, 23)]), c, w + 0.8)
 		"plane":
-			draw_colored_polygon(PackedVector2Array([Vector2(27, 15), Vector2(3, 24), Vector2(7, 18), Vector2(2, 15), Vector2(7, 12), Vector2(3, 6)]), c)
+			# the airport pictogram (assets/textures/level/icon_plane.png: nose to the upper right), turned to point right;
+			# sized and nudged left so the turned silhouette (nose reaches 1.21 half-widths out) stays inside the 30 grid
+			draw_set_transform(off + Vector2(12.9, 15) * s, PI / 4, Vector2(s, s))
+			draw_texture_rect(PLANE, Rect2(-13.3, -13.3, 26.6, 26.6), false, c)
+			draw_set_transform(off, 0.0, Vector2(s, s))
 		"headphones":
 			draw_arc(Vector2(15, 17), 11.0, PI, TAU, 24, c, w, true)
 			draw_rect(Rect2(3, 17, 5, 9), c)

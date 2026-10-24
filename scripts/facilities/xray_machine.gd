@@ -44,7 +44,9 @@ func build() -> void:
 			for i in 5:
 				Geo.box(self, Vector3(-0.3 + i * 0.15, 1.15, z), Vector3(0.14, 0.7, 0.01), Mats.get_mat("rubber"), false)
 	var side_x := 0.61 if tripo else 0.56
-	Geo.box(self, Vector3(side_x, 1.3, 0.6), Vector3(0.01, 0.2, 0.5), Mats.get_mat("lamp_amber"), false)
+	# radiation warning label and the round X-RAY ON lamp above it (was a bare amber slab)
+	LevelKit.plate(self, "label_xray", Vector3(side_x - 0.004, 1.28, 0.6), 90.0, Vector2(0.39, 0.26))
+	Geo.cyl(self, Vector3(side_x + 0.008, 1.5, 0.6), 0.032, 0.024, Mats.get_mat("lamp_amber")).rotation.z = PI / 2
 	Geo.label(self, "X-RAY 01", Vector3(side_x, 1.0, 0.0), PI / 2, 44, Color(0.9, 0.9, 0.9), 0.004, false, "print")
 	# tray with test bag
 	_tray = Node3D.new()
@@ -80,7 +82,7 @@ func build() -> void:
 	screen_mat.emission_enabled = true
 	screen_mat.emission_texture = viewport.get_texture()
 	screen_mat.emission = Color.BLACK
-	screen_mat.emission_energy_multiplier = 1.4
+	screen_mat.emission_energy_multiplier = 0.95
 	quad.material_override = screen_mat
 	monitor_node.add_child(quad)
 	quad.position = Vector3(0, 0.42, -0.005)
@@ -94,7 +96,7 @@ func build() -> void:
 	panel.position = Vector3(1.86, 0.78, 0.0)
 	panel.rotation.y = PI / 2
 	panel.rotation.x = -0.9
-	Geo.box(panel, Vector3(0, 0, -0.02), Vector3(0.9, 0.22, 0.04), Mats.get_mat("plastic_grey"), false)
+	Geo.box(panel, Vector3(0, -0.02, -0.02), Vector3(0.9, 0.27, 0.04), Mats.get_mat("plastic_grey"), false)   # room for the captions
 	Props.button(panel, Vector3(-0.3, 0.0, 0), 0.0, "button_green", "가방 투입", "테스트 가방 투입 (스캔)", _on_scan)
 	Props.button(panel, Vector3(0.0, 0.0, 0), 0.0, "button_blue", "모니터", "모니터 전원 끄기/켜기", _on_monitor)
 	Props.button(panel, Vector3(0.3, 0.0, 0), 0.0, "button_red", "비상정지", "X-ray 비상정지", _on_estop)
@@ -169,7 +171,7 @@ func _content_for(a: String) -> String:
 func _on_monitor() -> void:
 	monitor_on = not monitor_on
 	screen.powered = monitor_on
-	screen_mat.emission_energy_multiplier = 1.4 if monitor_on else 0.0
+	screen_mat.emission_energy_multiplier = 0.95 if monitor_on else 0.0
 	act("monitor_off" if not monitor_on else "monitor_on", id)
 
 
@@ -189,7 +191,7 @@ func _on_power_lost() -> void:
 
 func _on_power_restored() -> void:
 	screen.powered = monitor_on
-	screen_mat.emission_energy_multiplier = 1.4 if monitor_on else 0.0
+	screen_mat.emission_energy_multiplier = 0.95 if monitor_on else 0.0
 
 
 func _apply_anomaly(a: String) -> void:

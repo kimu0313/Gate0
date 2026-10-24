@@ -7,6 +7,7 @@ const SIGN_BLUE := Color(0.36, 0.56, 1.0)
 const LAYER_WORLD := 1
 const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4
+const LAYER_AUDIO := 512        # reverb zones (Terminal) found by every AudioStreamPlayer3D's area_mask
 
 static var sign_font: Font      # wayfinding signs: DIN-style Bahnschrift, Hangul from Malgun Gothic Bold
 static var led_font: Font       # LED / LCD displays: Bahnschrift with wider tracking
@@ -231,6 +232,10 @@ static func label(parent: Node, text: String, pos: Vector3, rot_y := 0.0, font_s
 ## Shrinks a Label3D so its widest line fits `max_width` metres (signs, boards, plates) and, when given, all of
 ## its lines fit `max_height`.
 static func fit(l: Label3D, max_width: float, max_height := INF) -> Label3D:
+	# remembered, so text changed later through set_text() is fitted to the same space
+	if not l.has_meta("fit_px"):
+		l.set_meta("fit_px", l.pixel_size)
+	l.set_meta("fit_space", Vector2(max_width, max_height if is_finite(max_height) else 1000.0))
 	var w := l.font.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.font_size).x * l.pixel_size
 	if w > max_width and w > 0.0:
 		l.pixel_size *= max_width / w
@@ -248,6 +253,12 @@ static func _text_px(l: Label3D) -> Vector2:
 	var w := l.font.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.font_size).x
 	var h := lines * l.font.get_height(l.font_size) + (lines - 1) * l.line_spacing
 	return Vector2(w, h)
+
+
+## Clear face kept round printed text on a w x h panel (metres, each side): 8 % of its smaller side, at most 7 cm,
+## so signs and plates never print edge to edge or under their frame.
+static func label_margin(w: float, h: float) -> float:
+	return clampf(minf(w, h) * 0.08, 0.004, 0.07)
 
 
 ## The box face a label is printed on: returns the largest text size (metres) that stays inside it with a
@@ -284,9 +295,9 @@ static func _backing_space(l: Label3D) -> Vector2:
 		var area := ext_r * ext_u
 		if area >= best_area:
 			continue
-		var pad := minf(ext_r, ext_u) * 0.08
+		var pad := label_margin(2.0 * ext_r, 2.0 * ext_u)
 		best_area = area
-		best = Vector2(maxf(0.01, 2.0 * (ext_r - off_r) - 2.0 * pad), maxf(0.01, 2.0 * (ext_u - off_u) - 0.01))
+		best = Vector2(maxf(0.01, 2.0 * (ext_r - off_r) - 2.0 * pad), maxf(0.01, 2.0 * (ext_u - off_u) - 2.0 * pad))
 	return best
 
 

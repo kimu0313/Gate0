@@ -1,8 +1,9 @@
 class_name Shutter
 extends Node3D
 ## Glass sliding partition that closes off unopened zones: frameless panels hung from a brushed steel track, a
-## frosted band printed with the closure notice. Opening slides the panels sideways into the wall pockets on
-## both jambs (a single panel goes to the +X side). Partitions in `linked` open and close with this one.
+## frosted band printed with the closure notice. Opening slides the panels sideways through a steel-lined slot in
+## each jamb into the wall pocket behind it (a single panel goes to the +X side). Partitions in `linked` open and
+## close with this one.
 
 var width := 4.0
 var height := 4.0
@@ -41,11 +42,23 @@ func _build(label_text: String) -> void:
 	var n := maxi(1, int(round(width / 1.5)))
 	var pw := width / n
 	var gh := height - 0.2
+	# pocket mouths: a dark slot in each jamb the panels slide into, lined with steel trim on both faces of the wall
+	# (without it they slid through the wall's solid end face)
+	var dark := Mats.std(Color(0.03, 0.032, 0.036), 0.95)
+	var slot_h := height - 0.17
+	for side in ([1.0] if n == 1 or OS.get_cmdline_user_args().has("--no-pocket") else [-1.0, 1.0]):
+		if OS.get_cmdline_user_args().has("--no-pocket"):
+			break                          # debug: the old look, for before/after captures
+		var jx: float = side * width * 0.5
+		Geo.box(self, Vector3(jx + side * 0.148, 0.01 + slot_h * 0.5, 0.005), Vector3(0.304, slot_h, 0.14), dark, false)
+		for tz in [-1.0, 1.0]:
+			Geo.box(self, Vector3(jx - side * 0.0125, 0.01 + slot_h * 0.5, 0.005 + tz * 0.0875), Vector3(0.025, slot_h, 0.035), steel, false)
 	for i in n:
 		var p := Node3D.new()
 		add_child(p)
 		var x := -width * 0.5 + pw * (i + 0.5)
-		var z := 0.035 if i % 2 == 0 else -0.035      # alternate tracks so the panels can stack
+		# alternate tracks so the panels can stack; a hair of depth per panel so stacked panes never share a plane
+		var z := (0.035 if i % 2 == 0 else -0.035) + i * 0.0015
 		p.position = Vector3(x, 0, z)
 		Geo.box(p, Vector3(0, 0.02 + gh * 0.5, 0), Vector3(pw - 0.02, gh, 0.02), glass, false)
 		Geo.box(p, Vector3(0, 0.05, 0), Vector3(pw - 0.02, 0.06, 0.04), steel, false)
@@ -97,7 +110,7 @@ func open(instant := false) -> void:
 	if instant:
 		_set_panels(true)
 		return
-	Snd.play_at("door_slide", global_position + Vector3(0, 2.0, 0), -2.0, 0.8, 10.0)
+	Snd.play_at("partition_slide", global_position + Vector3(0, 2.0, 0), -2.0, 1.0, 10.0)
 	_slide(true, 2.4)
 
 
@@ -112,5 +125,5 @@ func close(instant := false) -> void:
 	if instant:
 		_set_panels(false)
 		return
-	Snd.play_at("door_slide", global_position + Vector3(0, 2.0, 0), -3.0, 0.75, 10.0)
+	Snd.play_at("partition_slide", global_position + Vector3(0, 2.0, 0), -3.0, 0.92, 10.0)
 	_slide(false, 2.0)

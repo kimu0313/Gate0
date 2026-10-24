@@ -17,6 +17,9 @@ var shots := [
 	["fascia_east", Vector3(0.8, 0.05, 1.0), Vector3(4.4, 3.5, 4.4)],
 	["escalator_sign", Vector3(-0.8, 0.05, 10.6), Vector3(0.9, 1.2, 12.3)],
 	["escalator", Vector3(-2.0, 0.05, 6.5), Vector3(8.0, 2.5, 12.0)],
+	["escalator_side", Vector3(7.6, 0.05, 8.6), Vector3(7.6, 1.9, 12.3)],
+	["escalator_top", Vector3(9.4, 0.05, 9.2), Vector3(12.2, 4.5, 12.3)],
+	["escalator_foot", Vector3(1.4, 0.05, 10.4), Vector3(3.2, 0.4, 12.3)],
 	["lounge", Vector3(3.0, 0.05, 3.0), Vector3(14.0, 5.5, 6.0)],
 	["strip", Vector3(7.0, 0.05, -3.8), Vector3(-10.0, 2.0, -7.0)],
 	["storage", Vector3(13.4, 0.05, -4.0), Vector3(20.0, 1.0, -7.4)],
@@ -47,6 +50,11 @@ var shots := [
 	["fids_view", Vector3(-1.0, 0.05, 1.0), Vector3(-8.2, 4.5, -2.1)],
 	["arr_view", Vector3(1.0, 0.05, 1.0), Vector3(8.2, 4.5, -2.1)],
 	["gates_sign", Vector3(0.0, 0.05, -71.5), Vector3(0.0, 3.85, -79.0)],
+	["fids_lobby", Vector3(0.0, 0.05, 3.2), Vector3(0.0, 5.0, -2.3)],
+	["desk_front", Vector3(0.2, 0.05, 2.6), Vector3(0.2, 0.85, 5.8)],
+	["desk_op", Vector3(2.9, 0.05, 8.6), Vector3(0.3, 0.75, 5.9)],
+	["hall_corner_w", Vector3(-3.4, 0.05, 2.4), Vector3(-6.4, 1.4, -2.2)],
+	["gate_bins", Vector3(14.0, 0.05, -82.0), Vector3(20.0, 0.5, -76.5)],
 	["sign_hall_baggage", Vector3(-7.4, 0.05, -1.2), Vector3(-7.4, 3.2, -6.2)],
 	["door_staff", Vector3(-4.0, 0.05, 0.9), Vector3(-6.9, 2.0, 0.9)],
 	["door_exit", Vector3(-18.0, 0.05, -60.0), Vector3(-18.0, 2.0, -63.8)],
@@ -68,6 +76,15 @@ var shots := [
 	["dep_sign", Vector3(0.6, 0.05, 2.2), Vector3(0.6, 3.15, -5.0)],
 	["whiteboard", Vector3(-14.4, 0.05, 2.6), Vector3(-12.42, 1.6, 2.6)],
 	["main_power", Vector3(-46.3, 0.05, -50.0), Vector3(-47.78, 1.4, -50.0)],
+	["eq_punch", Vector3(-15.0, 0.05, -1.1), Vector3(-15.0, 1.35, -2.3)],
+	["eq_breaker", Vector3(-13.3, 0.05, -1.1), Vector3(-13.3, 1.5, -2.3)],
+	["eq_office_wall", Vector3(-14.3, 0.05, 1.6), Vector3(-14.3, 1.4, -2.3)],
+	["eq_lights", Vector3(-18.5, 0.05, 8.9), Vector3(-19.78, 1.45, 8.9)],
+	["eq_lights_gates", Vector3(-11.5, 0.05, -77.4), Vector3(-11.5, 1.45, -76.22)],
+	["eq_fax", Vector3(-14.1, 0.05, 6.0), Vector3(-12.9, 0.95, 6.2)],
+	["eq_power", Vector3(-46.5, 0.05, -50.0), Vector3(-47.78, 1.4, -50.0), "flashlight"],
+	["eq_power_side", Vector3(-46.9, 0.05, -50.9), Vector3(-47.78, 1.35, -49.85), "flashlight"],
+	["eq_fax_close", Vector3(-13.65, 0.05, 6.0), Vector3(-12.95, 1.0, 6.2)],
 	# z-fighting checks (ceiling edges, lintels, beam crossings, door headers, block ends)
 	["fids_bottom", Vector3(-8.2, 0.05, 0.4), Vector3(-8.2, 3.4, -2.3)],
 	["fids_bottom_side", Vector3(-5.6, 0.05, -0.2), Vector3(-8.6, 3.5, -2.3)],
@@ -123,6 +140,7 @@ func _run() -> void:
 		if not only.is_empty() and not (s[0] in only):
 			continue
 		player.teleport(Transform3D(Basis(), s[1]))
+		player.toggle_flashlight(1 if s.size() > 3 and s[3] == "flashlight" else 0)   # optional 4th: "flashlight"
 		await get_tree().process_frame
 		player.look_at_point(s[2], 0.01)
 		await get_tree().create_timer(wait).timeout

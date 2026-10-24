@@ -59,7 +59,7 @@ const SPOTS := {
 	"md_west": Vector3(-1.2, 0, -18.0), "md_east": Vector3(6.85, 0, -18.0),
 	# where a person stands to work each panel (feet) and what they look at
 	"view_lights": Vector3(-18.4, 0.05, 8.9), "look_lights": Vector3(-19.78, 1.45, 8.9),
-	"view_fids": Vector3(-4.6, 0.05, 1.0), "look_fids": Vector3(-8.2, 4.6, -2.3),
+	"view_fids": Vector3(-2.0, 0.05, 4.2), "look_fids": Vector3(-2.45, 5.8, -2.3),
 	"view_pa": Vector3(0.2, 0.05, 7.0), "look_pa": Vector3(0.2, 1.0, 5.85),
 	"view_baggage": Vector3(-34.3, 0.05, -57.4), "look_baggage": Vector3(-25.5, 0.6, -59.0),
 	"view_walkway": Vector3(1.2, 0.05, -28.4), "look_walkway": Vector3(3.4, 0.2, -40.0),
@@ -363,12 +363,7 @@ func _build_office() -> void:
 	Geo.cyl(clock, Vector3.ZERO, 0.18, 0.04, Mats.get_mat("plastic_white")).rotation.x = PI / 2
 	Geo.label(clock, "3:00", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true, "lcd")
 	# fax table for revision pages (east wall, by the door)
-	if TripoProps.exists("security", "SEC_InspectionTable"):
-		TripoProps.spawn(self, "security", "SEC_InspectionTable", Vector3(-12.85, 0, 6.2), PI / 2, true, null, Vector3(0.9, 0.8, 0.7))
-	else:
-		Geo.box(self, Vector3(-12.85, 0.4, 6.2), Vector3(0.7, 0.8, 0.9), Mats.get_mat("wood"))
-	Geo.box(self, Vector3(-12.9, 0.9, 6.2), Vector3(0.35, 0.2, 0.45), Mats.get_mat("plastic_white"), false)
-	Geo.label(self, "FAX", Vector3(-13.08, 0.95, 6.2), -PI / 2, 20, Color(0.2, 0.2, 0.2), 0.003, false, "print")
+	Equipment.fax(self, Vector3(-12.85, 0, 6.2), PI / 2)
 	# card reader door (office <-> hall), south wall
 	var d := SlidingDoor.create(self, Vector3(-18.2, 0, 7.6), 0.0, 2.0, 2.4, false, false)
 	doors["office"] = d
@@ -379,14 +374,7 @@ func _build_office() -> void:
 	# lit so it reads in the dark
 	LevelKit.plate(self, "plate_office", Vector3(-16.55, 1.72, 7.8), 0.0, Vector2(0.6, 0.4), 0.3)
 	# punch clock, time cards and breaker (north wall)
-	var pc_holder := Props.panel_box(self, Vector3(-15.3, 1.35, -2.28), 0.0, Vector2(0.36, 0.5), "근태 기록기")
-	Geo.box(pc_holder, Vector3(0, 0.02, 0.01), Vector3(0.22, 0.12, 0.02), Mats.get_mat("screen_off"), false)
-	Geo.label(pc_holder, "TIME CARD", Vector3(0, 0.02, 0.022), 0.0, 18, Color(0.5, 1.0, 0.6), 0.002, true)
-	Geo.box(pc_holder, Vector3(0, -0.14, 0.015), Vector3(0.14, 0.02, 0.03), Mats.get_mat("black"), false)
-	punch_clock = Interactable.create(pc_holder, Vector3(0, -0.05, 0.05), Vector3(0.36, 0.5, 0.12), "근무 기록 (출근·퇴근)", Callable())
-	punch_clock.press_sound = "clock_punch"
-	for i in 8:
-		Geo.box(self, Vector3(-14.6, 1.2 + i * 0.05, -2.36), Vector3(0.1, 0.004, 0.06), Mats.get_mat("paper"), false)
+	punch_clock = Equipment.punch_clock(self, Vector3(-15.3, 1.35, -2.28), 0.0)
 
 
 # --------------------------------------------------------------------------------------------
@@ -450,19 +438,12 @@ func _build_hall() -> void:
 	_checkin_block(1.0)
 	_checkin_block(-1.0)
 	_escalator()
-	# broadcast desk: a counter with raised returns at both ends, open to the south (the PA console sits on it)
-	if TripoProps.exists("terminal", "TRM_InfoDesk"):
-		TripoProps.spawn(self, "terminal", "TRM_InfoDesk", Vector3(0.2, 0, 5.75), PI, true, null, Vector3(1.9, 1.0, 0.9))
-		for rx in [-1.0, 1.4]:
-			TripoProps.spawn(self, "terminal", "TRM_InfoDesk", Vector3(rx, 0, 6.05), PI / 2 if rx < 0 else -PI / 2, true, null, Vector3(1.5, 1.18, 0.5))
-	else:
-		Geo.box(self, Vector3(0.2, 0.5, 5.75), Vector3(1.9, 1.0, 0.9), Mats.get_mat("counter_front"))
-		for rx in [-1.0, 1.4]:
-			Geo.box(self, Vector3(rx, 0.59, 6.05), Vector3(0.5, 1.18, 1.5), Mats.get_mat("counter_front"))
+	_info_desk()
 	# two benches in front of the desk, turned at an angle like the sketch's foreground
 	Props.seat_row(self, Vector3(0.2, 0, 0.1), 3, -1.87)
 	Props.seat_row(self, Vector3(0.55, 0, -2.1), 3, -1.87)
-	for p in [Vector3(4.4, 0, -0.5), Vector3(-4.6, 0, -0.5), Vector3(-7.4, 0, 9.4)]:
+	# bins against walls, out of the walking lines: the corners beside the security opening, the west block's end
+	for p in [Vector3(5.85, 0, -1.95), Vector3(-6.6, 0, -1.95), Vector3(-8.2, 0, 7.6)]:
 		Props.trash_bin(self, p)
 	for p in [Vector3(-19.2, 0, 13.2), Vector3(-11.6, 0, 13.2)]:
 		Props.planter(self, p)
@@ -500,7 +481,9 @@ func _checkin_block(side: float) -> void:
 	var zc := (z0 + z1) * 0.5
 	var face := -90.0 if side > 0 else 90.0       # kiosks and signs look back into the hall
 	var wm := Mats.get_mat("wall")
-	Geo.box(self, Vector3((face_x + outer) * 0.5, HALL_H * 0.5, zc), Vector3(absf(outer - face_x), HALL_H, z1 - z0), wm)
+	# the block runs right up to the north wall (face z -2.3), so there is no dead-end alcove behind it
+	var zn := -2.3
+	Geo.box(self, Vector3((face_x + outer) * 0.5, HALL_H * 0.5, (zn + z1) * 0.5), Vector3(absf(outer - face_x), HALL_H, z1 - zn), wm)
 	# fascia overhang (3.0 .. 4.25 m), its underside a ceiling, a steel edge along the front
 	Geo.box(self, Vector3((fx + face_x) * 0.5, 3.625, zc), Vector3(1.8, 1.25, z1 - z0), wm, false)
 	Geo.box(self, Vector3((fx + face_x) * 0.5, 2.995, zc), Vector3(1.8, 0.01, z1 - z0), Mats.get_mat("ceiling"), false)
@@ -521,6 +504,54 @@ func _checkin_block(side: float) -> void:
 		LevelKit.decal(self, "sign_lounge", Vector3(face_x - 0.01, 5.9, zc), face, Vector2(2.4, 1.6))
 	else:
 		LevelKit.staff_door(self, Vector3(face_x, 0, 0.9), 90.0)
+
+
+## Broadcast desk: a solid-surface counter (worktop 1.0 m, the PA console on it) between two raised returns
+## (1.18 m), open to the south where the operator stands: dark recessed plinth, blue accent line on the public face,
+## quartz tops overhanging 3 cm, a drawer pedestal and a knee space under the worktop. Built from closed rounded
+## volumes (the stretched Tripo desk showed open, paper-thin panels).
+func _info_desk() -> void:
+	var body := Mats.std(Color(0.88, 0.88, 0.86), 0.35)
+	var top := Mats.std(Color(0.74, 0.75, 0.74), 0.22, 0.05)
+	var blue := Mats.std(Color(0.07, 0.25, 0.56), 0.4)
+	var dark := Mats.std(Color(0.09, 0.095, 0.1), 0.6)
+	var kick := CarouselMesh.mat("kick")
+	var x0 := -0.75                         # worktop between the returns
+	var x1 := 1.15
+	var z_front := 5.3                      # public face (north)
+	var z_back := 6.2                       # operator side (south) of the worktop
+	var parts: Array = [
+		# [centre-bottom, size, corner radius, material, closed base]
+		[Vector3((x0 + x1) * 0.5, 0.0, z_front + 0.05), Vector3(x1 - x0, 0.1, 0.06), 0.01, kick, false],
+		[Vector3((x0 + x1) * 0.5, 0.1, z_front + 0.04), Vector3(x1 - x0, 0.86, 0.08), 0.01, body, false],      # modesty panel
+		[Vector3((x0 + x1) * 0.5, 0.96, (z_front + z_back) * 0.5), Vector3(x1 - x0 + 0.04, 0.04, z_back - z_front + 0.06), 0.015, top, true],
+		[Vector3(x1 - 0.26, 0.0, 5.76), Vector3(0.46, 0.96, 0.82), 0.015, body, false],                        # drawer pedestal (floor to worktop)
+	]
+	for rx in [-1.0, 1.4]:
+		parts.append([Vector3(rx, 0.0, 6.05), Vector3(0.42, 0.1, 1.42), 0.03, kick, false])
+		parts.append([Vector3(rx, 0.1, 6.05), Vector3(0.5, 1.04, 1.5), 0.04, body, false])
+		parts.append([Vector3(rx, 1.14, 6.05), Vector3(0.56, 0.04, 1.56), 0.04, top, true])
+	for pt in parts:
+		var mi := MeshInstance3D.new()
+		mi.mesh = CarouselMesh.rounded_prism(pt[1], pt[2], pt[4])
+		mi.material_override = pt[3]
+		add_child(mi)
+		mi.position = pt[0]
+	# knee space: a dark back under the worktop between the modesty panel and the pedestal
+	Geo.box(self, Vector3((x0 + x1 - 0.52) * 0.5, 0.53, z_front + 0.085), Vector3(x1 - x0 - 0.52, 0.86, 0.01), dark, false)
+	# blue accent line wrapping the public face and the returns' outer faces
+	Geo.box(self, Vector3((x0 + x1) * 0.5, 0.82, z_front - 0.003), Vector3(x1 - x0, 0.035, 0.008), blue, false)
+	for rx in [-1.0, 1.4]:
+		Geo.box(self, Vector3(rx, 0.82, 5.3 - 0.003), Vector3(0.42, 0.035, 0.008), blue, false)
+	# drawer fronts: dark seams and finger pulls on the pedestal's operator face
+	for i in 3:
+		var dy := 0.24 + i * 0.25
+		Geo.box(self, Vector3(x1 - 0.26, dy + 0.11, 6.172), Vector3(0.4, 0.006, 0.006), dark, false)
+		Geo.box(self, Vector3(x1 - 0.26, dy + 0.06, 6.175), Vector3(0.14, 0.012, 0.012), CarouselMesh.mat("steel"), false)
+	# colliders
+	Geo.blocker(self, Vector3((x0 + x1) * 0.5, 0.5, (z_front + z_back) * 0.5), Vector3(x1 - x0, 1.0, z_back - z_front))
+	for rx in [-1.0, 1.4]:
+		Geo.blocker(self, Vector3(rx, 0.59, 6.05), Vector3(0.5, 1.18, 1.5))
 
 
 ## Self check-in kiosk: an off-white cabinet on a dark plinth with a blue band, a service door, boarding-pass and
@@ -583,37 +614,9 @@ func _build_kiosk() -> Node3D:
 	return k
 
 
-## Stopped escalator from the hall floor up to the closed 2F lounge (east), built from the walkway units: flat
-## landing, two straight units tilted 30°, flat landing on the lounge floor. Belted off at the foot.
+## Stopped escalator from the hall floor up to the closed 2F lounge (east), belted off at the foot (Escalator).
 func _escalator() -> void:
-	var zc := 12.3
-	var foot_x := 4.2
-	var ang := deg_to_rad(30.0)
-	var run := MEZZ_Y / tan(ang)
-	var slope := MEZZ_Y / sin(ang)
-	var width := 1.5
-	if TripoProps.exists("walkway", "SEC_WalkwayMid"):
-		var bottom := TripoProps.spawn(self, "walkway", "SEC_WalkwayEnd", Vector3.ZERO, -PI / 2, false, null, Vector3(width, 0, 2.6))
-		bottom.position = Vector3(foot_x - 1.3, 0, zc)
-		var top := TripoProps.spawn(self, "walkway", "SEC_WalkwayEnd", Vector3.ZERO, PI / 2, false, null, Vector3(width, 0, 2.6))
-		top.position = Vector3(foot_x + run + 1.3, MEZZ_Y, zc)
-		for i in 2:
-			var m := TripoProps.spawn(self, "walkway", "SEC_WalkwayMid", Vector3.ZERO, -PI / 2, false, null, Vector3(width, 0, slope * 0.5 + 0.04))
-			m.rotate_object_local(Vector3.RIGHT, ang)
-			var s := slope * (i + 0.5) * 0.5
-			m.position = Vector3(foot_x + cos(ang) * s, sin(ang) * s, zc)
-	else:
-		var ramp := Geo.box(self, Vector3(foot_x + run * 0.5, MEZZ_Y * 0.5 + 0.5, zc), Vector3(slope, 0.2, width), Mats.get_mat("metal_dark"), false)
-		ramp.rotation.z = ang
-	# truss cladding under the incline
-	var truss := Geo.box(self, Vector3(foot_x + run * 0.5 + 0.35, MEZZ_Y * 0.5 - 0.35, zc), Vector3(slope, 0.7, width - 0.1), Mats.get_mat("steel_frame"), false)
-	truss.rotation.z = ang
-	Geo.blocker(self, Vector3(foot_x + run * 0.5 - 0.6, 1.5, zc), Vector3(run + 3.8, 3.0, width + 0.2))
-	# out of service: belt across the foot, sign stand
-	LevelKit.stanchions(self, [Vector3(foot_x - 3.0, 0, zc - 1.0), Vector3(foot_x - 3.0, 0, zc + 1.0)])
-	var plate := LevelKit.sign_body(self, Vector3(foot_x - 3.3, 1.25, zc), -90.0, Vector2(0.9, 0.6))
-	LevelKit.decal(plate, "sign_escalator_oos", Vector3(0, 0, plate.get_meta("face_z") + 0.003), 0.0, Vector2(0.87, 0.58))
-	Geo.box(self, Vector3(foot_x - 3.3, 0.5, zc), Vector3(0.05, 1.0, 0.05), Mats.get_mat("steel_frame"), false)
+	Escalator.build(self, Vector3(4.2, 0, 12.3), MEZZ_Y)
 
 
 ## The 2F lounge behind its glass front (the plan crosses it out): closed for the opening, never reachable.
@@ -637,7 +640,8 @@ func _build_lounge() -> void:
 		while mz <= b + 0.01:
 			Geo.box(self, Vector3(12, (MEZZ_Y + HALL_H) * 0.5, mz), Vector3(0.1, HALL_H - MEZZ_Y, 0.08), frame, false)
 			mz += 2.5
-	Geo.box(self, Vector3(12, MEZZ_Y + 0.05, 5.75), Vector3(0.3, 0.1, 16.5), frame, false)
+	for seg in [[-2.5, 11.4], [13.2, 14.0]]:          # the base frame stops at the escalator's arrival
+		Geo.box(self, Vector3(12, MEZZ_Y + 0.05, (seg[0] + seg[1]) * 0.5), Vector3(0.3, 0.1, seg[1] - seg[0]), frame, false)
 	Geo.blocker(self, Vector3(12.6, MEZZ_Y + 1.5, 12.3), Vector3(0.3, 3.0, 2.0))
 	# seats under dust sheets, an opening-soon sign on the glass, one dim emergency light
 	for zz in [1.0, 4.0, 7.0]:
@@ -917,7 +921,7 @@ func _build_gates() -> void:
 		["@icon_departures", 0.62, Color(1, 1, 1), Vector2(0, 0)],
 		["GATE 03 · 04  ▶", 52, Color(1, 1, 1), Vector2(2.3, 0)],
 	], 5.5)
-	for p in [Vector3(-20, 0, -78), Vector3(20, 0, -78)]:
+	for p in [Vector3(-20, 0, -76.5), Vector3(20, 0, -76.5)]:     # against the gate hall's north wall
 		Props.trash_bin(self, p)
 	for p in [Vector3(-24.5, 0, -98.5), Vector3(24.5, 0, -98.5)]:
 		Props.planter(self, p)
@@ -958,12 +962,7 @@ func _build_service_rooms() -> void:
 		Geo.cyl(self, Vector3(-46.5 + i * 3.0, 2.6, -47.4), 0.08, 0.1, Mats.get_mat("metal"))
 	Geo.box(self, Vector3(-42, 2.6, -47.35), Vector3(12, 0.12, 0.12), Mats.get_mat("metal_dark"), false)
 	# main power lever (west end)
-	var mp := Props.panel_box(self, Vector3(-47.78, 1.4, -50), PI / 2, Vector2(1.0, 1.2), "MAIN POWER  주 전원")
-	Geo.box(mp, Vector3(0, -0.1, 0.05), Vector3(0.12, 0.5, 0.08), Mats.get_mat("metal"), false).name = "Lever"
-	Geo.box(mp, Vector3(0, 0.18, 0.08), Vector3(0.3, 0.08, 0.12), Mats.get_mat("button_red"), false)
-	Geo.label(mp, "⚠ 터미널 전체 전원 차단", Vector3(0, -0.45, 0.006), 0.0, 26, Geo.SIGN_BLUE, 0.003, false, "print")
-	main_power = Interactable.create(mp, Vector3(0, 0, 0.1), Vector3(0.8, 1.0, 0.2), "주 전원 레버", Callable())
-	main_power.press_sound = ""
+	main_power = Equipment.main_power(self, Vector3(-47.78, 1.4, -50), PI / 2)
 	# system log terminal (north wall)
 	var term := Node3D.new()
 	add_child(term)
@@ -1135,23 +1134,25 @@ func _build_facility_systems() -> void:
 		lights_panel.switches[zn].toggled.connect(func(on): _sync_switch(zn, on))
 	for zn in lights_panel_gates.switches.keys():
 		lights_panel_gates.switches[zn].toggled.connect(func(on): _sync_switch(zn, on))
-	# FIDS on the hall's north wall (face z -2.3), either side of the opening into the strip; the boards stand on
-	# the wall with their 22 cm cabinets 1 cm off it (they used to sit buried in it, only the screen showing)
+	# FIDS side by side on the hall's north wall right above the opening into security (face z -2.3), where the
+	# whole lobby sees them (they used to sit in the alcoves behind the check-in blocks); the RESET box is on the
+	# wall left of the opening at hand height
 	var fids := FidsBoard.new()
 	fids.id = "fids"
 	fids.title = "FIDS 출발 전광판"
 	fids.short_name = "FIDS-01"
 	fids.zone = "hall"
 	add_child(fids)
-	fids.position = Vector3(-8.2, 4.6, -2.07)
-	fids.build(6.0, 2.8, true)
+	fids.position = Vector3(-2.45, 5.8, -2.07)
+	fids.build(4.4, 2.05, true)
+	fids.control_box.position = Vector3(-5.95, 1.45, -2.23) - fids.position
 	facilities["fids"] = fids
 	arrivals = FidsBoard.new()
 	arrivals.id = "fids_arr"
 	arrivals.zone = "hall"
 	add_child(arrivals)
-	arrivals.position = Vector3(8.2, 4.6, -2.07)
-	arrivals.build(6.0, 2.8, false)
+	arrivals.position = Vector3(2.45, 5.8, -2.07)
+	arrivals.build(4.4, 2.05, false)
 	arrivals.screen.title = "도착  ARRIVALS"
 	arrivals.screen.icon = load("res://assets/textures/level/icon_arrivals.png")
 	arrivals.set_story("message", ["운영 준비 중", "NOT IN SERVICE"])

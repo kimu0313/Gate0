@@ -42,6 +42,7 @@ var _observe_label: Label
 var _prompt_row: HBoxContainer
 var _prompt_box: PanelContainer
 var _prompt_text: Label
+var _prompt_tw: Tween
 # warning, hints
 var _warn: Control
 var _warn_text := ""
@@ -366,6 +367,9 @@ func _build_warning(root: Control) -> void:
 # per frame
 # =========================================================================================
 func _process(delta: float) -> void:
+	# safety net: no target, no fade running, yet the prompt still shows -> fade it out
+	if not has_target and _prompt_row.modulate.a > 0.0 and not (_prompt_tw and _prompt_tw.is_running()):
+		_prompt_row.modulate.a = move_toward(_prompt_row.modulate.a, 0.0, delta * 8.0)
 	# subtitles
 	if _sub_time > 0.0:
 		_sub_time -= delta
@@ -514,7 +518,12 @@ func set_prompt(text: String) -> void:
 		_prompt_text.text = UiKit.keep_all(UiKit.t(text))
 	if has_target == had:
 		return
+	# one fade at a time: a show still running when the hide starts (it is the longer of the two) used to finish
+	# last and leave the prompt on screen with nothing targeted (seen after alt-tab)
+	if _prompt_tw and _prompt_tw.is_valid():
+		_prompt_tw.kill()
 	var tw := _prompt_row.create_tween().set_parallel(true)
+	_prompt_tw = tw
 	if has_target:
 		_prompt_row.offset_top = 82
 		_prompt_row.offset_bottom = 128

@@ -1,6 +1,7 @@
 class_name BreakerPanel
 extends Node3D
-## 시설 전원 배전반 — cuts or restores power per facility group.
+## 시설 전원 배전반 — cuts or restores power per facility group: a distribution board (Equipment.board) with one
+## breaker module per group.
 
 var groups := {}      # key -> Array[Facility]
 var switches := {}    # key -> ToggleSwitch
@@ -8,14 +9,14 @@ var switches := {}    # key -> ToggleSwitch
 
 ## entries: [[key, caption, [Facility...]], ...]
 func build(entries: Array, title := "시설 전원 배전반  BREAKER") -> void:
-	var w := 0.2 * entries.size() + 0.35
-	var holder := Props.panel_box(self, Vector3.ZERO, 0.0, Vector2(w, 0.75), title)
-	Geo.label(holder, "※ 차단 시 해당 시설 즉시 정지", Vector3(0, -0.31, 0.006), 0.0, 18, Color(0.85, 0.85, 0.85), 0.0022, false, "print")
-	for i in entries.size():
+	var n := entries.size()
+	var w := 0.15 * n + 0.3
+	var face := Equipment.board(self, Vector2(w, 0.75), title, "※ 차단 시 해당 시설 즉시 정지")
+	for i in n:
 		var e: Array = entries[i]
 		var key: String = e[0]
 		groups[key] = e[2]
-		var s := ToggleSwitch.create(holder, Vector3(-w * 0.5 + 0.27 + i * 0.2, -0.04, 0.0), e[1], true)
+		var s := ToggleSwitch.create(face, Vector3((i - (n - 1) * 0.5) * 0.15, -0.02, 0.0), e[1], true)
 		s.on_prompt = "전원 투입"
 		s.off_prompt = "전원 차단"
 		s._refresh(true)

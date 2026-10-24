@@ -26,6 +26,7 @@ var _reboot_t := 0.0
 var _clock_offset := 0.0
 var _story_mode := ""
 var _hum: AudioStreamPlayer3D
+var control_box: Node3D          # the RESET box (with_controls)
 
 
 const SCREEN_W := 1600       # screen texture width (px); its height follows the board so the lettering is not stretched
@@ -82,6 +83,7 @@ func build(width := 8.0, height := 3.2, with_controls := true) -> void:
 	_hum = Snd.make_loop("machine_hum_loop", self, -18.0, 3.0, 12.0)
 	if with_controls:
 		var box := Props.panel_box(self, Vector3(width * 0.5 - 0.45, -height * 0.5 - 1.75, -0.16), 0.0, Vector2(0.6, 0.5), "FIDS 제어함")   # on the wall below
+		control_box = box                  # the terminal may move it to a reachable spot
 		Props.button(box, Vector3(-0.12, -0.04, 0), 0.0, "button_blue", "RESET", "전광판 RESET", _on_reset)
 		Geo.label(box, "SEOHAE FIDS-01", Vector3(0.13, -0.04, 0.006), 0.0, 18, Color(0.7, 0.75, 0.8), 0.0022, false, "print")
 	_rows = NORMAL_ROWS.duplicate(true)

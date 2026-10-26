@@ -187,7 +187,8 @@ func _run_world() -> void:
 		ui.tablet._show_tab("camera")
 		await _wait(0.5)
 		await _shot("27_tablet_camera")
-	Game.add_clue("log2")
+	Game.add_clue("ticket")
+	Game.add_clue("job_post")
 	Game.add_clue("syslog")
 	ui.tablet._show_tab("records")
 	await _wait(0.3)
@@ -211,6 +212,11 @@ func _run_world() -> void:
 	await _wait(0.5)
 	# binder
 	Game.binder_pages = ["p0", "p1", "p2", "p3", "p4", "f4", "p5", "f5", "f6", "p9"]
+	ui.open_binder("p1")
+	await _wait(0.9)
+	await _shot("39_binder_p1")
+	ui.close_modal()
+	await _wait(0.4)
 	ui.open_binder("p4")
 	await _wait(0.9)
 	await _shot("40_binder_p4")
@@ -225,7 +231,7 @@ func _run_world() -> void:
 	ui.close_modal()
 	await _wait(0.5)
 	# document
-	ui.read_doc(RulesDB.CLUES.log2.title, RulesDB.CLUES.log2.body, "serif")
+	ui.read_doc(RulesDB.CLUES.scraps.title, RulesDB.CLUES.scraps.body, "serif")
 	await _wait(0.8)
 	await _shot("50_document")
 	ui._close_reader()

@@ -3,6 +3,9 @@ extends Facility
 ## 안내방송 콘솔. [테스트 방송] plays the standard test announcement; [송출 중지] cuts the PA.
 ## Anomalies: pa_word (one word differs from the standard text), pa_slow (the voice drags and deepens),
 ## pa_extra (a sentence is added after the standard text), pa_auto (the PA keeps broadcasting by itself).
+## The console came from the old airfield (DAY 3 transfer list): its left end is a built-in cassette deck. `service`
+## is the story's handle on it (fault check, module swap, playing the A0 tape), switched on by the day script;
+## [송출 중지] does nothing while the tape is on air.
 
 const TEXT_NORMAL := "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."
 const TEXT_EN := "Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. Thank you."
@@ -22,6 +25,9 @@ var _onair: MeshInstance3D
 var _t := 0.0
 var _auto_running := false
 var _quiet_cancel := false
+var service: Interactable     # story use of the console / deck (disabled until a day script sets it up)
+var fault := false            # DAY 3: SPK-07 has no output until the spare module is fitted
+var _deck_lamp: MeshInstance3D
 
 
 func build() -> void:
@@ -53,6 +59,20 @@ func build() -> void:
 	Geo.capsule(mic, Vector3(0, 0.38, 0.12), 0.022, 0.1, Mats.get_mat("plastic_dark")).rotation.x = 1.2
 	_onair = Geo.box(self, Vector3(-0.3, 0.12, -0.2), Vector3(0.18, 0.06, 0.02), Mats.get_mat("screen_off"), false)
 	Geo.label(_onair, "ON AIR", Vector3(0, 0, 0.012), 0.0, 18, Color(0.9, 0.9, 0.9), 0.002)
+	# cassette deck built into the left end of the console
+	var deck := Node3D.new()
+	add_child(deck)
+	deck.position = Vector3(-0.62, 0.0, 0.03)
+	Geo.box(deck, Vector3(0, 0.05, 0), Vector3(0.3, 0.1, 0.34), Mats.get_mat("plastic_dark"), false)
+	Geo.box(deck, Vector3(0, 0.1015, 0.03), Vector3(0.21, 0.003, 0.13), Mats.get_mat("screen_off"), false)      # cassette door
+	Geo.box(deck, Vector3(0, 0.1035, 0.03), Vector3(0.1, 0.002, 0.04), Mats.std(Color(0.32, 0.33, 0.35), 0.35), false)   # window
+	for i in 4:
+		Geo.box(deck, Vector3(-0.075 + i * 0.05, 0.103, -0.1), Vector3(0.04, 0.008, 0.03), Mats.get_mat("plastic_grey"), false)
+	_deck_lamp = Geo.box(deck, Vector3(0.115, 0.1025, 0.11), Vector3(0.018, 0.004, 0.018), Mats.get_mat("screen_off"), false)
+	var tape_l := Geo.label(deck, "TAPE", Vector3(-0.1, 0.104, 0.12), 0.0, 16, Color(0.75, 0.78, 0.8), 0.0018, false, "print")
+	tape_l.rotation.x = -PI / 2
+	service = Interactable.create(deck, Vector3(0, 0.08, 0), Vector3(0.34, 0.18, 0.38), "", Callable())
+	service.enabled = false
 	focus = face
 	Snd.pa_started.connect(_on_pa_started)
 	Snd.pa_finished.connect(_on_pa_finished)
@@ -60,6 +80,8 @@ func build() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if fault and not Snd.pa_busy:
+		_lcd.modulate = Color(1.0, 0.62, 0.15) if fmod(_t, 1.0) < 0.6 else Color(0.35, 0.2, 0.05)
 	var live := Snd.pa_busy
 	for i in _vu.size():
 		var level := 0.05
@@ -105,8 +127,21 @@ func play_test() -> void:
 
 func _on_stop() -> void:
 	act("pa_stop", id)
+	if Snd.pa_busy and Snd.pa_tag == "tape":
+		# the old deck does not answer the console any more
+		Snd.play_at("beep_error", focus_position(), -6.0)
+		Events.notify.emit("[송출 중지]가 듣지 않는다. 테이프가 계속 돈다.", "alert")
+		return
 	if Snd.pa_busy:
 		Snd.pa_stop()
+
+
+## DAY 3: speaker channel SPK-07 is dead (the spare amp module is in the storage room's transfer crate).
+func set_fault(on: bool) -> void:
+	fault = on
+	_deck_lamp.material_override = Mats.get_mat("lamp_red") if on else Mats.get_mat("screen_off")
+	Geo.set_text(_lcd, "SPK-07 FAULT" if on else "READY")
+	_lcd.modulate = Color(1.0, 0.62, 0.15) if on else Color(0.35, 1.0, 0.5)
 
 
 ## pa_auto: the console keeps announcing flight 000 by itself until someone presses [송출 중지].
@@ -130,16 +165,19 @@ func _apply_anomaly(a: String) -> void:
 		_auto_loop()
 
 
-func _on_pa_started(_tag: String) -> void:
+func _on_pa_started(tag: String) -> void:
 	_onair.material_override = Mats.get_mat("lamp_red")
-	Geo.set_text(_lcd, "ON AIR")
+	Geo.set_text(_lcd, "ON AIR" if tag != "tape" else "TAPE PLAY")
 	_lcd.modulate = Color(1.0, 0.35, 0.3)
+	if tag == "tape":
+		_deck_lamp.material_override = Mats.get_mat("lamp_green")
 
 
 func _on_pa_finished(cancelled: bool) -> void:
 	_onair.material_override = Mats.get_mat("screen_off")
-	Geo.set_text(_lcd, "STOPPED" if cancelled and not _quiet_cancel else "READY")
-	_lcd.modulate = Color(0.35, 1.0, 0.5)
+	_deck_lamp.material_override = Mats.get_mat("lamp_red") if fault else Mats.get_mat("screen_off")
+	Geo.set_text(_lcd, "SPK-07 FAULT" if fault else ("STOPPED" if cancelled and not _quiet_cancel else "READY"))
+	_lcd.modulate = Color(1.0, 0.62, 0.15) if fault else Color(0.35, 1.0, 0.5)
 	if _quiet_cancel:
 		_quiet_cancel = false
 		return

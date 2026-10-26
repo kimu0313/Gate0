@@ -2,13 +2,14 @@ class_name XrayMachine
 extends Facility
 ## 보안검색대 X-ray 1번 레인. [테스트 가방 투입] scans the test bag and shows the image.
 ## Anomalies: xray_figure (a curled human shape in the bag), xray_heart (something beating),
-## xray_mybag (your own bag with a passenger tag).
+## xray_mybag (your own bag with a passenger tag), xray_41 (41 passenger bags come through after one test bag).
 
 var screen: XrayScreen
 var viewport: SubViewport
 var screen_mat: StandardMaterial3D
 var monitor_on := true
 var scanned := false
+var _pax_seen := 0
 var _tray: Node3D
 var _tray_t := 0.0
 var _tray_target := 0.0
@@ -122,6 +123,12 @@ func _process(delta: float) -> void:
 		_belt.stop()
 	if screen.scan_progress < 1.0:
 		screen.scan_progress = minf(1.0, screen.scan_progress + delta * 0.8)
+	# xray_41: a short beep for every passenger bag that comes through
+	if screen.content == "pax" and screen.pax_count != _pax_seen:
+		_pax_seen = screen.pax_count
+		Snd.play_at("beep_ok", focus_position(), -14.0, 1.25, 4.0)
+		if _pax_seen >= XrayScreen.PAX_TOTAL or not screen.pax_running:
+			_belt.stop()
 	# the figure slowly notices whoever stares at it
 	if anomaly == "xray_figure" and scanned and monitor_on:
 		var cam := get_viewport().get_camera_3d()
@@ -153,8 +160,17 @@ func _reveal() -> void:
 	_stare_time = 0.0
 	screen.stare = 0.0
 	screen.content = _content_for(anomaly)
+	if anomaly == "xray_41":
+		_start_pax()
 	Snd.play_at("beep_ok", focus_position(), -10.0, 1.0, 4.0)
 	changed.emit()
+
+
+## xray_41: the one test bag went in, and passenger bags keep coming through on the monitor.
+func _start_pax() -> void:
+	screen.start_pax()
+	_pax_seen = 1
+	_belt.play()
 
 
 func _content_for(a: String) -> String:
@@ -165,6 +181,8 @@ func _content_for(a: String) -> String:
 			return "heart"
 		"xray_mybag":
 			return "mybag"
+		"xray_41":
+			return "pax"
 	return "bag"
 
 
@@ -177,6 +195,7 @@ func _on_monitor() -> void:
 
 func _on_estop() -> void:
 	act("estop", id)
+	screen.pax_running = false
 	_tray_target = _tray_t
 	running = false
 	_belt.stop()
@@ -197,6 +216,8 @@ func _on_power_restored() -> void:
 func _apply_anomaly(a: String) -> void:
 	if scanned:
 		screen.content = _content_for(a)
+		if a == "xray_41":
+			_start_pax()
 
 
 func _remove_anomaly(_a: String) -> void:

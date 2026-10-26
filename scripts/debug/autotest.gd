@@ -103,6 +103,11 @@ func _heartbeat() -> void:
 
 func _run() -> void:
 	_heartbeat()
+	if Game.cycle == 1:
+		# the arrival scene: card reader, door, walking in to the colleague
+		for k in 8:
+			await wait(1.25)
+			await shot("arrive_%d" % k)
 	while true:
 		await wait(0.3)
 		if d.dead:
@@ -128,6 +133,9 @@ func _run() -> void:
 # --- goals -----------------------------------------------------------------------------------
 func _do_goal(task: Task) -> void:
 	log_line("GOAL  " + task.title)
+	if Game.cycle <= 2:
+		await wait(0.6)
+		await shot("quest_" + task.id)   # the order panel and the green diamond, from wherever the last order left us
 	var title := task.title
 	if "태블릿 열어 보기" in title:
 		await wait(1.0)
@@ -160,8 +168,6 @@ func _do_goal(task: Task) -> void:
 				if presses <= 3:
 					await shot("colleague_%d" % presses)
 			log_line("  handover talk: %d presses" % presses)
-	elif "사물함" in title:
-		await _pick("log2")
 	elif "탑승동 출입" in title:
 		var reader: CardReader = d.script_obj.get("_reader")
 		await goto(reader.global_position + reader.global_basis.z * 1.1 + Vector3(0, -1.2, 0), reader.global_position)
@@ -177,6 +183,8 @@ func _do_goal(task: Task) -> void:
 	elif "0번 게이트 앞으로" in title:
 		await _finale_choice()
 		return
+	elif task.target != null and not ("퇴근" in title or "근무 종료" in title):
+		await _use_target(task)
 	elif "퇴근" in title or "근무 종료" in title:
 		await goto(t.spot("view_punch"), t.spot("look_punch"))
 		await shot("before_punch")
@@ -194,6 +202,48 @@ func _do_goal(task: Task) -> void:
 	# goals finish once the phase script has heard the radio out — don't redo the action meanwhile
 	await _until(func(): return task.state == "done" or d.current != task, 90.0)
 	await wait(0.5)
+
+
+## Story goals name what to use (Task.target): walk up to it and press [E] until the goal is done, closing
+## whatever documents it opens (the DAY 4 drawer opens two in a row).
+func _use_target(task: Task) -> void:
+	var tries := 0
+	while task.state != "done" and tries < 8 and not d.dead:
+		var tg := task.target
+		if not is_instance_valid(tg):
+			await wait(0.5)
+			tries += 1
+			continue
+		var it: Interactable = tg as Interactable if tg is Interactable else ((tg as Pickup).interactable if tg is Pickup else null)
+		if it == null or not is_instance_valid(it):
+			log_line("  !! goal target is not usable: " + task.title)
+			return
+		var at := it.global_position
+		var away := Vector3(p.global_position.x - at.x, 0, p.global_position.z - at.z)
+		away = away.normalized() if away.length() > 0.1 else Vector3(1, 0, 0)
+		await goto(Vector3(at.x, 0.05, at.z) + away * 1.2, at)
+		if it.enabled:
+			it.interact()
+		await wait(1.2)
+		var closes := 0
+		while world.ui.modal == "doc" and closes < 5:
+			if closes == 0:
+				await shot("doc_" + str(Game.clues.keys().back() if not Game.clues.is_empty() else ""))
+			world.ui._close_reader()
+			await wait(1.0)
+			closes += 1
+		tries += 1
+		await wait(0.5)
+	log_line("  used %s (%d tries) -> %s" % [task.title, tries, task.state])
+
+
+## DAY 1: the rule page waiting at a facility goes into the binder first.
+func _pick_page_near(f: Facility) -> void:
+	for n in t.get_children():
+		if n is Pickup and (n as Pickup).item_id.begins_with("page_") and n.global_position.distance_to(f.focus_position()) < 8.0:
+			log_line("  page " + (n as Pickup).item_id)
+			await _pick((n as Pickup).item_id)
+			return
 
 
 func _pick_prefix(prefix: String) -> void:
@@ -229,6 +279,11 @@ func _after_punch() -> void:
 func _do_inspect(task: Task) -> void:
 	var f := t.facility(task.facility_id)
 	log_line("INSPECT %s  [%s]  anomaly=%s" % [task.title, task.facility_id, f.anomaly])
+	if Game.cycle <= 2:
+		await wait(0.6)
+		await shot("quest_" + task.id)
+	if Game.cycle == 1:
+		await _pick_page_near(f)
 	if f is BoardingGate:
 		# far enough back that a seated "passenger" never comes within reach
 		await goto(f.to_global(Vector3(-1.0, 0.05, 11.5)), f.focus_position())
@@ -377,6 +432,10 @@ func _watch_events() -> void:
 				log_line("EVENT name call → stand still")
 				await shot("namecall")
 				await _until(func(): return d.running_event != "namecall", 40.0)
+			"tapecall":
+				log_line("EVENT the tape says your name → stand still (p.9 ②)")
+				await shot("tapecall")
+				await _until(func(): return d.running_event != "tapecall", 60.0)
 			"3am":
 				log_line("EVENT 3am → stay in a lit zone (lit=%s)" % d.player_zone_lit())
 				if not d.player_zone_lit():

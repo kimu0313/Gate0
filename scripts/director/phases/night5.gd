@@ -1,6 +1,7 @@
 extends PhaseScript
 ## DAY 5 — 10/23, 개장일 새벽 · 마지막 근무. 모든 구역이 열려 있고, 터미널은 이미 당신을 승객으로 안다.
-## 교대 근무자는 안내 데스크에 있다. 바닥에 떨어져 있었다며 탑승권을 건넨다 — FLIGHT 000, 당신의 이름.
+## 교대 근무자는 안내 데스크에 있다 ("닷새를 다 채운 분은 처음 봐요"). 바닥에 떨어져 있었다며 탑승권을 건넨다 —
+## FLIGHT A0, 23:40, 당신의 이름. 분실물 보관함의 1987년 탑승권은 여전히 젖어 있다.
 ## "게이트에서 봬요" — 그리고 탑승동 쪽으로 걸어가 사라진다.
 ## 비상 수칙이 차례로 시험된다: 점검 6 뒤 이름을 부르는 방송(p.9 ②), 점검 8 뒤 정전(p.9 ①), 03:00 정기 방송(p.9 ③).
 ## 새벽 후반 (점검 12 직후): 수칙끼리 충돌 — 방송 중에는 움직이지 마라(p.9 ③) vs 탑승 안내가 나오면 즉시
@@ -12,7 +13,8 @@ const GATE_FRONT_Z := -92.0
 
 const POST := "npc_info"   # Terminal spot: at the information desk
 const TALK := [
-	["마지막 근무네요. 오늘이 개장일이에요.", ""],
+	["마지막 근무네요. 닷새를 다 채운 분은… 처음 봐요.", ""],
+	["오늘이 개장일이에요.", ""],
 	["세 시 방송, 이름 부르는 방송, 정전. 수칙 9페이지 다시 봐 둬요.", ""],
 	["아, 이거. 아까 바닥에 떨어져 있었어요. …당신 이름이던데요.", "pass"],
 	["그럼… 게이트에서 봬요.", ""],
@@ -39,6 +41,8 @@ func setup() -> void:
 	d.ui.tablet.boarding_mode = true
 	var reader := CardReader.create(d.t, d.t.spot("wing_reader"), 0.0)
 	reader.swiped.connect(func(r: CardReader): r.show_result(true, "PASSENGER"))
+	d.t.lost_found.enabled = true
+	d.t.lost_found.callback = func(): d.read_clue("ticket_wet", "sans", [], {"stain": true})
 	spawn_worker(d.t.spot(POST), 0.0)
 	d.t.triggers.emergency_out.body_entered.connect(func(b: Node3D):
 		if b.is_in_group("player") and finale and ending == "exit":
@@ -73,7 +77,7 @@ func _give(item: String) -> void:
 	d.npc.present("pass", 3.0)
 	Game.set_flag("boarding_pass")
 	Snd.play("page_flip", -4.0, 1.1)
-	d.ui.read_doc("탑승권 — FLIGHT 000", tr("PASSENGER　%s\nFLIGHT　SH 000\nFROM　SEOHAE · 서해\nTO　HOME · 집\nGATE　0\nBOARDING　06:00\nSEAT　—\n\n탑승이 확인되었습니다.") % Game.player_name, "mono")
+	d.ui.read_doc("탑승권 — FLIGHT A0", tr("PASSENGER　%s\nFLIGHT　A0\nFROM　SEOHAE · 서해\nTO　HOME · 집\nGATE　0\nBOARDING　23:40\nSEAT　—\n\n탑승이 확인되었습니다.") % Game.player_name, "mono")
 	await d.until(func(): return d.ui.modal != "doc" or d.dead)
 
 
@@ -120,7 +124,7 @@ func _boarding_call() -> void:
 func _finale() -> void:
 	finale = true
 	d.jump_clock(5 * 60 + 50)
-	d.t.facility("fids").set_story("final", ["SH 000", "GATE 0", "BOARDING"])
+	d.t.facility("fids").set_story("final", ["A0  23:40", "GATE 0", "BOARDING"])
 	Snd.play("sub_boom", 0.0, 0.8, "SFX")
 	d.p.add_shake(0.4)
 	d.t.reveal_gate0()   # builds Gate 0 and its jet bridge trigger

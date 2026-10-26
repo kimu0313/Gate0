@@ -213,6 +213,15 @@ func stream(sound_name: String) -> AudioStream:
 
 
 func voice(clip: String) -> AudioStream:
+	if clip == "name_tape":
+		# DAY 4: past the end of the 1987 tape, a voice says your name
+		var path := Game.name_voice_path.replace("voice_name.wav", "voice_name_tape.wav")
+		if Game.name_voice_path != "" and FileAccess.file_exists(path):
+			if not _cache.has("__tape__" + path):
+				_cache["__tape__" + path] = AudioStreamWAV.load_from_file(path)
+			if _cache["__tape__" + path]:
+				return _cache["__tape__" + path]
+		return stream("tape_name_generic")
 	if clip == "name_call":
 		if Game.name_voice_path != "":
 			if _cache.has("__name__" + Game.name_voice_path):
@@ -515,6 +524,7 @@ func radio_static(on: bool) -> void:
 # --- PA system -------------------------------------------------------------------------------------
 ## Plays a full PA announcement (chime → voice clips → closing chime). Await it.
 ## opts: subs (Array[String]), wrong (bool), slow_index (int, voice slows down), pitch (float),
+##       pitches (Array[float], per clip), no_chime (bool, no opening chime — a tape starting by itself),
 ##       no_end (bool), tag (String), delay_between (float)
 func pa_announce(clips: Array, opts: Dictionary = {}) -> bool:
 	while pa_busy:
@@ -523,23 +533,25 @@ func pa_announce(clips: Array, opts: Dictionary = {}) -> bool:
 	pa_tag = str(opts.get("tag", ""))
 	_pa_cancel = false
 	pa_started.emit(pa_tag)
-	var chime := "pa_chime_wrong" if opts.get("wrong", false) else "pa_chime"
-	await _pa_play(stream(chime), 1.0, false)
-	if not _pa_cancel:
-		await _wait(0.25)
+	if not opts.get("no_chime", false):
+		var chime := "pa_chime_wrong" if opts.get("wrong", false) else "pa_chime"
+		await _pa_play(stream(chime), 1.0, false)
+		if not _pa_cancel:
+			await _wait(0.25)
 	var subs: Array = opts.get("subs", [])
-	var base_pitch: float = opts.get("pitch", 1.0)
+	var pitches: Array = opts.get("pitches", [])
 	for i in clips.size():
 		if _pa_cancel:
 			break
 		var s := voice(str(clips[i]))
 		if s == null:
 			continue
+		var clip_pitch: float = float(pitches[i]) if i < pitches.size() else float(opts.get("pitch", 1.0))
 		var slow: bool = int(opts.get("slow_index", -1)) == i
 		if i < subs.size() and str(subs[i]) != "":
-			var dur := s.get_length() / base_pitch * (1.35 if slow else 1.0)
+			var dur := s.get_length() / clip_pitch * (1.35 if slow else 1.0)
 			Events.subtitle.emit("pa", str(subs[i]), dur + 0.4)
-		await _pa_play(s, base_pitch, slow)
+		await _pa_play(s, clip_pitch, slow)
 		if not _pa_cancel and i < clips.size() - 1:
 			await _wait(float(opts.get("delay_between", 0.6)))
 	if not _pa_cancel and not opts.get("no_end", false):

@@ -21,6 +21,12 @@ var _phase_box: PanelContainer
 var _zone: FlapLabel
 var _obj_text := ""
 var _boarding := false
+var _quest_box: HBoxContainer    # top right: the current order (퀘스트)
+var _obj_fade: Tween             # the panel's fade-out when an order is done; the next order cancels it
+var _obj_dist: Label             # DAY 1: distance to the green diamond, beside the caption
+var _marker: Control             # DAY 1 (tutorial): green diamond over where the current order is
+var marker_pos: Variant = null   # world point the diamond points at (null = none); ShiftDirector.marker_target()
+var _marker_t := 0.0
 # toasts (top right)
 var _notes_root: Control
 var _notes: Array = []          # [{node, life, max, accent}]
@@ -71,6 +77,7 @@ func _ready() -> void:
 	_build_reticle(root)
 	_build_warning(root)
 	_build_controls(root)
+	_build_marker(root)   # last: the diamond pinned to a screen edge stays above the notes
 	_keys_t = 40.0
 	Events.subtitle.connect(show_subtitle)
 	Events.notify.connect(add_note)
@@ -85,10 +92,19 @@ func _build_objective(root: Control) -> void:
 	_obj_root.add_theme_constant_override("separation", 0)
 	_obj_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_obj_root)
+	# the current order hangs in the top right corner, the notes stack up under it
+	_quest_box = HBoxContainer.new()
+	_quest_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_quest_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_quest_box.offset_right = -44
+	_quest_box.offset_top = 44
+	_quest_box.alignment = BoxContainer.ALIGNMENT_END
+	_quest_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_quest_box)
 	_obj_head = HBoxContainer.new()
 	_obj_head.add_theme_constant_override("separation", 0)
 	_obj_head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_obj_root.add_child(_obj_head)
+	_quest_box.add_child(_obj_head)
 	_obj_tile = PanelContainer.new()
 	_obj_tile.custom_minimum_size = Vector2(72, 0)
 	_obj_tile.add_theme_stylebox_override("panel", UiKit.box(UiKit.SIGNAL, Color(0, 0, 0, 0), 0, 0, 0))
@@ -105,9 +121,17 @@ func _build_objective(root: Control) -> void:
 	bv.add_theme_constant_override("separation", 2)
 	bv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_obj_body.add_child(bv)
+	var cap_row := HBoxContainer.new()
+	cap_row.add_theme_constant_override("separation", 10)
+	cap_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bv.add_child(cap_row)
 	_obj_caption = FlapLabel.make("CURRENT ORDER · 현재 지시", UiKit.MIN_TEXT, UiKit.SIGNAL_TEXT, "display", 700)
 	_obj_caption.tick_sound = false
-	bv.add_child(_obj_caption)
+	_obj_caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cap_row.add_child(_obj_caption)
+	_obj_dist = UiKit.label("", UiKit.MIN_TEXT, MARKER_GREEN, "display", 700)
+	_obj_dist.visible = false
+	cap_row.add_child(_obj_dist)
 	_objective = FlapLabel.make("", 27, UiKit.TEXT, "sans", 700)
 	_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_objective.custom_minimum_size = Vector2(430, 0)
@@ -139,6 +163,73 @@ func _build_objective(root: Control) -> void:
 	_zone.tick_sound = false
 	_zone.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mh.add_child(_zone)
+
+
+## DAY 1 is the tutorial: the current order's place gets a green diamond, on screen or pinned to the screen edge
+## in its direction, with the distance under it.
+const MARKER_GREEN := Color(0.3, 0.92, 0.45)
+
+
+func _build_marker(root: Control) -> void:
+	_marker = Control.new()
+	UiKit.full_rect(_marker)
+	_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_marker.draw.connect(_draw_marker)
+	root.add_child(_marker)
+
+
+func set_marker(pos: Variant) -> void:
+	marker_pos = pos
+
+
+func _draw_marker() -> void:
+	if marker_pos == null or player == null or player.camera == null:
+		return
+	var cam := player.camera
+	var wp: Vector3 = marker_pos
+	var vs := _marker.size
+	var dist := cam.global_position.distance_to(wp)
+	var a := clampf((dist - 1.6) / 1.4, 0.0, 1.0)      # fades out once you are there
+	if a <= 0.0:
+		return
+	var edge := 64.0
+	var inner := Rect2(Vector2(edge, edge), vs - Vector2(edge, edge) * 2.0)
+	var behind := cam.is_position_behind(wp)
+	var sp := cam.unproject_position(wp)
+	var off := behind or not inner.has_point(sp)
+	var out_dir := Vector2.ZERO
+	if off:
+		# pinned to the screen edge, in the target's direction
+		var c := vs * 0.5
+		var d := (sp - c) if not behind else (c - sp)
+		if d.length() < 1.0:
+			d = Vector2(0, 1)
+		var k := minf(absf(inner.size.x * 0.5 / d.x) if absf(d.x) > 0.001 else INF, absf(inner.size.y * 0.5 / d.y) if absf(d.y) > 0.001 else INF)
+		sp = c + d * k
+		out_dir = d.normalized()
+	else:
+		sp.y += sin(_marker_t * 3.2) * 4.0
+	var r := 13.0
+	var pts := PackedVector2Array([sp + Vector2(0, -r), sp + Vector2(r, 0), sp + Vector2(0, r), sp + Vector2(-r, 0)])
+	var glow := PackedVector2Array([sp + Vector2(0, -r - 6), sp + Vector2(r + 6, 0), sp + Vector2(0, r + 6), sp + Vector2(-r - 6, 0)])
+	_marker.draw_colored_polygon(glow, Color(MARKER_GREEN, 0.18 * a))
+	_marker.draw_colored_polygon(pts, Color(MARKER_GREEN, 0.92 * a))
+	pts.append(pts[0])
+	_marker.draw_polyline(pts, Color(0.02, 0.12, 0.05, 0.9 * a), 2.0, true)
+	var ri := r * 0.42
+	_marker.draw_colored_polygon(PackedVector2Array([sp + Vector2(0, -ri), sp + Vector2(ri, 0), sp + Vector2(0, ri), sp + Vector2(-ri, 0)]), Color(0.9, 1.0, 0.92, 0.85 * a))
+	if off:
+		var tip := sp + out_dir * (r + 14.0)
+		var side := Vector2(-out_dir.y, out_dir.x) * 7.0
+		_marker.draw_colored_polygon(PackedVector2Array([tip, sp + out_dir * (r + 5.0) + side, sp + out_dir * (r + 5.0) - side]), Color(MARKER_GREEN, 0.92 * a))
+	var font := UiKit.font("display", 700)
+	var txt := "%d m" % roundi(dist)
+	var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+	var tp := sp + Vector2(-tw * 0.5, r + 24.0)
+	if off and out_dir.y > 0.5:
+		tp.y = sp.y - r - 12.0          # pinned to the bottom edge: the distance goes above
+	_marker.draw_string_outline(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 5, Color(0, 0, 0, 0.7 * a))
+	_marker.draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.92, 1.0, 0.94, a))
 
 
 func _refresh_phase_chip() -> void:
@@ -399,6 +490,16 @@ func _process(delta: float) -> void:
 	_reticle.queue_redraw()
 	_update_notes(delta)
 	_update_erosion(delta)
+	# DAY 1 diamond and its distance in the order panel; the notes stack starts under the order panel
+	_marker_t += delta
+	_marker.queue_redraw()
+	var showing := marker_pos != null and _obj_head.visible and player != null and player.camera != null
+	_obj_dist.visible = showing
+	if showing:
+		_obj_dist.text = "◆ %d m" % roundi(player.camera.global_position.distance_to(marker_pos))
+	var top := 44.0 + (_obj_head.size.y + 14.0 if _obj_head.visible and _obj_head.modulate.a > 0.1 else 0.0)
+	_notes_root.offset_top = lerpf(_notes_root.offset_top, top, 1.0 - exp(-delta * 10.0))
+	_notes_root.offset_bottom = _notes_root.offset_top + 656.0
 
 
 func _zone_text() -> String:
@@ -415,12 +516,18 @@ func set_objective(text: String) -> void:
 	_obj_text = text
 	if text == "":
 		if _obj_head.visible:
-			var tw := create_tween()
-			tw.tween_property(_obj_head, "modulate:a", 0.0, 0.18)
-			tw.tween_callback(func():
+			if _obj_fade:
+				_obj_fade.kill()
+			_obj_fade = create_tween()
+			_obj_fade.tween_property(_obj_head, "modulate:a", 0.0, 0.18)
+			_obj_fade.tween_callback(func():
 				if _obj_text == "":
 					_obj_head.visible = false)
 		return
+	# the next order usually follows straight on: stop the last one's fade-out, or it would hide this one
+	if _obj_fade:
+		_obj_fade.kill()
+		_obj_fade = null
 	var was_hidden := not _obj_head.visible or _obj_head.modulate.a < 0.5
 	_obj_head.visible = true
 	_obj_head.modulate.a = 1.0

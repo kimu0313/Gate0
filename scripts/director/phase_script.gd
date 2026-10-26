@@ -2,15 +2,13 @@ class_name PhaseScript
 extends RefCounted
 ## Base for the per-shift story scripts (night1.gd … night5.gd = DAY 1–5, each one dawn shift 00:00–06:00).
 ## setup() configures the world before the player gains control; run() is the scripted coroutine.
-## Shared helpers below place the documents and pickups that recur across days, and the evening-shift
-## colleague (StaffNpc) who hands each shift over in person.
+## Shared helpers below place the documents and pickups that recur across days, the evening-shift colleague
+## (StaffNpc) who hands each shift over in person, and the story goals (use_goal) the days are built from.
 
 const DOCS := {
 	# clue id: [Terminal spot, rotation, prompt, first day it can be found]
 	"log1": ["doc_log1", 0.2, "낡은 업무일지 읽기", 1],
 	"memo_worker": ["doc_memo_worker", 0.4, "구겨진 메모 읽기", 1],
-	"log2": ["doc_log2", PI / 2, "사물함 속 업무일지 읽기", 3],
-	"newspaper": ["doc_newspaper", -0.3, "의자 위 신문 조각 읽기", 4],
 	"log3": ["doc_log3", 0.6, "의자 위에 놓인 업무일지 읽기", 4],
 	"timecard": ["doc_timecard", 0.0, "오래된 근태 카드 읽기", 5],
 }
@@ -45,34 +43,61 @@ func title_lines() -> Array:
 ## Every clue that can already be found by this day and was not picked up yet.
 func place_documents() -> void:
 	Geo.box(d.t, d.t.spot("log1_desk"), Vector3(0.7, 0.76, 0.5), Mats.get_mat("wood"))
-	if Game.cycle >= 3:
-		# staff locker beside the security checkpoint (the missing mechanic's work log)
-		var locker := d.t.spot("locker")
-		Geo.box(d.t, locker + Vector3(0, 0.95, 0), Vector3(0.45, 1.9, 0.9), Mats.get_mat("metal_dark"))
-		Geo.box(d.t, locker + Vector3(-0.3, 0.99, 0), Vector3(0.24, 0.03, 0.8), Mats.get_mat("metal"), false)
 	if Game.cycle >= 5:
 		Geo.box(d.t, d.t.spot("timecard_shelf"), Vector3(0.5, 0.04, 0.3), Mats.get_mat("metal_dark"), false)
+	if Game.cycle >= 2:
+		_ensure_day1_pages()
 	for id in DOCS.keys():
 		var e: Array = DOCS[id]
-		# DAY 3: the locker stays shut until the colleague hands over its key (night3.gd places the log then)
-		if id == "log2" and Game.cycle == 3 and not Game.flag("got_locker_key"):
-			continue
 		if Game.cycle >= int(e[3]):
 			d.spawn_doc(id, d.t.spot(e[0]), e[1], e[2])
-	if Game.cycle >= 2 and not Game.has_clue("plaque"):
-		var pl := Pickup.create(d.t, d.t.spot("plaque"), 0.0, "plaque", "덮개 아래 동판 살펴보기", "plaque")
+	# from DAY 2: the rusted memorial in the corner of the strip on the way to the storage room
+	if Game.cycle >= 2:
+		var pl := Pickup.create(d.t, d.t.spot("plaque"), -PI / 4, "plaque", "녹슨 동판 살펴보기", "plaque")
+		pl.name = "plaque"
 		pl.keep_after_pick = true
-		pl.picked.connect(func(_p):
-			if Game.has_clue("plaque"):
-				return
-			Game.add_clue("plaque")
-			var c: Dictionary = RulesDB.CLUES.plaque
-			d.ui.read_doc(c.title, c.body, "serif"))
+		pl.picked.connect(func(_p): d.read_clue("plaque", "serif"))
+
+
+## DAY 1 rule pages the player walked past are in the binder by the next shift anyway (the manager's copies).
+func _ensure_day1_pages() -> void:
+	for id in Game.DAY_PAGES[1]:
+		if id == "p3" and Game.binder_pages.has("p3_dmg"):
+			continue
+		Game.add_binder_page(id)
+
+
+## A rule page waiting at its facility: picking it up files it in the binder.
+func rule_page(id: String, spot_name: String, rot_y: float, kind := "wallpage") -> Pickup:
+	if Game.binder_pages.has(id):
+		return null
+	var pg := RulesDB.page(id)
+	var pk := Pickup.create(d.t, d.t.spot(spot_name), rot_y, "page_" + id, tr("수칙 p.%s 챙기기") % pg.no, kind)
+	pk.name = "page_" + id
+	pk.picked.connect(func(_p):
+		Game.add_binder_page(id)
+		Snd.play("binder_open", -8.0)
+		d.notify(tr("근무 수칙 p.%s %s — 바인더에 끼움") % [pg.no, tr(pg.title)], "good"))
+	return pk
+
+
+## A story goal on something to use (`target`: an Interactable or a Pickup — debug bots go there). It is done once
+## `done` returns true (default: the target was used) and whatever it opened has been closed again.
+func use_goal(title: String, detail: String, location: String, target: Node3D, done := Callable()) -> void:
+	var g := d.goal(title, detail, location, {"target": target})
+	if done.is_valid():
+		await d.until(func(): return d.dead or done.call())
+	elif target is Interactable:
+		await (target as Interactable).used
+	elif target is Pickup:
+		await (target as Pickup).picked
+	await d.until(func(): return d.dead or d.ui.modal == "")
+	d.complete_goal(g)
 
 
 ## The usual end of a shift: a clock-out order, the time clock, then the morning report.
 func punch_out(title := "퇴근 기록", detail := "시설관리실 [b]근태 기록기[/b]에서 근무 종료를 기록하십시오.") -> void:
-	var g := d.goal(title, detail, "office")
+	var g := d.goal(title, detail, "office", {"target": d.t.punch_clock})
 	d.punch_enabled = true
 	await d.punched
 	d.complete_goal(g)
@@ -113,13 +138,19 @@ func spawn_worker(pos: Vector3, rot_y: float) -> StaffNpc:
 	return n
 
 
-## Every shift opens with the colleague's handover: a work order to go and talk to them, the talk itself
-## (stepped through with [E]; the day's items change hands on the way — `give` is called with each item id),
-## then they clock out and walk off (`way`, see ShiftDirector.npc_leave) while you get to work.
-func colleague_handover(detail: String, location: String, lines: Array, give: Callable, way := "entrance") -> void:
-	var g := d.goal("교대 근무자와 대화하기", detail, location)
+## A work order to go and talk to the colleague, and the talk itself (stepped through with [E]; the day's items
+## change hands on the way — `give` is called with each item id, see ShiftDirector.npc_talk).
+func colleague_talk(title: String, detail: String, location: String, lines: Array, give: Callable) -> void:
+	var g := d.goal(title, detail, location, {"target": d.npc})
 	await d.npc_talk(lines, give)
 	d.complete_goal(g)
+
+
+## Every shift opens with the colleague's handover: the talk, then they clock out and walk off (`way`, see
+## ShiftDirector.npc_leave) while you get to work.
+func colleague_handover(detail: String, location: String, lines: Array, give: Callable, way := "entrance",
+		title := "교대 근무자와 대화하기") -> void:
+	await colleague_talk(title, detail, location, lines, give)
 	d.npc_leave(way)
 
 

@@ -32,7 +32,7 @@ var settings := {
 	"reduce_motion": false,     # calmer UI: no shakes, flickers or HUD glitch jitter
 	"crosshair": true,
 	"keys": {},                 # action -> physical keycode (rebound primary key)
-	"language": "",             # "ko" | "en"; empty = follow the OS on first launch
+	"language": "",             # "ko" | "en" | "ja"; empty = follow the OS on first launch
 }
 
 ## Primary + alternate keys and mouse buttons per action; the first key of the actions listed in
@@ -201,7 +201,8 @@ func load_settings() -> void:
 		if cfg.has_section_key("settings", "fullscreen") and not cfg.has_section_key("settings", "window_mode"):
 			settings.window_mode = "fullscreen" if cfg.get_value("settings", "fullscreen") else "windowed"
 	if str(settings.language) == "":
-		settings.language = "ko" if OS.get_locale_language() == "ko" else "en"
+		var os_lang := OS.get_locale_language()
+		settings.language = os_lang if os_lang in ["ko", "ja"] else "en"
 	get_tree().node_added.connect(func(n: Node):
 		if n is WorldEnvironment:
 			_apply_brightness.call_deferred(n))
@@ -474,7 +475,8 @@ func endings_seen() -> Array:
 
 
 # --- runtime name voice (Windows SAPI) -----------------------------------------------------
-## Synthesises "{name} 승객님..." so the PA can call the player by name. Falls back silently.
+## Synthesises "{name} 승객님..." so the PA can call the player by name, and "{name} 씨, 들립니까?" for the voice past
+## the end of the 1987 tape (Snd.voice "name_tape", voice_name_tape.wav beside it). Falls back silently.
 func _prepare_name_voice() -> void:
 	name_voice_path = ""
 	if OS.get_name() != "Windows" or DisplayServer.get_name() == "headless":
@@ -482,12 +484,15 @@ func _prepare_name_voice() -> void:
 	var out_path := ProjectSettings.globalize_path("user://voice_name.wav")
 	var safe_name := player_name.replace("'", "").replace("\"", "").replace("`", "").replace("$", "")
 	var text := "%s 승객님. %s 승객님. 영번 게이트로 오시기 바랍니다. 기다리고 있습니다." % [safe_name, safe_name]
+	var tape_path := out_path.replace("voice_name.wav", "voice_name_tape.wav")
+	var tape_text := "%s 씨. %s 씨, 들립니까. 여기는, 에이영편입니다." % [safe_name, safe_name]
 	var ps := "Add-Type -AssemblyName System.Speech; " \
 		+ "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " \
 		+ "try { $s.SelectVoice('Microsoft Heami Desktop') } catch {}; " \
 		+ "$s.Rate = -3; " \
 		+ "$f = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(22050, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono); " \
-		+ "$s.SetOutputToWaveFile('%s', $f); $s.Speak('%s'); $s.Dispose()" % [out_path, text]
+		+ "$s.SetOutputToWaveFile('%s', $f); $s.Speak('%s'); " % [out_path, text] \
+		+ "$s.Rate = -3; $s.SetOutputToWaveFile('%s', $f); $s.Speak('%s'); $s.Dispose()" % [tape_path, tape_text]
 	var t := Thread.new()
 	t.start(func():
 		var output := []

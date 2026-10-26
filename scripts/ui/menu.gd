@@ -7,7 +7,6 @@ var _cam: Camera3D
 var _t := 0.0
 var _main: Control
 var _title_box: HBoxContainer
-var _tagline: Label
 var _rows: Array = []
 var _chapter_rows: Array = []
 var _fids: Control
@@ -20,7 +19,6 @@ var _fids_board: FidsBoard
 var _intro_started := false
 var _hold_intro := false
 static var _boot_shown := false    # the launch notice shows once per run, not on every return to the menu
-static var _reopen_settings := false
 
 
 func _ready() -> void:
@@ -30,6 +28,7 @@ func _ready() -> void:
 	get_tree().paused = false
 	_build_backdrop()
 	_build_ui()
+	_build_settings()
 	Snd.set_ambience("amb_night_loop", -6.0, 2.0)
 	Snd.set_music("menu_music_loop", -10.0, 3.0)
 	var args := OS.get_cmdline_user_args()
@@ -45,9 +44,10 @@ func _ready() -> void:
 		var g = load("res://scripts/debug/ui_gallery.gd").new()
 		g.menu = self
 		add_child(g)
-	if _reopen_settings:
-		_reopen_settings = false
-		_on_settings.call_deferred()
+	if args.has("--settingstest") and not get_tree().root.has_node("SettingsTest"):
+		var st = load("res://scripts/debug/settings_test.gd").new()
+		st.name = "SettingsTest"
+		get_tree().root.add_child.call_deferred(st)
 
 
 func _build_backdrop() -> void:
@@ -136,8 +136,6 @@ func _build_ui() -> void:
 	_title_box.add_theme_constant_override("separation", 0)
 	col.add_child(_title_box)
 	_title_box.add_child(TitleLogo.new())
-	_tagline = UiKit.label("승객은 아무도 없는데, 탑승 안내 방송이 울립니다.", 27, Color("d6dae0"), "sans", 300)
-	col.add_child(_tagline)
 	_build_menu_rows(col)
 
 
@@ -184,6 +182,11 @@ func _build_menu_rows(col: VBoxContainer) -> void:
 	_foot.add_child(UiKit.label("헤드폰 착용을 권장합니다", 16, UiKit.TEXT_DIM))
 	_build_name_panel()
 	_build_chapter_panel()
+	for c in [_title_box, _fids, _foot] + _rows:
+		(c as CanvasItem).modulate.a = 0.0
+
+
+func _build_settings() -> void:
 	_settings = SettingsPanel.new()
 	_settings.visible = false
 	UiKit.center(_settings, Vector2(980, 820))
@@ -191,18 +194,29 @@ func _build_menu_rows(col: VBoxContainer) -> void:
 	_settings.back.connect(func():
 		_settings.visible = false
 		_show_main())
-	# the menu is built in one language: rebuild it, coming straight back to the settings
-	_settings.language_changed.connect(func():
-		_reopen_settings = true
-		get_tree().reload_current_scene.call_deferred())
-	for c in [_title_box, _tagline, _fids, _foot] + _rows:
-		(c as CanvasItem).modulate.a = 0.0
+	_settings.language_changed.connect(_relocalize)
+
+
+## The language was switched in the settings: the menu's own UI is rebuilt in the new language where it
+## stands. The 3D backdrop keeps drifting and the open settings panel stays on the same tab (it rebuilds
+## itself) — no scene reload, so nothing jumps.
+func _relocalize() -> void:
+	theme = UiKit.theme()
+	for n in [_main, _name_panel, _chapter_panel]:
+		if is_instance_valid(n):
+			n.queue_free()
+	_rows.clear()
+	_chapter_rows.clear()
+	_build_ui()
+	move_child(_settings, -1)   # keep the open panel above the rebuilt menu
+	_main.visible = false
+	if _intro_started:
+		for c in [_title_box, _fids, _foot] + _rows:
+			(c as CanvasItem).modulate.a = 1.0
 
 
 func _intro() -> void:
 	UiFx.flicker_on(_title_box, 0.35)
-	_tagline.modulate.a = 0.0
-	UiFx.fade(_tagline, 1.0, 0.8, 1.0)
 	_fids.modulate.a = 0.0
 	UiFx.fade(_fids, 1.0, 1.0, 0.7)
 	_foot.modulate.a = 0.0
@@ -343,10 +357,10 @@ func _build_chapter_panel() -> void:
 	gap.custom_minimum_size = Vector2(0, 8)
 	v.add_child(gap)
 	var items := [
-		[1, "night", "D1", "DAY 1 — 첫 근무 · 인수인계"],
-		[2, "night", "D2", "DAY 2 — 수하물 수취대 · FLIGHT 000"],
-		[3, "night", "D3", "DAY 3 — 보안검색 · 당신의 가방"],
-		[4, "night", "D4", "DAY 4 — 탑승동 · PASSENGER ACCESS ONLY"],
+		[1, "night", "D1", "DAY 1 — 첫 근무 · 또 새로 오신 분"],
+		[2, "night", "D2", "DAY 2 — 수하물 수취대 · 1987년의 비행기표"],
+		[3, "night", "D3", "DAY 3 — 보안검색 · A0 / 87.11.03"],
+		[4, "night", "D4", "DAY 4 — 탑승동 · 젖은 물건들"],
 		[5, "night", "D5", "DAY 5 — 개장일 · GATE 0"],
 	]
 	var grid := GridContainer.new()

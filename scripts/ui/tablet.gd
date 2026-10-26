@@ -1021,7 +1021,7 @@ func _refresh_records() -> void:
 		any = true
 		var c: Dictionary = RulesDB.CLUES[id]
 		var body := UiKit.t(str(c.body))    # translate the template before the name goes in
-		if id == "syslog":
+		if str(c.body).contains("%s"):   # syslog, job_post, locker_tags carry your name
 			body = body % Game.player_name
 		var b := Button.new()
 		b.focus_mode = Control.FOCUS_NONE

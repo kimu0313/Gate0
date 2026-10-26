@@ -45,6 +45,7 @@ const C_BAD := ALERT
 const C_INFO := OPS
 
 static var _fonts := {}
+static var _fonts_locale := ""
 static var _theme: Theme
 static var _textures := {}
 static var _keep_all_re: RegEx
@@ -56,9 +57,16 @@ static var _keep_all_re: RegEx
 ## kind: sans (Korean UI) | display / sign (DIN-style sign face, Hangul from sans)
 ##       | mono | serif | hand
 static func font(kind := "sans", weight := 400) -> Font:
+	# the faces depend on the language (Japanese needs a Japanese face): rebuild after a switch
+	var locale := TranslationServer.get_locale()
+	if locale != _fonts_locale:
+		_fonts_locale = locale
+		_fonts.clear()
+		_theme = null
 	var key := "%s_%d" % [kind, weight]
 	if _fonts.has(key):
 		return _fonts[key]
+	var ja := locale.begins_with("ja")
 	var out: Font
 	match kind:
 		"display", "sign":
@@ -68,11 +76,13 @@ static func font(kind := "sans", weight := 400) -> Font:
 			fv.fallbacks = [font("sans", maxi(weight, 400))]
 			out = fv
 		# serif / hand are rulebook clues, so they ship with the game instead of relying on the OS
+		# (in Japanese the kana and kanji come from a Japanese Mincho / textbook face behind them)
 		"serif":
 			out = Geo.bundled_font("res://assets/fonts/NanumMyeongjo-%s.ttf" % ("Bold" if weight >= 600 else "Regular"),
-				["Batang", "BatangChe", "Noto Serif KR", "serif"])
+				(["Yu Mincho", "MS Mincho"] if ja else []) + ["Batang", "BatangChe", "Noto Serif KR", "serif"])
 		"hand":
-			out = Geo.bundled_font("res://assets/fonts/NanumPenScript-Regular.ttf", ["Gungsuh", "GungsuhChe", "Batang", "serif"])
+			out = Geo.bundled_font("res://assets/fonts/NanumPenScript-Regular.ttf",
+				(["UD Digi Kyokasho N-R", "UD Digi Kyokasho NK-R", "Yu Mincho"] if ja else []) + ["Gungsuh", "GungsuhChe", "Batang", "serif"])
 		"mono":
 			var m: Font = Geo.installed_font(["Consolas"])
 			if m:
@@ -82,7 +92,7 @@ static func font(kind := "sans", weight := 400) -> Font:
 			m.fallbacks = [font("sans", weight)]
 			out = m
 		_:
-			out = Geo.korean_font(weight)
+			out = Geo.ui_font(weight)
 	_fonts[key] = out
 	return out
 
@@ -132,7 +142,7 @@ static func empty_box() -> StyleBoxEmpty:
 
 ## Shared theme: sliders, toggles, scrollbars, line edits and separators in the SIGN style.
 static func theme() -> Theme:
-	if _theme:
+	if _theme and _fonts_locale == TranslationServer.get_locale():
 		return _theme
 	var t := Theme.new()
 	t.default_font = font("sans")

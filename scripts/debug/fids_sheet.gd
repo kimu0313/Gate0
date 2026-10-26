@@ -8,12 +8,14 @@ const BOARD := Vector2(6.0, 2.8)
 var states := [
 	["normal", "normal", [], {}],
 	["ghost", "normal", [], {"ghost": true}],
+	["ghost_a0", "normal", [], {"a0": "BOARDING"}],
+	["a0_departed", "normal", [], {"a0": "DEPARTED"}],
 	["changed_home", "normal", [], {"row": [4, "dest", "HOME", "ko", "집"]}],
 	["changed_boarding", "normal", [], {"row": [6, "remark", "BOARDING"]}],
 	["arrivals", "message", ["운영 준비 중", "NOT IN SERVICE"], {"title": "도착  ARRIVALS"}],
 	["gate04", "story", ["FLIGHT 000", "GATE 04", "CHECK-IN"], {}],
 	["final_day2", "final", ["GATE 0", "BOARDING"], {}],
-	["final_day5", "final", ["SH 000", "GATE 0", "BOARDING"], {}],
+	["final_day5", "final", ["A0  23:40", "GATE 0", "BOARDING"], {}],
 	["final_ending", "final", ["FLIGHT 000", "BOARDING"], {}],
 	["reboot", "reboot", [], {}],
 ]
@@ -39,6 +41,11 @@ func _ready() -> void:
 		var opt: Dictionary = st[3]
 		if opt.get("ghost", false):
 			rows.insert(0, FidsBoard.FLIGHT0_ROW.duplicate())
+			rows.pop_back()
+		if opt.has("a0"):
+			var a0: Dictionary = FidsBoard.A0_ROW.duplicate()
+			a0["remark"] = opt.a0
+			rows.insert(0, a0)
 			rows.pop_back()
 		if opt.has("row"):
 			var r: Array = opt.row

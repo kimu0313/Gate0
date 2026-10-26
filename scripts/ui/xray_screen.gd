@@ -3,13 +3,17 @@ extends Control
 ## The X-ray operator monitor: a real dual-energy scan image (generated art in assets/textures/xray: organics orange,
 ## mixed green, metals blue) on the scanner's white field, between the operator's header and status bars. The bag
 ## is drawn in line by line as it passes the detector (scan_progress); anomalies are overlaid on the scan.
-## content: "" (idle) | "bag" | "figure" | "heart" | "mybag" (your own bag, scanned as a passenger's)
+## content: "" (idle) | "bag" | "figure" | "heart" | "mybag" (your own bag, scanned as a passenger's) |
+## "pax" (one bag goes in, 41 passenger bags come through one after another — flight A0's 41)
 
 var content := ""
 var powered := true
 var stare := 0.0          # 0..1, figure turns its head toward the viewer
 var scan_progress := 1.0  # 0..1 reveal sweep
+var pax_count := 0        # "pax": passenger bags shown so far (1..PAX_TOTAL)
+var pax_running := false  # "pax": still counting (X-ray 비상정지 freezes it)
 var _t := 0.0
+var _pax_t := 0.0
 var mono: Font
 
 const SCANS := {
@@ -26,6 +30,8 @@ const BAR := Color(0.07, 0.09, 0.12)
 const INK := Color(0.66, 0.74, 0.82)
 const ORANGE := Color(0.86, 0.45, 0.12)
 const BLUE := Color(0.12, 0.28, 0.75)
+const PAX_TOTAL := 41
+const PAX_EVERY := 0.65                       # seconds per passenger bag
 
 var _tex := {}
 
@@ -37,7 +43,18 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if content == "pax" and pax_running and pax_count < PAX_TOTAL:
+		_pax_t += delta
+		pax_count = mini(PAX_TOTAL, 1 + int(_pax_t / PAX_EVERY))
 	queue_redraw()
+
+
+## "pax": start counting passenger bags from the first one.
+func start_pax() -> void:
+	content = "pax"
+	_pax_t = 0.0
+	pax_count = 1
+	pax_running = true
 
 
 func _scan(id: String) -> Texture2D:
@@ -60,7 +77,7 @@ func _draw() -> void:
 	draw_rect(Rect2(0, 0, w, top), BAR)
 	draw_rect(Rect2(0, h - bottom, w, bottom), BAR)
 	draw_string(mono, Vector2(12, 23), "X-RAY 01  ·  SEOHAE SEC", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, INK)
-	if content != "mybag":                 # the passenger notice takes the clock's place there
+	if content != "mybag" and content != "pax":   # the passenger notice takes the clock's place there
 		draw_string(mono, Vector2(0, 23), Game.clock_text() + "  ", HORIZONTAL_ALIGNMENT_RIGHT, w - 8, 17, INK)
 	var mode := "HI-PEN  ·  OS  ·  ZOOM 1.0"
 	draw_string(mono, Vector2(12, h - 10), "kV 160  mA 0.8  DUAL-ENERGY", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(INK, 0.75))
@@ -73,9 +90,13 @@ func _draw() -> void:
 		_scanlines(field)
 		return
 	# the scan, fitted into the field
-	var tex := _scan(content)
 	var k := minf(field.size.x / SCAN_PX.x, field.size.y / SCAN_PX.y)
 	var img := Rect2(field.get_center() - SCAN_PX * k * 0.5, SCAN_PX * k)
+	if content == "pax":
+		_draw_pax(field, img, k)
+		_scanlines(field)
+		return
+	var tex := _scan(content)
 	if tex:
 		draw_texture_rect(tex, img, false)
 	else:
@@ -111,6 +132,32 @@ func _draw() -> void:
 func _scanlines(field: Rect2) -> void:
 	for sy in range(int(field.position.y), int(field.end.y), 3):
 		draw_line(Vector2(0, sy), Vector2(size.x, sy), Color(0, 0, 0, 0.035), 1.0)
+
+
+## "pax": passenger bag after passenger bag (the two scan images, mirrored every other one), each with a
+## 1987 tag, and a counter that runs up to 41 unless the X-ray is stopped.
+func _draw_pax(field: Rect2, img: Rect2, _k: float) -> void:
+	var n := maxi(1, pax_count)
+	var tex := _scan("bag" if n % 3 != 0 else "mybag")
+	var flip := n % 2 == 0
+	if tex:
+		if flip:
+			draw_set_transform(Vector2(img.position.x * 2.0 + img.size.x, 0), 0.0, Vector2(-1, 1))
+		draw_texture_rect(tex, img, false)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var red := Color(0.85, 0.12, 0.1)
+	draw_string(mono, Vector2(0, 23), "PASSENGER BAGGAGE  %02d / %d  " % [n, PAX_TOTAL], HORIZONTAL_ALIGNMENT_RIGHT, size.x - 8, 17, Color(1.0, 0.4, 0.32))
+	var tag := Rect2(img.end.x - 230, img.position.y + 6, 216, 64)
+	draw_rect(tag, Color(0.93, 0.88, 0.72, 0.92))
+	draw_rect(tag, Color(0.6, 0.5, 0.25), false, 2.0)
+	draw_string(mono, tag.position + Vector2(10, 26), "PAX %02d" % n, HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 16, 20, Color(0.15, 0.15, 0.18))
+	draw_string(mono, tag.position + Vector2(10, 52), "A0  87.11.03", HORIZONTAL_ALIGNMENT_LEFT, tag.size.x - 16, 18, red)
+	# each bag is drawn in as it passes the detector, then the next one follows
+	if pax_running and n < PAX_TOTAL:
+		var sweep := clampf(fmod(_pax_t, PAX_EVERY) / (PAX_EVERY * 0.7), 0.0, 1.0)
+		var x := field.position.x + field.size.x * sweep
+		draw_rect(Rect2(x, field.position.y, field.end.x - x, field.size.y), FIELD)
+		draw_line(Vector2(x, field.position.y), Vector2(x, field.end.y), Color(0.3, 0.55, 0.9, 0.7), 2.0)
 
 
 ## A baggage tag on the handle: the airport scanned your bag as a passenger's (DAY 2 · 수칙 p.7 ③).

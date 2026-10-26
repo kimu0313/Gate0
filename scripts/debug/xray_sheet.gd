@@ -6,7 +6,7 @@ extends Node
 var world: Node
 
 const STATES := [["idle", "", 1.0, 0.0], ["bag", "bag", 1.0, 0.0], ["scanning", "bag", 0.55, 0.0], ["mybag", "mybag", 1.0, 0.0],
-	["heart", "heart", 1.0, 0.0], ["figure", "figure", 1.0, 1.0]]
+	["heart", "heart", 1.0, 0.0], ["figure", "figure", 1.0, 1.0], ["pax", "pax", 1.0, 0.0]]
 
 
 func _ready() -> void:
@@ -23,6 +23,9 @@ func _ready() -> void:
 		s.size = Vector2(640, 480)
 		vp.add_child(s)
 		s.content = st[1]
+		if st[1] == "pax":   # xray_41, partway through the count
+			s.start_pax()
+			s._pax_t = 11.3
 		s.scan_progress = st[2]
 		s.stare = st[3]
 		for f in 4:

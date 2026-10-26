@@ -92,6 +92,9 @@ func _build() -> void:
 
 ## Rebuilds the panel in place (language change), keeping the open tab.
 func _rebuild() -> void:
+	# the main menu reloads its whole scene on a language change; this panel may already be gone
+	if not is_inside_tree():
+		return
 	var tab := _current
 	_build()
 	_show_tab(tab, false)
@@ -142,7 +145,11 @@ func _show_tab(key: String, sound := true) -> void:
 		b.add_theme_font_override("font", UiKit.font("sans", 700 if on else 500))
 	if sound:
 		Snd.play("ui_tap", -12.0, 1.2)
+	if not is_inside_tree():
+		return
 	await get_tree().process_frame
+	if not is_inside_tree():
+		return
 	var tb: Button = _tab_buttons[key]
 	var tw := _indicator.create_tween().set_parallel(true)
 	tw.tween_property(_indicator, "position:x", tb.position.x, 0.2 if sound else 0.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -152,6 +159,11 @@ func _show_tab(key: String, sound := true) -> void:
 ## Q / E (or LB / RB style page keys) switch tabs; ESC cancels a key capture before closing.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible or _capturing != "":
+		return
+	# ESC / cancel closes the panel wherever it is open (main menu or pause menu)
+	if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		back.emit()
 		return
 	var keys: Array = TABS.map(func(t): return t[0])
 	var i := keys.find(_current)
@@ -185,7 +197,7 @@ func _build_controls(p: VBoxContainer) -> void:
 func _build_display(p: VBoxContainer) -> void:
 	_section(p, "LANGUAGE · 언어")
 	# option names stay in their own language so either can be found
-	_choice(p, "언어 · Language", "language", [["ko", "한국어"], ["en", "English"]], false)
+	_choice(p, "언어 · Language", "language", [["ko", "한국어"], ["en", "English"], ["ja", "日本語"]], false)
 	_section(p, "WINDOW · 창")
 	_choice(p, "화면 모드", "window_mode", [["windowed", "창 모드"], ["borderless", "테두리 없는 전체 화면"], ["fullscreen", "전체 화면"]])
 	_toggle(p, "수직 동기화 (VSync)", "vsync")

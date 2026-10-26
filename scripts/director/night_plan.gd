@@ -35,9 +35,11 @@ const ANOMALY_COUNT := {1: 0, 2: 6, 3: 7, 4: 8, 5: 8}
 ## slot → [facility kind, anomaly] that starts by itself before that inspection
 const AUTO := {2: {8: ["pa", "pa_auto"]}}
 ## slot → facility kind handled by the day script
-const RESERVED := {2: {7: "fids"}, 3: {6: "baggage", 11: "xray"}, 4: {4: "pa", 5: "walkway", 6: "gate"}, 5: {12: "gate"}}
+const RESERVED := {2: {7: "fids"}, 3: {6: "baggage", 8: "fids", 11: "xray"},
+	4: {4: "pa", 5: "walkway", 6: "gate", 8: "baggage", 12: "gate"}, 5: {12: "gate"}}
 ## anomalies the day script places itself (so the random picks never repeat them that day)
-const SCRIPTED := {2: ["fids_gate04"], 3: ["bag_name", "xray_mybag"], 4: ["pa_auto", "auto_run", "gate_open"]}
+const SCRIPTED := {2: ["fids_gate04"], 3: ["bag_name", "fids_a0", "xray_41"],
+	4: ["pa_auto", "auto_run", "gate_open", "bag_wet", "gate_passenger"]}
 
 const FAC_TEXT := {
 	"lights": ["조명 분전반 점검", "시설관리실 출입문 옆 [b]조명 분전반[/b] 앞에서 켜 둔 구역의 조명을 관찰하고 보고하십시오.\n(꺼진 구역이 있으면 스위치로 켜십시오)"],
@@ -93,6 +95,8 @@ static func build(cycle: int) -> Array:
 	for f in NEW_FACS.get(c, []):
 		pool.append(f)
 		pool.append(f)
+	if c == 1:
+		pool.append_array(facs)   # the training shift goes round every facility again after the handover
 	var free := n_slots - HANDOVER - reserved.size() - autos.size()
 	while pool.size() < free:
 		pool.append(facs[randi() % facs.size()])

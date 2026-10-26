@@ -83,8 +83,11 @@ func _ready() -> void:
 			var mi: MeshInstance3D = e[1]
 			if not ob.intersects(text_box.grow(0.01)) or ob.grow(SLACK).has_point(c + back):
 				continue          # far away, or the backing / something the label sits on
+			var inner := ob.grow(-0.03)
+			if inner.size.x <= 0.0 or inner.size.y <= 0.0 or inner.size.z <= 0.0:
+				continue          # a sheet thinner than the slack (stickers, plates) cannot swallow text
 			for p: Vector3 in corners:
-				if ob.grow(-0.03).has_point(p):
+				if inner.has_point(p):
 					clipped += 1
 					print("LABEL CLIP  %s  into %s  at %s" % [l.text.replace("\n", " / ").left(40), _name(mi), str(p.snapped(Vector3.ONE * 0.01))])
 					break

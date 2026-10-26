@@ -103,6 +103,17 @@ var shots := [
 	["colleague", Vector3(-14.6, 0.05, 3.6), Vector3(-16.0, 1.45, 1.2)],
 	["colleague_wide", Vector3(-13.2, 0.05, 6.6), Vector3(-16.0, 1.0, 1.2)],
 	["colleague_face", Vector3(-18.2, 0.05, 1.0), Vector3(-16.0, 1.5, 1.2)],
+	# story props (Day1~5 초안)
+	["locker04", Vector3(-17.6, 0.05, -0.6), Vector3(-17.59, 1.47, -1.8)],
+	["office_pc", Vector3(-17.8, 0.05, 1.8), Vector3(-19.35, 0.95, 1.8)],
+	["drawer", Vector3(-17.6, 0.05, 4.9), Vector3(-19.2, 0.45, 4.1)],
+	["lostfound", Vector3(14.2, 0.05, -5.4), Vector3(14.1, 0.7, -2.95)],
+	["crate", Vector3(17.6, 0.05, -4.4), Vector3(18.6, 0.4, -6.9)],
+	["plaque", Vector3(9.4, 0.05, -5.4), Vector3(11.45, 0.9, -7.95)],
+	["pa_deck", Vector3(-0.1, 0.05, 6.9), Vector3(-0.42, 1.0, 5.88)],
+	["page_p2", Vector3(-18.0, 0.05, 10.4), Vector3(-19.8, 1.45, 9.8)],
+	["page_p3", Vector3(-5.6, 0.05, 0.0), Vector3(-6.4, 1.45, -2.3)],
+	["page_p9", Vector3(-14.0, 0.05, 5.4), Vector3(-13.0, 0.85, 5.9)],
 ]
 var out_dir := ""
 var _i := 0

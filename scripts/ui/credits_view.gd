@@ -10,6 +10,7 @@ const TEAM := [["제작", "RevStudio"], ["기획 · 원안", "김훈철 외"]]
 const FONTS := [
 	["나눔명조 · 나눔손글씨 펜", "Copyright (c) 2010, NHN Corporation"],
 	["Noto Sans KR", "Copyright 2014-2021 Adobe, with Reserved Font Name 'Source'"],
+	["Noto Sans JP", "Copyright 2014-2021 Adobe, with Reserved Font Name 'Source'"],
 	["Barlow", "Copyright 2017 The Barlow Project Authors"],
 	["IBM Plex Mono", "Copyright © 2017 IBM Corp., with Reserved Font Name \"Plex\""],
 ]

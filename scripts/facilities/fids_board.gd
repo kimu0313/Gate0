@@ -2,7 +2,8 @@ class_name FidsBoard
 extends Facility
 ## FIDS 출발 전광판. Normal = fixed test schedule in TEST MODE.
 ## Anomalies: fids_extra (a flight that is not in the list), fids_changed (one field altered),
-## fids_clock (board clock runs backwards), fids_gate04 (the list is replaced by a FLIGHT 000 check-in screen).
+## fids_clock (board clock runs backwards), fids_gate04 (the list is replaced by a FLIGHT 000 check-in screen),
+## fids_a0 (flight A0 of 1987 tops the list as DEPARTED; on DAY 1 the same row shows once as BOARDING, ghost_row).
 
 const NORMAL_ROWS := [
 	{"time": "06:10", "flight": "SH 101", "dest": "TOKYO/NARITA", "ko": "도쿄/나리타", "gate": "01", "remark": "TEST"},
@@ -15,6 +16,8 @@ const NORMAL_ROWS := [
 	{"time": "10:15", "flight": "SH 804", "dest": "MANILA", "ko": "마닐라", "gate": "04", "remark": "TEST"},
 ]
 const FLIGHT0_ROW := {"time": "--:--", "flight": "SH 000", "dest": "HOME", "ko": "집", "gate": "0", "remark": "BOARDING"}
+## the flight of 1987 (서해비행장 A0, 23:40): BOARDING in the DAY 1 glimpse, DEPARTED as the DAY 3 anomaly
+const A0_ROW := {"time": "23:40", "flight": "A0", "dest": "", "ko": "", "gate": "0", "remark": "BOARDING"}
 
 var screen: FidsScreen
 var viewport: SubViewport
@@ -139,7 +142,7 @@ func _on_power_restored() -> void:
 func ghost_row(on: bool) -> void:
 	_rows = NORMAL_ROWS.duplicate(true)
 	if on:
-		_rows.insert(0, FLIGHT0_ROW.duplicate())
+		_rows.insert(0, A0_ROW.duplicate())
 		_rows.pop_back()
 	_refresh()
 
@@ -171,6 +174,11 @@ func _apply_anomaly(anomaly_id: String) -> void:
 					_rows[6]["remark"] = "BOARDING"
 		"fids_clock":
 			_clock_offset = 0.0
+		"fids_a0":
+			var row := A0_ROW.duplicate()
+			row["remark"] = "DEPARTED"
+			_rows.insert(0, row)
+			_rows.pop_back()
 		"fids_gate04":
 			# the whole board turns into one check-in screen for a flight that does not exist
 			_story_mode = "story"

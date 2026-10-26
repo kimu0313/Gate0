@@ -1,8 +1,8 @@
 """Check assets/i18n/en.po against the Korean strings in the scripts.
 
-usage: python -I tools/i18n/check_po.py [project_root]
-Lists source strings with no translation (add them to en.po, msgid = the Korean text)
-and translations whose %s/%d/[b]/| tokens differ from the source.
+usage: python -I tools/i18n/check_po.py [project_root] [--lang en|ja]
+Lists source strings with no translation (add them to <lang>.po, msgid = the Korean text)
+and translations whose %s/%d/[b]/[color]/| tokens differ from the source. Default language: en.
 """
 import json
 import os
@@ -11,7 +11,13 @@ import subprocess
 import sys
 import tempfile
 
-root = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
+args = sys.argv[1:]
+lang = "en"
+if "--lang" in args:
+    i = args.index("--lang")
+    lang = args[i + 1]
+    del args[i:i + 2]
+root = args[0] if args else os.getcwd()
 here = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -50,7 +56,7 @@ def read_po(path: str) -> dict:
     return entries
 
 
-po = read_po(os.path.join(root, "assets", "i18n", "en.po"))
+po = read_po(os.path.join(root, "assets", "i18n", lang + ".po"))
 with tempfile.TemporaryDirectory() as tmp:
     out = os.path.join(tmp, "strings.json")
     subprocess.run([sys.executable, "-I", os.path.join(here, "extract.py"), root, out], check=True)
@@ -60,13 +66,13 @@ plain = {k[1] for k in po if k[0] == ""}
 missing = [e for e in now if e["src"] not in plain]
 problems = []
 for (ctx, k), v in po.items():
-    for tok in ["%s", "%d", "%%", "[b]", "[/b]", "|"]:
+    for tok in ["%s", "%d", "%%", "[b]", "[/b]", "[color", "[/color]", "|"]:
         if k.count(tok) != v.count(tok):
             problems.append(f"{tok!r} count differs: {k[:50]!r}")
     if v == "":
         problems.append(f"empty msgstr: {k[:50]!r}")
 
-print(f"en.po: {len(po)} entries; scripts: {len(now)} strings; untranslated: {len(missing)}; problems: {len(problems)}")
+print(f"{lang}.po: {len(po)} entries; scripts: {len(now)} strings; untranslated: {len(missing)}; problems: {len(problems)}")
 for e in missing:
     print(f"  missing  {e['src'][:60]!r}  ({e['refs'][0]})")
 for p in problems:

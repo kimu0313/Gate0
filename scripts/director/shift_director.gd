@@ -131,6 +131,18 @@ func radio(text: String, speaker := "소장", extra := 0.0) -> void:
 	if dead:
 		return
 	_radio_busy = true
+	await _radio_line(text, speaker, extra)
+	_radio_busy = false
+	radio_free.emit()
+
+
+## A radio line from inside a conversation that already holds the radio's turn (ShiftDirector.npc_talk): the
+## manager cuts in on the colleague.
+func radio_cut_in(text: String, speaker := "소장") -> void:
+	await _radio_line(text, speaker, 0.0)
+
+
+func _radio_line(text: String, speaker: String, extra: float) -> void:
 	Snd.play("radio_on", -8.0, 1.0, "SFX")
 	await wait(0.25)
 	var dur := clampf(1.6 + text.length() * 0.06, 2.2, 9.0) + extra
@@ -150,8 +162,6 @@ func radio(text: String, speaker := "소장", extra := 0.0) -> void:
 	_radio_chatter.stop()
 	Snd.play("radio_off", -9.0, 1.0, "SFX")
 	await wait(0.35)
-	_radio_busy = false
-	radio_free.emit()
 
 
 ## Radio line that does not block the caller.
@@ -171,6 +181,7 @@ func npc_talk(lines: Array, give: Callable) -> void:
 		await radio_free
 	_radio_busy = true
 	n.on_talk = func(): npc_next.emit()
+	n.interactable.enabled = true   # a second conversation (DAY 1) picks up where the first left off
 	n.interactable.prompt = "교대 근무자와 이야기하기"
 	await npc_next
 	n.interactable.prompt = "계속 듣기"
@@ -182,7 +193,9 @@ func npc_talk(lines: Array, give: Callable) -> void:
 		Events.subtitle.emit("npc", "%s|%s" % [StaffNpc.NAME, text], 600.0)
 		n.murmur(clampf(0.6 + text.length() * 0.045, 1.0, 3.0))
 		if l.size() > 1 and str(l[1]) != "":
-			await give.call(str(l[1]))
+			# `give` returning true means the line was cut short (the radio cut in): the next follows at once
+			if (await give.call(str(l[1]))) == true:
+				continue
 		await wait(0.35)   # a press that came with the previous line does not skip this one
 		await npc_next
 	ui.hud.hide_subtitle()
@@ -288,6 +301,7 @@ func goal(title: String, detail: String, location := "", opts := {}) -> Task:
 	task.detail = detail
 	task.location = location
 	task.optional = opts.get("optional", false)
+	task.target = opts.get("target", null)
 	_add_task(task)
 	return task
 
@@ -388,6 +402,46 @@ func complete_goal(task: Task) -> void:
 	_after_task(task)
 
 
+## Where the current order is, for the HUD's green diamond (null = nothing to point at). DAY 1 is the tutorial:
+## every order. DAY 2: only what is done for the first time — the day's story goals (not the clock-out) and the
+## first inspection of the facility opened today (B-03). An inspection points at its rule page first while that
+## page is still waiting on the wall, then at the facility's control stand or the facility itself.
+const TUTORIAL_PAGES := {"lights": "page_p2", "fids": "page_p3", "pa": "page_p4"}
+const CONTROL_SPOTS := {"baggage": "b03_controls", "walkway": "mw1_controls"}
+var _kinds_done := {}          # facility kinds inspected this shift (first-time markers stop after one)
+
+
+func marker_target() -> Variant:
+	if dead or ending_started or current == null or not current.is_open():
+		return null
+	if Game.cycle != 1 and not (Game.cycle == 2 and _first_time(current)):
+		return null
+	if current.kind == "goal":
+		var tg := current.target
+		if tg == null or not is_instance_valid(tg):
+			return null
+		if tg is StaffNpc:
+			return (tg as StaffNpc).head_position() + Vector3(0, 0.55, 0)
+		return tg.global_position + Vector3(0, 0.3, 0)
+	var page := t.get_node_or_null(str(TUTORIAL_PAGES.get(current.facility_id, ""))) as Node3D
+	if page and is_instance_valid(page) and not page.is_queued_for_deletion():
+		return page.global_position + Vector3(0, 0.25, 0)
+	if CONTROL_SPOTS.has(current.facility_id):
+		return t.spot(CONTROL_SPOTS[current.facility_id])
+	var f := t.facility(current.facility_id)
+	return f.focus_position() if f else null
+
+
+## A goal of the day (other than clocking out), or the first inspection of a facility opened today.
+func _first_time(task: Task) -> bool:
+	if task.kind == "goal":
+		return task.target != null and task.target != t.punch_clock
+	var kind := AnomalyDB.kind_of(task.facility_id)
+	var c := clampi(Game.cycle, 1, NightPlan.DAYS)
+	var before: Array = NightPlan.DAY_FACS[c - 1] if c > 1 else []
+	return (NightPlan.DAY_FACS[c] as Array).has(kind) and not before.has(kind) and not _kinds_done.has(kind)
+
+
 func until_done(task: Task) -> void:
 	while task.state != "done":
 		await task_finished
@@ -415,6 +469,8 @@ func _complete(task: Task, result: String) -> void:
 
 
 func _after_task(task: Task) -> void:
+	if task.kind == "inspect":
+		_kinds_done[AnomalyDB.kind_of(task.facility_id)] = true
 	if current == task:
 		current = null
 		_activate_next()
@@ -636,6 +692,7 @@ func _resolve(f: Facility) -> void:
 # per-frame
 # =========================================================================================
 func _process(delta: float) -> void:
+	ui.hud.set_marker(marker_target())
 	if dead or get_tree().paused:
 		return
 	# clock
@@ -921,18 +978,35 @@ func ev_namecall(lethal := false) -> void:
 	Snd.pa_announce(["name_call"], {"wrong": true, "pitch": 0.94, "no_end": true,
 		"subs": [tr("%s 승객님. %s 승객님. 영번 게이트로 오시기 바랍니다. 기다리고 있습니다.") % [name_text, name_text]]})
 	await get_tree().process_frame
-	var moved := 0.0
+	var walked: float = await _walked_while_pa()
+	if walked < 0.0:
+		return
+	running_event = ""
+	if walked > STILL_SLACK:
+		_violation("이름을 부르는 방송 중에 움직였습니다. (수칙 p.9 ②)", lethal)
+
+
+## "Do not move" broadcasts (p.9 ② ③): how far the player walks on their own feet while the PA is on air, after a
+## moment to come to a stop when it starts. Any real step counts (the old check let short steps through); looking
+## around is not walking, and neither is a conveyor carrying them. Returns -1.0 if they died meanwhile.
+const STILL_GRACE := 0.8       # seconds after the broadcast starts to stop walking
+const STILL_SLACK := 0.08      # metres of their own steps that still count as standing still (an accidental tap)
+
+
+func _walked_while_pa() -> float:
+	var walked := 0.0
+	var on_air := 0.0
 	while Snd.pa_busy:
 		await get_tree().process_frame
 		if dead:
-			return
+			return -1.0
 		if get_tree().paused:
 			continue
-		if p.move_vel.length() > 0.6:
-			moved += get_process_delta_time()
-	running_event = ""
-	if moved > 0.35:
-		_violation("이름을 부르는 방송 중에 움직였습니다. (수칙 p.9 ②)", lethal)
+		var dt := get_process_delta_time()
+		on_air += dt
+		if on_air > STILL_GRACE:
+			walked += Vector2(p.move_vel.x, p.move_vel.z).length() * dt
+	return walked
 
 
 func ev_3am(lethal := false) -> void:
@@ -1019,36 +1093,109 @@ func night_lights_down() -> void:
 	notify("구역 조명 절반이 자동으로 꺼졌다. 여기서부터는 혼자다.", "info")
 
 
-## 03:00 정기 방송 (수칙 p.9 ③): stand still until it ends. From DAY 2 one word is not what it usually is.
+## 03:00 정기 방송 (수칙 p.9 ③): stand still until it ends (walking counts, looking around does not; DAY 1 says so
+## once as it starts). It opens with the date and time — and those drift:
+## DAY 2 it is 1987. 11. 3., 23:40 (the boarding pass and the plaque), DAY 4 it is 23:40 again, at 서해비행장, and
+## the last baggage has arrived. `odd`: one word of the text is not what it usually is ('승객' for '관계자').
+const REGULAR_INTRO := {
+	1: "10월 19일, 현재 시각 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.",
+	2: "1987년 11월 3일, 현재 시각 밤 11시 40분입니다. 터미널 정기 안내 방송을 시작합니다.",
+	3: "10월 21일, 현재 시각 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.",
+	4: "10월 22일, 현재 시각 밤 11시 40분입니다. 서해비행장 정기 안내 방송을 시작합니다.",
+	5: "10월 23일, 현재 시각 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.",
+}
+const TEXT_ODD := "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 승객 외에는 출입을 삼가 주시기 바랍니다. 감사합니다."
+const TEXT_LAST_BAGGAGE := "마지막 수하물이 도착했습니다."
+
+
 func ev_regular_broadcast(lethal := false, odd := true) -> void:
 	if dead:
 		return
 	running_event = "broadcast"
 	event_tension = 0.7
-	Snd.pa_announce(["pa_regular_intro_ko", "pa_test_anom_b_ko" if odd else "pa_test_normal_ko", "pa_test_normal_en"], {"tag": "regular",
-		"subs": ["현재 시각, 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다.",
-			"안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 승객 외에는 출입을 삼가 주시기 바랍니다. 감사합니다." if odd
-				else "안내 말씀 드립니다. 현재 터미널 시설 점검이 진행 중입니다. 관계자 외에는 출입을 삼가 주시기 바랍니다. 감사합니다.",
-			"Attention please. Facility inspection is currently in progress in this terminal. Authorized personnel only. Thank you."]})
+	var c := clampi(Game.cycle, 1, 5)
+	var intro := "pa_regular_intro_d%d" % c
+	if not ResourceLoader.exists(Snd.VOICE_DIR + intro + ".wav"):
+		intro = "pa_regular_intro_ko"
+	var clips := [intro, "pa_test_anom_b_ko" if odd else "pa_test_normal_ko"]
+	var subs := [REGULAR_INTRO[c], TEXT_ODD if odd else PaConsole.TEXT_NORMAL]
+	if c == 4:
+		clips.append("pa_last_baggage_ko")
+		subs.append(TEXT_LAST_BAGGAGE)
+	clips.append("pa_test_normal_en")
+	subs.append(PaConsole.TEXT_EN)
+	Snd.pa_announce(clips, {"tag": "regular", "subs": subs, "wrong": c == 2 or c == 4})
 	await get_tree().process_frame
-	var moved := 0.0
-	while Snd.pa_busy:
-		await get_tree().process_frame
-		if dead:
-			return
-		if get_tree().paused:
-			continue
-		if p.move_vel.length() > 0.6:
-			moved += get_process_delta_time()
+	var walked: float = await _walked_while_pa()
+	if walked < 0.0:
+		return
 	running_event = ""
 	if dead:
 		return
-	if moved > 0.35:
+	if walked > STILL_SLACK:
 		_violation("03:00 정기 방송 중에 움직였습니다. (수칙 p.9 ③)", lethal)
+	elif c == 2:
+		notify("방송이 끝났다. …1987년 11월 3일, 밤 11시 40분이라고 했다.", "info")
+	elif c == 4:
+		notify("방송이 끝났다. …서해비행장. 그리고 마지막 수하물이 도착했다고 했다.", "info")
 	elif odd:
 		notify("방송이 끝났다. …'관계자'가 아니라 '승객'이라고 했던 것 같다.", "info")
 	else:
 		notify("방송이 끝났다. 수칙대로 끝까지 움직이지 않았다.", "good")
+
+
+## The control-tower recording from 1987 on the A0 tape (tools/gen_tape.py): routine clearances, then the pilot
+## starts to say something and the tape breaks up. [voice clip, subtitle]
+const TAPE := [
+	["tape_a0_1", "관제탑: A0, 서해 타워. 바람 잔잔, 활주로 34, 이륙을 허가합니다."],
+	["tape_a0_2", "A0: 이륙 허가, 활주로 34. A0."],
+	["tape_a0_3", "A0: 서해 타워, A0. 이륙했습니다. 1,000피트 통과."],
+	["tape_a0_4", "관제탑: A0, 레이더 포착. 6,000피트까지 상승하십시오."],
+	["tape_a0_5", "A0: 6,000 상승, A0. …타워, 저기— 지금 아래에—"],
+	["tape_a0_6", "(잡음)"],
+]
+
+
+## The A0 tape on the PA console's deck, through every speaker in the terminal. DAY 3 you play it yourself;
+## DAY 4 (`replay`) it plays by itself in the night — and past the point where it broke off, a voice in the noise
+## says your name (수칙 p.9 ②: do not answer, do not move until it ends). [송출 중지] does nothing meanwhile.
+func ev_tape(replay := false, lethal := false) -> void:
+	if dead:
+		return
+	running_event = "tape"
+	event_tension = 0.8 if replay else 0.5
+	var hiss := Snd.play("radio_static_loop", -26.0, 0.8, "PA")
+	var clips := []
+	var subs := []
+	for e in TAPE:
+		clips.append(e[0])
+		subs.append(e[1])
+	await Snd.pa_announce(clips, {"tag": "tape", "no_chime": true, "no_end": true, "delay_between": 0.45, "subs": subs})
+	if dead:
+		if hiss:
+			hiss.stop()
+		return
+	if replay:
+		# the tape should end here. It does not.
+		await wait(2.5)
+		running_event = "tapecall"
+		event_tension = 1.0
+		Snd.pa_announce(["name_tape"], {"tag": "tape", "no_chime": true, "no_end": true, "pitches": [0.84],
+			"subs": [tr("…%s 씨. %s 씨, 들립니까. 여기는, A0편입니다.") % [Game.player_name, Game.player_name]]})
+		await get_tree().process_frame
+		var walked: float = await _walked_while_pa()
+		if walked < 0.0:
+			if hiss:
+				hiss.stop()
+			return
+		await wait(1.2)
+		if walked > STILL_SLACK:
+			_violation("테이프가 이름을 부르는 동안 움직였습니다. (수칙 p.9 ②)", lethal)
+		else:
+			notify("잡음이 끊겼다. 스피커에서 테이프가 멈추는 소리가 났다.", "info")
+	if hiss:
+		hiss.stop()
+	running_event = ""
 
 
 ## DAY 5: FLIGHT 000 boarding call while you stand at the gates. p.9 ③ says freeze during broadcasts;
@@ -1222,6 +1369,30 @@ func _bind_world_objects() -> void:
 	t.syslog_terminal.callback = _on_syslog
 	t.main_power.callback = _on_main_power
 	t.exit_door_use.callback = _on_exit_door
+	t.office_pc.callback = _on_office_pc
+	t.locker_tag.callback = func(): read_clue("locker_tags", "sans", [Game.player_name])
+
+
+## Shows a story document (RulesDB.CLUES) and records it as found; `args` fill its %s after translation.
+## `extra` goes to the page (e.g. {"stain": true} for a soaked one). Returns once it is closed.
+func read_clue(id: String, font_kind := "serif", args: Array = [], extra := {}) -> void:
+	if ui.modal != "":
+		return
+	Game.add_clue(id)
+	var c: Dictionary = RulesDB.CLUES[id]
+	var body := tr(str(c.body))
+	if not args.is_empty():
+		body = body % args
+	await ui.read_doc(c.title, body, font_kind, extra)
+
+
+## The office PC: the job you were hired for — until there is something else to look up (after the 1987
+## boarding pass turns up on DAY 2, the document search for flight A0).
+func _on_office_pc() -> void:
+	if Game.cycle >= 2 and Game.has_clue("ticket"):
+		await read_clue("a0_search", "mono")
+	else:
+		await read_clue("job_post", "mono", [Game.player_name])
 
 
 func _open_door_briefly(door: SlidingDoor, seconds := 4.0) -> void:
@@ -1296,7 +1467,7 @@ func spawn_doc(clue_id: String, pos: Vector3, rot_y := 0.0, prompt := "문서 �
 	pk.picked.connect(func(_p):
 		Game.add_clue(clue_id)
 		var c: Dictionary = RulesDB.CLUES[clue_id]
-		var font_kind := "serif" if clue_id.begins_with("log") or clue_id == "newspaper" else ("hand" if clue_id in ["memo_worker", "timecard"] else "sans")
+		var font_kind := "serif" if clue_id.begins_with("log") else ("hand" if clue_id in ["memo_worker", "timecard"] else "sans")
 		ui.read_doc(c.title, c.body, font_kind))
 	return pk
 

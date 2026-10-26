@@ -3564,42 +3564,8 @@ msgstr ""
 "p.7 Security　　　　 p.8 Gates\n"
 "p.9 Emergency Rules"
 
-msgid ""
-"1. 근무 시간은 [b]00:00 ~ 06:00[/b]입니다. 00:00 ~ 01:00은 인수인계 시간으로 저녁 근무자가 남아 있습니다.\n"
-"   01:00부터는 혼자 근무합니다.\n"
-"\n"
-"2. 점검은 태블릿에 표시되는 지시 순서대로 수행합니다. 하루 점검은 [b]14회[/b]입니다. (첫 근무일은 교육 근무로 8회)\n"
-"\n"
-"3. 시설을 가동하고 직접 관찰한 뒤, 태블릿으로 [b][정상][/b] 또는 [b][이상][/b]을 즉시 보고하십시오.\n"
-"   [이상]을 보고했다면 해당 시설의 수칙에 따라 제한 시간 안에 대응하십시오.\n"
-"\n"
-"4. 이상을 놓치거나, 정상을 이상으로 보고하면 [b]판정 실수[/b]로 기록됩니다.\n"
-"   하루에 판정 실수가 [b]3회[/b] 쌓이면 그날 근무는 무효 처리되고 00:00부터 다시 근무합니다.\n"
-"\n"
-"5. 같은 상황에 두 수칙이 서로 다르게 적혀 있으면, [b]시행일이 더 늦은 추록[/b]을 따르십시오.\n"
-"\n"
-"6. 수칙에 적혀 있지 않은 행동을 하지 마십시오. 수칙이 눈을 감으라고 하면, 감으십시오. ([b]C[/b] 길게)\n"
-"\n"
-"7. [b]0번 게이트는 존재하지 않습니다.[/b]\n"
-"   0번 게이트로 안내하는 표지판·방송·사람을 따르지 마십시오."
-msgstr ""
-"1. Shift hours are [b]00:00 – 06:00[/b]. 00:00 – 01:00 is handover; the evening staff are still in the building.\n"
-"   From 01:00 you work alone.\n"
-"\n"
-"2. Carry out inspections in the order of the work orders shown on the tablet. A shift has [b]14[/b] inspections (the first shift is a training shift with 8).\n"
-"\n"
-"3. Operate the facility and observe it directly, then report [b][NORMAL][/b] or [b][ANOMALY][/b] on the tablet immediately.\n"
-"   If you report [ANOMALY], respond within the time limit according to that facility's rules.\n"
-"\n"
-"4. Missing an anomaly, or reporting a normal facility as anomalous, is recorded as a [b]judgment error[/b].\n"
-"   If [b]3[/b] judgment errors pile up in one shift, that shift is void and you start again from 00:00.\n"
-"\n"
-"5. If two rules say different things about the same situation, follow [b]the addendum with the later effective date[/b].\n"
-"\n"
-"6. Do not take any action that is not written in the rules. If the rules tell you to close your eyes, close them. (Hold [b]C[/b])\n"
-"\n"
-"7. [b]Gate 0 does not exist.[/b]\n"
-"   Do not follow any sign, announcement or person directing you to Gate 0."
+msgid "1. 근무 시간은 [b]00:00 ~ 06:00[/b]입니다. 00:00 ~ 01:00은 인수인계 시간으로 저녁 근무자가 남아 있습니다.\n   01:00부터는 혼자 근무합니다.\n\n2. 점검은 태블릿에 표시되는 지시 순서대로 수행합니다. 하루 점검은 [b]14회[/b]입니다. (첫 근무일은 교육 근무로 8회)\n\n3. 시설을 가동하고 직접 관찰한 뒤, 태블릿으로 [b][정상][/b] 또는 [b][이상][/b]을 즉시 보고하십시오.\n   [이상]을 보고했다면 해당 시설의 수칙에 따라 제한 시간 안에 대응하십시오.\n\n4. 이상을 놓치거나, 정상을 이상으로 보고하면 [b]판정 실수[/b]로 기록됩니다.\n   하루에 판정 실수가 [b]3회[/b] 쌓이면 그날 근무는 무효 처리되고 00:00부터 다시 근무합니다.\n\n5. 같은 상황에 두 수칙이 서로 다르게 적혀 있으면, [b]시행일이 더 늦은 추록[/b]을 따르십시오.\n\n6. 수칙에 적혀 있지 않은 행동을 하지 마십시오. 수칙이 눈을 감으라고 하면, 감으십시오. ([b]C[/b] 길게)\n\n7. 매일 [b]03:00 정기 방송[/b]이 나오는 동안에는 그 자리에서 [b]움직이지 마십시오[/b]. 방송이 끝날 때까지입니다. (p.9 ③)\n\n8. [b]0번 게이트는 존재하지 않습니다.[/b]\n   0번 게이트로 안내하는 표지판·방송·사람을 따르지 마십시오."
+msgstr "1. Shift hours are [b]00:00 – 06:00[/b]. 00:00 – 01:00 is handover; the evening staff are still in the building.\n   From 01:00 you work alone.\n\n2. Carry out inspections in the order of the work orders shown on the tablet. A shift has [b]14[/b] inspections (the first shift is a training shift with 8).\n\n3. Operate the facility and observe it directly, then report [b][NORMAL][/b] or [b][ANOMALY][/b] on the tablet immediately.\n   If you report [ANOMALY], respond within the time limit according to that facility's rules.\n\n4. Missing an anomaly, or reporting a normal facility as anomalous, is recorded as a [b]judgment error[/b].\n   If [b]3[/b] judgment errors pile up in one shift, that shift is void and you start again from 00:00.\n\n5. If two rules say different things about the same situation, follow [b]the addendum with the later effective date[/b].\n\n6. Do not take any action that is not written in the rules. If the rules tell you to close your eyes, close them. (Hold [b]C[/b])\n\n7. Every day, while the [b]03:00 regular broadcast[/b] is on, [b]do not move[/b] from where you are. Stay put until it ends. (p.9 ③)\n\n8. [b]Gate 0 does not exist.[/b]\n   Do not follow any sign, announcement or person directing you to Gate 0."
 
 msgid ""
 "위치: 체크인 홀 북측 벽 / 제어함은 전광판 오른쪽 아래\n"
@@ -4491,3 +4457,477 @@ msgstr "DANGER · HIGH VOLTAGE"
 
 msgid "터미널 전체 전원 차단"
 msgstr "Shuts off all terminal power"
+
+# --- story flow (Day1~5 초안) ---
+
+msgid "%s 씨. %s 씨, 들립니까. 여기는, 에이영편입니다."
+msgstr "%s. %s, do you read me? This is Flight A-zero."
+
+msgid "A0편 DEPARTED"
+msgstr "Flight A0 DEPARTED"
+
+msgid "전광판 맨 위에 없는 항공편 A0(23:40 · GATE 0)이 DEPARTED로 떠 있었습니다."
+msgstr "At the top of the board, a flight that doesn't exist — A0 (23:40 · GATE 0) — was showing DEPARTED."
+
+msgid "젖은 가방"
+msgstr "Soaked Bag"
+
+msgid "바닷물에 젖은 1980년대 가죽 가방(A0 · 87.11.03 태그)이 함께 나왔습니다."
+msgstr "A 1980s leather suitcase soaked in sea water (tagged A0 · 87.11.03) came out with the others."
+
+msgid "바닷물에 젖은 가방에 손을 댔습니다. (수칙 p.5)"
+msgstr "You touched the bag soaked in sea water. (Rule p.5)"
+
+msgid "41개의 소지품"
+msgstr "41 Belongings"
+
+msgid "가방 하나를 넣었는데 승객 소지품 41개가 연달아 통과했습니다. 태그는 모두 A0 · 87.11.03."
+msgstr "You loaded one bag, and 41 passengers' belongings came through one after another. Every tag read A0 · 87.11.03."
+
+msgid "승객 소지품이 연달아 찍히는 X-ray 모니터를 껐습니다. (수칙 p.7)"
+msgstr "You turned off the X-ray monitor while passengers' belongings kept coming through. (Rule p.7)"
+
+msgid "위치: 보안검색 구역 1번 레인 / 판독 모니터는 기계 동쪽 데스크\n\n[b][정상][/b] [가방 투입] 시 판독 화면: 노트북, 물병, 열쇠, 케이블.\n\n① 판독 화면에 [b]사람의 형체[/b]가 보이면:\n　→ 모니터를 끄지 마십시오.\n　→ 화면 앞에서 [b]눈을 감고 10초[/b]를 세십시오. 형체와 눈을 마주치지 마십시오.\n\n② 가방 속에서 무언가 [b]규칙적으로 움직이면[/b]:\n　→ X-ray [비상정지]를 누르십시오. 모니터를 끄지 마십시오.\n\n③ 판독 화면의 가방에 [b]승객 이름표[/b]가 보이면:\n　→ 그 이름을 소리 내어 읽지 마십시오.\n　→ X-ray [b][비상정지][/b]를 누르십시오. 모니터를 끄지 마십시오.\n\n④ 한 번 투입했는데 가방이 [b]연달아[/b] 통과하면:\n　→ 개수를 세지 마십시오.\n　→ X-ray [b][비상정지][/b]를 누르십시오. 모니터를 끄지 마십시오."
+msgstr "Location: Security, Lane 1 / Scan monitor on the desk east of the machine\n\n[b][NORMAL][/b] On [Insert Bag / 가방 투입], the scan screen shows: laptop, water bottle, keys, cable.\n\n① If the scan screen shows [b]a human shape[/b]:\n→ Do not turn off the monitor.\n→ In front of the screen, [b]close your eyes and count 10 seconds[/b]. Do not meet the shape's eyes.\n\n② If something inside a bag [b]moves rhythmically[/b]:\n→ Press the X-ray [Emergency Stop / 비상정지]. Do not turn off the monitor.\n\n③ If the bag on the scan screen carries [b]a passenger name tag[/b]:\n→ Do not read the name out loud.\n→ Press the X-ray [b][Emergency Stop / 비상정지][/b]. Do not turn off the monitor.\n\n④ If you load one bag and bags come through [b]one after another[/b]:\n→ Do not count them.\n→ Press the X-ray [b][Emergency Stop / 비상정지][/b]. Do not turn off the monitor."
+
+msgid "채용 공고 — 게시 이력"
+msgstr "Job Posting — Posting History"
+
+msgid "서해국제공항공사 채용 게시판\n\n[계약직] 터미널 새벽 시설점검원 (00:00 ~ 06:00) · 1명\n지원자 %s — 최종 합격 · 10월 19일 첫 근무 배정\n\n[b]게시 이력[/b]\n2026. 08. 31. 게시　　　 → 09. 06. 채용 완료\n2026. 09. 07. 재게시　　 → 09. 13. 채용 완료\n2026. 09. 14. 재게시　　 → 09. 20. 채용 완료\n2026. 09. 21. 재게시　　 → 09. 27. 채용 완료\n2026. 09. 28. 재게시　　 → 10. 04. 채용 완료\n2026. 10. 05. 재게시　　 → 10. 11. 채용 완료\n2026. 10. 12. 재게시　　 → 10. 18. 채용 완료\n2026. 10. 26. 재게시 예약 (자동)\n\n※ 이 공고는 근무자가 바뀔 때마다 자동으로 다시 게시됩니다."
+msgstr "Seohae International Airport Corporation · Recruitment Board\n\n[Contract] Terminal Dawn Facility Inspector (00:00 – 06:00) · 1 opening\nApplicant %s — Accepted · First shift assigned: October 19\n\n[b]Posting history[/b]\n2026.08.31  Posted     → 09.06  Position filled\n2026.09.07  Reposted   → 09.13  Position filled\n2026.09.14  Reposted   → 09.20  Position filled\n2026.09.21  Reposted   → 09.27  Position filled\n2026.09.28  Reposted   → 10.04  Position filled\n2026.10.05  Reposted   → 10.11  Position filled\n2026.10.12  Reposted   → 10.18  Position filled\n2026.10.26  Repost scheduled (automatic)\n\n※ This posting is republished automatically every time the position changes hands."
+
+msgid "사물함 04 — 이름표"
+msgstr "Locker 04 — Name Tags"
+
+msgid "맨 위에 새 이름표가 붙어 있다.\n　「%s」\n\n그 아래로 이름표가 여러 겹 덧붙어 있다.\n들뜬 가장자리마다 다른 이름이 보인다.\n　「박정우」　「이수연」　「김도현」　「최은비」　「한 ○ ○」\n\n몇 장은 볼펜으로 그어져 있다.\n맨 아래 한 장은 누렇게 바랬다 — 「서해비행장 정비과」"
+msgstr "A new name tag sits on top.\n　\"%s\"\n\nBeneath it, older name tags are stuck on in layers.\nEvery lifted edge shows a different name.\n　\"Park Jung-woo\"　\"Lee Su-yeon\"　\"Kim Do-hyun\"　\"Choi Eun-bi\"　\"Han ○ ○\"\n\nA few have been crossed out in ballpoint.\nThe one at the very bottom has gone yellow — \"Seohae Airfield, Maintenance\""
+
+msgid "10월 12일.\n첫 근무. 소장님은 무전으로만 연락한다. 얼굴은 한 번도 못 봤다.\n\n수칙이 이상할 정도로 구체적이다.\n'0번 게이트는 존재하지 않습니다.'\n존재하지 않는 걸 왜 굳이 적어 놨을까.\n\n그래도 시키는 대로만 하면 아무 일도 없다고 했다."
+msgstr "October 12.\nFirst shift. The Chief only contacts me by radio. Never once seen the Chief's face.\n\nThe rules are strangely specific.\n'Gate 0 does not exist.'\nWhy bother writing down something that doesn't exist?\n\nStill, they said nothing happens as long as I do exactly as I'm told."
+
+msgid "새벽 3시쯤 전광판이 혼자 켜짐.\n편명 A0, 목적지 칸 비어 있음, 게이트 0.\n삭제해도 다음 날 또 뜸.\n\n소장님은 신경 쓰지 말라고 함.\n— 전기팀 박"
+msgstr "Board switched itself on around 3 a.m.\nFlight A0, destination field blank, Gate 0.\nDelete it and it's back the next day.\n\nChief says not to worry about it.\n— Park, Electrical"
+
+msgid "분실물 — 탑승권 (1987)"
+msgstr "Lost & Found — Boarding Pass (1987)"
+
+msgid "서해비행장 · BOARDING PASS\n\n편명　　 A0\n날짜　　 1987. 11. 03.\n출발　　 23:40\n탑승구　 0\n좌석　　 —\n성명　　 (잉크가 번져 읽을 수 없다)\n\n분실물 보관 태그\n접수 2026. 10. 19. 05:58 · 접수자 —\n\n아직 개장도 하지 않은 공항이다."
+msgstr "SEOHAE AIRFIELD · BOARDING PASS\n\nFlight    A0\nDate      1987.11.03\nDeparts   23:40\nGate      0\nSeat      —\nName      (the ink has run; unreadable)\n\nLost property tag\nLogged 2026.10.19 05:58 · Received by —\n\nThis airport hasn't even opened yet."
+
+msgid "녹슨 추모 동판"
+msgstr "Rusted Memorial Plaque"
+
+msgid "추　모\n\n1987년 11월\n서해비행장 A0편\n탑승객 41명\n\n(이름이 새겨진 아랫부분은 녹이 슬어 읽을 수 없다)\n\n모서리가 휘고 녹이 번져 있다.\n새로 지은 터미널에는 어울리지 않을 만큼 오래된 동판이다."
+msgstr "IN MEMORIAM\n\nNovember 1987\nSeohae Airfield Flight A0\n41 passengers\n\n(The lower part, where the names are engraved, is too rusted to read)\n\nThe corners are bent and the rust has spread.\nA plaque far too old for a newly built terminal."
+
+msgid "문서관리시스템 — 검색: A0"
+msgstr "Document Management System — Search: A0"
+
+msgid "서해국제공항공사 문서관리시스템\n검색어: A0　　결과 2건\n\n[1] 사고 조사 보고서 — 서해비행장 A0편 (1987)\n　　작성자: —　　작성일: —\n　　본문: (공란)\n\n[2] 내부 문서 SH-87-1103\n　　「A0 관련, 관계자 외 열람 금지」\n　　열람 권한이 없습니다."
+msgstr "Seohae International Airport Corporation Document Management System\nSearch: A0    2 results\n\n[1] Accident Investigation Report — Seohae Airfield Flight A0 (1987)\n    Author: —    Date: —\n    Body: (blank)\n\n[2] Internal document SH-87-1103\n    \"Re: A0 — authorized personnel only\"\n    You do not have permission to view this document."
+
+msgid "PA-01 자가 진단"
+msgstr "PA-01 Self-Diagnostic"
+
+msgid "PA-01 SELF TEST　　　　 FAULT\n\nSPK-07 (체크인 홀 동측) ········ 출력 없음\nAMP-2 ································ 이상\n\n예비 모듈 보관 위치\n　자재창고 · 이관 설비 상자\n\n※ 모듈 교체 후 콘솔이 자동으로 재시작됩니다."
+msgstr "PA-01 SELF TEST                   FAULT\n\nSPK-07 (Check-in Hall, east) ···· NO OUTPUT\nAMP-2 ··························· FAULT\n\nSpare module location\n  Storage room · transferred-equipment crate\n\n※ The console restarts automatically once the module is replaced."
+
+msgid "이관 설비 목록"
+msgstr "Transferred Equipment List"
+
+msgid "구 A비행장 설비 — 재사용\n(서해비행장 → 서해국제공항 이관 · 2025. 03.)\n\n1. 방송 콘솔 PA-01 ··············· 재사용 (안내 데스크)\n2. 스피커 SPK-01 ~ 12 ············ 일부 재사용 (체크인 홀)\n3. 방송용 테이프 데크 ············· 콘솔 내장\n4. 예비 앰프 모듈 AMP-2 ··········· 보관\n5. 관제 교신 녹음 테이프 1개 ······ 폐기 예정 → 보류\n6. 출발 안내 표시기 ··············· 폐기\n\n비고: 콘솔 음질 이상 없음. 그대로 사용할 것."
+msgstr "Former A Airfield equipment — for reuse\n(Seohae Airfield → Seohae International Airport transfer · 2025.03)\n\n1. PA console PA-01 ··········· Reused (information desk)\n2. Speakers SPK-01 – 12 ······· Partly reused (check-in hall)\n3. Broadcast tape deck ········ Built into the console\n4. Spare amp module AMP-2 ····· In storage\n5. ATC recording tape ×1 ······ To be discarded → on hold\n6. Departure indicator ········ Discarded\n\nNote: Console sound quality is fine. Use it as is."
+
+msgid "신문 스크랩 묶음 (1987)"
+msgstr "Bundle of Newspaper Clippings (1987)"
+
+msgid "누렇게 바랜 기사 조각들이 날짜순으로 붙어 있다.\n누군가 꾸준히 모아 온 것이다.\n\n11. 05.　서해비행장發 A0편 교신 두절… 해경 수색 착수\n11. 10.　A0편 수색 1주째, 서해상 표류물 없어\n11. 17.　서해상 A0편 수색 2주째… 탑승객 41명 생사 불명\n11. 24.　서해상 A0편 수색 3주째… 잔해도 기름띠도 없어\n11. 26.　A0편 수색 종료\n\n마지막 기사 여백에 볼펜 글씨:\n「도착 안내라도 듣고 싶다」 — 유족"
+msgstr "Yellowed clippings, pasted in date order.\nSomeone kept on collecting them.\n\n11.05　Seohae Airfield's Flight A0 loses contact… Coast Guard launches search\n11.10　Flight A0 search, week 1: no debris at sea\n11.17　Flight A0 search at sea, week 2… fate of 41 passengers unknown\n11.24　Flight A0 search at sea, week 3… no wreckage, no oil slick\n11.26　Flight A0 search called off\n\nIn the margin of the last clipping, in ballpoint:\n\"I just want to hear the arrival announcement.\" — a bereaved family member"
+
+msgid "공문 — 서해비행장 운항관리과 (1987)"
+msgstr "Official Letter — Seohae Airfield Flight Operations Section (1987)"
+
+msgid "문서번호 운항 87-1103\n수신: 교통부 항공국\n제목: A0편 수색 결과 보고\n\n1. 수색 기간: 1987. 11. 04. ~ 11. 25.\n2. 수색 결과: [b]발견물 없음.[/b]\n3. [b]기체 이륙 여부 재확인 요망.[/b]\n　 (관제 기록상 이륙 허가 23:40 · 교신 두절 23:44.\n　　활주로 감시 요원 중 이륙 장면을 본 사람 없음)\n\n붙임: 관제 교신 녹음 테이프 1부.　끝."
+msgstr "Doc. No. OPS 87-1103\nTo: Ministry of Transportation, Civil Aviation Bureau\nSubject: Report on the results of the Flight A0 search\n\n1. Search period: 1987.11.04 – 11.25\n2. Search result: [b]Nothing found.[/b]\n3. [b]Request re-verification of whether the aircraft took off at all.[/b]\n   (ATC records: takeoff clearance 23:40 · contact lost 23:44.\n    None of the runway watch staff saw it take off.)\n\nAttached: 1 ATC recording tape.    END."
+
+msgid "어제 본 그 탑승권이다.\n\n종이가 흠뻑 젖어 있다. 짠 냄새가 난다 — 바닷물이다.\n보관함 안은 말라 있는데, 이것만 젖어 있다.\n\n편명　　 A0\n날짜　　 1987. 11. 03.\n출발　　 23:40\n성명　　 (번진 잉크 사이로 글자 몇 개가 새로 떠올라 있다)"
+msgstr "It's the same boarding pass as yesterday.\n\nThe paper is soaked through. It smells of salt — sea water.\nThe inside of the cabinet is dry. Only this is wet.\n\nFlight    A0\nDate      1987.11.03\nDeparts   23:40\nName      (a few letters have surfaced anew through the running ink)"
+
+msgid "성명: 박○○ (정비과)\n\n1987. 11. 03.　출근 23:02　　퇴근 ──\n1987. 11. 04.　출근 ──　　　 퇴근 ──\n\n(카드 뒷면, 연필 글씨)\nA0편 방송이 또 나온다.\n탑승 안내가 들리면 게이트에서 나와야 한다. 앉으면 끝이다."
+msgstr "Name: Park ○○ (Maintenance)\n\n1987.11.03　In 23:02　　Out ──\n1987.11.04　In ──　　　 Out ──\n\n(On the back, in pencil)\nThe Flight A0 announcement is on again.\nWhen the boarding call plays, get out of the gate area. If you sit down, it's over."
+
+msgid "녹슨 동판 살펴보기"
+msgstr "Examine the rusted plaque"
+
+msgid "수칙 p.%s 챙기기"
+msgstr "Take rule page p.%s"
+
+msgid "근무 수칙 p.%s %s — 바인더에 끼움"
+msgstr "Rule page p.%s %s — filed in the binder"
+
+msgid "10월 19일, 현재 시각 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다."
+msgstr "October 19. The time is now three a.m. The terminal's scheduled announcement begins."
+
+msgid "1987년 11월 3일, 현재 시각 밤 11시 40분입니다. 터미널 정기 안내 방송을 시작합니다."
+msgstr "November 3, 1987. The time is now eleven forty p.m. The terminal's scheduled announcement begins."
+
+msgid "10월 21일, 현재 시각 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다."
+msgstr "October 21. The time is now three a.m. The terminal's scheduled announcement begins."
+
+msgid "10월 22일, 현재 시각 밤 11시 40분입니다. 서해비행장 정기 안내 방송을 시작합니다."
+msgstr "October 22. The time is now eleven forty p.m. Seohae Airfield's scheduled announcement begins."
+
+msgid "10월 23일, 현재 시각 새벽 세 시입니다. 터미널 정기 안내 방송을 시작합니다."
+msgstr "October 23. The time is now three a.m. The terminal's scheduled announcement begins."
+
+msgid "방송이 끝났다. …1987년 11월 3일, 밤 11시 40분이라고 했다."
+msgstr "The announcement ended. …It said November 3, 1987. Eleven forty p.m."
+
+msgid "방송이 끝났다. …서해비행장. 그리고 마지막 수하물이 도착했다고 했다."
+msgstr "The announcement ended. …Seohae Airfield. And it said the last baggage has arrived."
+
+msgid "관제탑: A0, 서해 타워. 바람 잔잔, 활주로 34, 이륙을 허가합니다."
+msgstr "Tower: A0, Seohae Tower. Wind calm, runway 34, cleared for takeoff."
+
+msgid "A0: 이륙 허가, 활주로 34. A0."
+msgstr "A0: Cleared for takeoff, runway 34. A0."
+
+msgid "A0: 서해 타워, A0. 이륙했습니다. 1,000피트 통과."
+msgstr "A0: Seohae Tower, A0. Airborne, passing 1,000 feet."
+
+msgid "관제탑: A0, 레이더 포착. 6,000피트까지 상승하십시오."
+msgstr "Tower: A0, radar contact. Climb and maintain 6,000 feet."
+
+msgid "A0: 6,000 상승, A0. …타워, 저기— 지금 아래에—"
+msgstr "A0: Climbing to 6,000, A0. …Tower, there's— right below us—"
+
+msgid "(잡음)"
+msgstr "(static)"
+
+msgid "…%s 씨. %s 씨, 들립니까. 여기는, A0편입니다."
+msgstr "…%s. %s, do you read me? This is Flight A0."
+
+msgid "테이프가 이름을 부르는 동안 움직였습니다. (수칙 p.9 ②)"
+msgstr "You moved while the tape was calling your name. (Rule p.9 ②)"
+
+msgid "잡음이 끊겼다. 스피커에서 테이프가 멈추는 소리가 났다."
+msgstr "The static cut out. From the speakers came the sound of a tape stopping."
+
+msgid "아, 또 새로 오신 분이네요."
+msgstr "Oh. Another new one."
+
+msgid "…아, 반가워요. 저는 저녁 근무예요. 오늘부터 새벽 근무 하시는 거죠?"
+msgstr "…Ah, nice to meet you. I'm on evenings. You're starting on the dawn shift today, right?"
+
+msgid "들어가기 전에 저기 PC에서 근무 배정 확인 한 번 눌러 주세요. 인사팀에서 확인한대요."
+msgstr "Before you start, confirm your shift assignment on that PC over there. HR checks it, apparently."
+
+msgid "사물함은 04번 쓰시면 돼요. 이름표 붙여 놨어요. 다 보고 오면 장비 넘겨 드릴게요."
+msgstr "You've got locker 04. I put your name tag on it. Once you've seen to both, I'll hand over the equipment."
+
+msgid "확인했어요? 그럼 장비요. 이건 점검 태블릿. 점검 지시가 여기로 와요. [Tab]으로 열고, 보고도 여기서 해요."
+msgstr "All done? Then, the equipment. This is the inspection tablet. Work orders come in here. Open it with [Tab] — you report on it too."
+
+msgid "근무 수칙 바인더요. 아직 몇 장 없죠? 나머지 페이지는 시설마다 꽂혀 있어요. 갈 때마다 챙겨서 끼우면 돼요."
+msgstr "The Shift Rules binder. Not many pages yet, right? The rest are posted at each facility. Pick them up as you go and file them in."
+
+msgid "뭐… 얼마 지나면 못 보겠지만. 그래도 잘 부탁해요."
+msgstr "Well… not that I'll be seeing you for long. Still, take care."
+
+msgid "…그리고, 저기. 사실 전에 이 자리에 있던 사람들이요—"
+msgstr "…And, um. The thing is, the people who had this job before you—"
+
+msgid "…아니에요. 별거 아니에요. 그럼 먼저 갈게요."
+msgstr "…Never mind. It's nothing. I'll be off, then."
+
+msgid "근무 수칙 바인더 수령 — [B]로 펼치기 (아직 p.0 · p.1뿐)"
+msgstr "Shift Rules Binder received — open it with [B] (only p.0 · p.1 so far)"
+
+msgid "첫 번째는 조명 분전반이에요. 사무실 문 바로 옆 벽. 분전반 옆에 수칙 2페이지가 꽂혀 있어요. 먼저 챙기세요."
+msgstr "First, the lighting panel. On the wall right next to the office door. Page 2 of the rules is posted beside the panel. Grab it first."
+
+msgid "다음은 출발 전광판. 체크인 홀 북쪽 벽이요. 3페이지는 전광판 아래, 제어함 왼쪽 벽에 붙어 있어요."
+msgstr "Next, the departures board. North wall of the check-in hall. Page 3 is on the wall below the board, left of the control box."
+
+msgid "마지막은 안내방송. 안내 데스크 콘솔이요. 4페이지는 콘솔 옆에 놓여 있어요."
+msgstr "Last, the PA. The console at the information desk. Page 4 is lying next to the console."
+
+msgid "[테스트 방송]을 눌러요. 문안은 수칙 4페이지랑 똑같아야 해요. 끝까지 듣고 보고하세요."
+msgstr "Press [Test Broadcast / 테스트 방송]. The wording has to match page 4 of the rules exactly. Listen to the end, then report."
+
+msgid "근무 배정 확인 (사무실 PC)"
+msgstr "Confirm your shift assignment (office PC)"
+
+msgid "사무실 서쪽 책상의 [b]PC[/b]에서 근무 배정을 확인하십시오."
+msgstr "Confirm your shift assignment on the [b]PC[/b] at the west desk of the office."
+
+msgid "…같은 공고가, 매주 다시 올라왔다."
+msgstr "…The same job ad. Posted again every single week."
+
+msgid "배정된 사물함 확인 (04)"
+msgstr "Check your assigned locker (04)"
+
+msgid "사무실 북쪽 벽 [b]사물함 04[/b]의 이름표를 확인하십시오."
+msgstr "Check the name tag on [b]locker 04[/b] on the office's north wall."
+
+msgid "이름표 밑에 이름표가… 몇 명째야."
+msgstr "Name tags under name tags… How many before me?"
+
+msgid "[b]저녁 근무자[/b]에게 돌아가 [E]로 근무 장비를 받으십시오."
+msgstr "Go back to the [b]evening staff[/b] and collect your equipment with [E]."
+
+msgid "교대 근무자에게 장비 받기"
+msgstr "Collect your equipment from the evening staff"
+
+msgid "팩스로 온 수칙 p.9 챙기기"
+msgstr "Take the faxed rule page p.9"
+
+msgid "시설관리실 [b]팩스[/b] 옆에 소장이 보낸 수칙 9페이지(비상 수칙)가 있습니다. 퇴근 전에 챙기십시오."
+msgstr "Rule page 9 (Emergency Rules), sent by the Chief, is beside the [b]fax[/b] in the Facility Office. Take it before you clock out."
+
+msgid "교대 근무자님, 퇴근 기록 아직이에요? 시간 지났어요."
+msgstr "Evening shift, you still haven't clocked out? You're past your time."
+
+msgid "그리고 방금 그분이 하려던 말은 신경 쓰지 마세요. 여기선 쓸데없는 데 관심 두는 사람이 오래 못 가요."
+msgstr "And whatever they were about to say just now, don't worry about it. People who take an interest in things that don't concern them don't last long here."
+
+msgid "다음은 바인더. [B]로 펼쳐요. 아직 0페이지 목차랑 1페이지 총칙뿐이죠? 1페이지는 꼭 읽어 두세요."
+msgstr "Now the binder. Open it with [B]. So far it's just page 0, Contents, and page 1, General, right? Make sure you read page 1."
+
+msgid "좋아요. 이제 점검이에요. 태블릿에 지시가 하나씩 떠요. 오늘은 여덟 번. 시설마다 그 시설 수칙 페이지가 있으니까, 챙겨서 바인더에 끼우고 시작해요."
+msgstr "Good. Now the inspections. Work orders come up on the tablet one at a time. Eight tonight. Each facility has its own rule page waiting there — take it, file it in the binder, then start."
+
+msgid "곧 세 시 정기 방송이에요. 비상 수칙 9페이지는 방금 사무실 팩스로 보냈어요. 이따 챙기고요."
+msgstr "The three o'clock announcement is coming up. I just faxed page 9, the emergency rules, to the office. Pick it up later."
+
+msgid "지금은 이것만 기억해요. 9페이지 3번 — 방송이 끝날 때까지 그 자리에서 움직이지 마세요."
+msgstr "For now, just remember this. Page 9, item 3 — don't move from where you are until the announcement ends."
+
+msgid "잘했어요. 정기 방송은 매일 세 시에 나와요. 날짜랑 시각을 알려 주니까 잘 들어 두세요."
+msgstr "Well done. The scheduled announcement plays at three every night. It gives the date and the time, so listen carefully."
+
+msgid "…A0, 23시 40분? 저런 편이 있었나."
+msgstr "…A0, 23:40? Was there a flight like that?"
+
+msgid "왔어요? 하루 버티셨네요. 오늘부터 수하물도 보시죠. B-03 제어대가 여기예요."
+msgstr "There you are. You made it through a day. You're on baggage from today, right? The B-03 controls are here."
+
+msgid "아, 그리고 분실물 보관함. 동쪽 끝 자재창고에 있는데, 하루 한 번 열어 보래요. 개장 전이라 비어 있을 거예요."
+msgstr "Oh, and the lost-and-found cabinet. It's in the storage room at the east end — we're supposed to open it once a day. We haven't opened yet, so it should be empty."
+
+msgid "창고 얘기는 소장님한테 굳이 안 하셔도 돼요. …그럼 먼저 갈게요. 오늘도 수칙 꼭 지키세요."
+msgstr "No need to mention the storage room to the Chief. …Well, I'm off. Stick to the rules tonight too."
+
+msgid "분실물 보관함 확인 (자재창고)"
+msgstr "Check the lost-and-found cabinet (storage room)"
+
+msgid "교대 근무자가 맡긴 일: 체크인 홀 동쪽 끝 [b]자재창고[/b]의 분실물 보관함을 열어 확인하십시오."
+msgstr "An errand from the evening staff: open and check the lost-and-found cabinet in the [b]storage room[/b] at the east end of the check-in hall."
+
+msgid "1987년 11월 3일…? 개장도 안 한 공항에, 39년 전 비행기표가 분실물로?"
+msgstr "November 3, 1987…? A 39-year-old plane ticket turned in as lost property — at an airport that hasn't even opened?"
+
+msgid "…아까 창고 앞 복도 구석에, 동판 같은 게 서 있었는데."
+msgstr "…There was something like a plaque standing in the corner of the passage outside the storage room."
+
+msgid "창고 앞 복도의 동판 살펴보기"
+msgstr "Examine the plaque in the passage outside storage"
+
+msgid "자재창고로 가는 복도 구석에 [b]녹슨 동판[/b]이 세워져 있습니다. 살펴보십시오."
+msgstr "A [b]rusted plaque[/b] stands in a corner of the passage to the storage room. Examine it."
+
+msgid "같은 날짜다. 1987년 11월, A0편… 41명."
+msgstr "Same date. November 1987, Flight A0… 41 people."
+
+msgid "A0편 기록 찾아보기 (사무실 PC)"
+msgstr "Look up records on Flight A0 (office PC)"
+
+msgid "A0편에 대해 알아보십시오. 시설관리실 [b]PC[/b]에서 사내 문서를 검색할 수 있습니다."
+msgstr "Find out about Flight A0. You can search internal documents on the [b]PC[/b] in the Facility Office."
+
+msgid "보고서는 비어 있고, 나머지는 열람 금지… 기록이 없는 게 아니다. 누가 막아 둔 거다."
+msgstr "The report is blank, the rest is restricted… It's not that there's no record. Someone has locked it away."
+
+msgid "…비행기표랑 같은 날짜, 같은 시각이다."
+msgstr "…Same date as the ticket. Same time."
+
+msgid "어제 분실물 보관함 열어 보셨어요? …아뇨, 저는 열어 본 적 없어요. 그냥 물어본 거예요."
+msgstr "Did you open the lost-and-found cabinet yesterday? …No, I've never opened it myself. Just asking."
+
+msgid "사흘째네요. 먼저 들어갈게요."
+msgstr "Day three, huh. I'm heading off."
+
+msgid "소장님. 자재창고 이관 설비 상자에서 테이프가 하나 나왔는데요."
+msgstr "Chief. A tape turned up in the transferred-equipment crate in the storage room."
+
+msgid "…자재창고요? 그쪽에 창고가 있어요? 제 도면엔 그냥 벽인데요."
+msgstr "…The storage room? There's a storage room over there? On my floor plan that's just a wall."
+
+msgid "거길 어떻게 찾아 들어갔어요? 누가 알려 줬어요?"
+msgstr "How did you find your way in there? Who told you about it?"
+
+msgid "콘솔 진단 화면에 위치가 나와 있었어요. 테이프엔 날짜가 적혀 있고요. 87년 11월 3일, A0…"
+msgstr "The console's diagnostic screen showed where it was. And there's a date written on the tape. November 3, '87, A0…"
+
+msgid "…그건 됐고요."
+msgstr "…Never mind that."
+
+msgid "하나만 말할게요. 그 테이프, 다시는 틀지 마세요. 끊긴 데서 끝나는 게 맞아요."
+msgstr "I'll tell you one thing. Don't ever play that tape again. It's meant to end where it cuts off."
+
+msgid "그 너머를 들으면, 저쪽에서도 당신을 듣게 돼요. 이름 같은 건 더더욱 말하지 말고요. …점검 계속하세요."
+msgstr "If you listen past that, they'll hear you on the other end too. And above all, don't say any names. …Carry on with the inspections."
+
+msgid "안내 데스크 PA 콘솔에서 경고음이 울린다."
+msgstr "A warning tone sounds from the PA console at the information desk."
+
+msgid "콘솔 경고 표시 확인"
+msgstr "Check the console warning"
+
+msgid "PA 콘솔 경고 확인"
+msgstr "Check the PA console warning"
+
+msgid "체크인 홀 [b]안내 데스크 PA 콘솔[/b]에 경고가 들어왔습니다. 콘솔의 진단 표시를 확인하십시오."
+msgstr "A warning has come up on the [b]PA console at the information desk[/b] in the check-in hall. Check the console's diagnostic display."
+
+msgid "예비 앰프 모듈 가져오기 (자재창고)"
+msgstr "Fetch the spare amp module (storage room)"
+
+msgid "[b]자재창고[/b]의 이관 설비 상자에서 예비 앰프 모듈(AMP-2)을 꺼내 오십시오."
+msgstr "Take the spare amp module (AMP-2) out of the transferred-equipment crate in the [b]storage room[/b]."
+
+msgid "A0, 87.11.03… 비행기표랑 같은 날짜다. 그리고 방송 콘솔이 — 그때 그 비행장 거라고?"
+msgstr "A0, 87.11.03… Same date as the ticket. And the PA console — it came from that airfield?"
+
+msgid "예비 앰프 모듈 끼우기"
+msgstr "Install the spare amp module"
+
+msgid "SPK-07 출력 복구. 콘솔이 다시 시작됐다."
+msgstr "SPK-07 output restored. The console has restarted."
+
+msgid "PA 콘솔에 앰프 모듈 끼우기"
+msgstr "Install the amp module in the PA console"
+
+msgid "[b]안내 데스크 PA 콘솔[/b]의 데크 쪽 모듈 칸에 예비 앰프 모듈을 끼우십시오."
+msgstr "Fit the spare amp module into the module slot on the deck side of the [b]PA console at the information desk[/b]."
+
+msgid "콘솔에 테이프 데크가 달려 있다. …한번 틀어 볼까."
+msgstr "There's a tape deck built into the console. …Maybe I'll play it."
+
+msgid "테이프 넣고 재생"
+msgstr "Insert and play the tape"
+
+msgid "테이프 재생해 보기"
+msgstr "Play the tape"
+
+msgid "PA 콘솔 왼쪽의 [b]테이프 데크[/b]에 카세트테이프를 넣고 재생하십시오."
+msgstr "Insert the cassette into the [b]tape deck[/b] on the left of the PA console and play it."
+
+msgid "예비 앰프 모듈과 카세트테이프 한 개를 꺼냈다. 테이프 라벨: A0 / 87.11.03"
+msgstr "You took out the spare amp module and a cassette tape. Tape label: A0 / 87.11.03"
+
+msgid "A0… 떠났다고? 지금 그런 편은 없는데."
+msgstr "A0… departed? There's no such flight."
+
+msgid "퇴근 기록을 찍는 순간, 안내 데스크 쪽 스피커에서 테이프 감기는 소리가 났다."
+msgstr "The moment you punched out, the speakers by the information desk made the sound of a tape winding."
+
+msgid "콘솔의 테이프 데크는 비어 있었다."
+msgstr "The console's tape deck was empty."
+
+msgid "사무실 서랍이요? …그거 제가 열어 둔 거 아니에요."
+msgstr "The office drawer? …I'm not the one who left that open."
+
+msgid "책상 옆 서랍 하나가 반쯤 열려 있다."
+msgstr "One of the drawers beside the desk is half open."
+
+msgid "열린 서랍 확인"
+msgstr "Check the open drawer"
+
+msgid "시설관리실 책상 옆 [b]서랍[/b]이 열려 있습니다. 확인하십시오."
+msgstr "A [b]drawer[/b] beside the desk in the Facility Office is open. Check it."
+
+msgid "발견물 없음… 이륙했는지도 모른다고? 비행기가 떴는지조차?"
+msgstr "Nothing found… They don't even know if it took off? Whether the plane ever left the ground?"
+
+msgid "스크랩 사이에서 공문 한 장이 미끄러져 나왔다."
+msgstr "An official letter slipped out from between the clippings."
+
+msgid "안내 데스크 쪽 스피커에서 테이프 감기는 소리가 난다."
+msgstr "From the speakers by the information desk comes the sound of a tape winding."
+
+msgid "…방금 그거, 그 테이프죠. 틀지 말라고 했잖아요."
+msgstr "…That just now — that was the tape, wasn't it. I told you not to play it."
+
+msgid "…안 틀었다고요? 그럼, 누가."
+msgstr "…You didn't play it? Then who did?"
+
+msgid "바닷물 냄새… 창고 분실물 보관함, 그 비행기표."
+msgstr "The smell of sea water… The lost-and-found cabinet in storage. That ticket."
+
+msgid "분실물 보관함 다시 확인 (자재창고)"
+msgstr "Check the lost-and-found cabinet again (storage room)"
+
+msgid "[b]자재창고[/b] 분실물 보관함의 1987년 탑승권을 다시 확인하십시오."
+msgstr "Check the 1987 boarding pass in the lost-and-found cabinet in the [b]storage room[/b] again."
+
+msgid "수색에선 아무것도 못 찾았는데… 바다에서 못 찾은 것들이, 여기로 돌아오고 있다."
+msgstr "The search found nothing… What the sea never gave back is coming back here."
+
+msgid "마지막 근무네요. 닷새를 다 채운 분은… 처음 봐요."
+msgstr "Your last shift. I've never seen anyone… make it through all five days."
+
+msgid "오늘이 개장일이에요."
+msgstr "Today's opening day."
+
+msgid "탑승권 — FLIGHT A0"
+msgstr "Boarding pass — FLIGHT A0"
+
+msgid "PASSENGER　%s\nFLIGHT　A0\nFROM　SEOHAE · 서해\nTO　HOME · 집\nGATE　0\nBOARDING　23:40\nSEAT　—\n\n탑승이 확인되었습니다."
+msgstr "PASSENGER　%s\nFLIGHT　A0\nFROM　SEOHAE\nTO　HOME\nGATE　0\nBOARDING　23:40\nSEAT　—\n\nBoarding confirmed."
+
+msgid "[송출 중지]가 듣지 않는다. 테이프가 계속 돈다."
+msgstr "[Stop Broadcast / 송출 중지] does nothing. The tape keeps turning."
+
+msgid "추　모\n1987. 11.\n서해비행장 A0편\n탑승객 41명"
+msgstr "IN MEMORIAM\n1987. 11.\nSeohae Airfield Flight A0\n41 Passengers"
+
+msgid "PC 화면 보기"
+msgstr "View the PC screen"
+
+msgid "사물함 04 이름표 보기"
+msgstr "Look at the locker 04 name tag"
+
+msgid "서랍 열어 보기"
+msgstr "Open the drawer"
+
+msgid "분실물 보관함  LOST & FOUND"
+msgstr "LOST & FOUND"
+
+msgid "분실물 보관함 열어 보기"
+msgstr "Open the lost-and-found cabinet"
+
+msgid "구 서해비행장 이관 설비\n재사용 · 2025. 03."
+msgstr "FROM FORMER SEOHAE AIRFIELD\nREUSE · 2025.03"
+
+msgid "이관 장비 상자 열어 보기"
+msgstr "Open the transferred-equipment crate"
+
+# --- chapter titles ---
+
+msgid "DAY 1 — 첫 근무 · 또 새로 오신 분"
+msgstr "DAY 1 — First Shift · Another New One"
+
+msgid "DAY 2 — 수하물 수취대 · 1987년의 비행기표"
+msgstr "DAY 2 — Baggage Claim · A Ticket from 1987"
+
+msgid "DAY 3 — 보안검색 · A0 / 87.11.03"
+msgstr "DAY 3 — Security · A0 / 87.11.03"
+
+msgid "DAY 4 — 탑승동 · 젖은 물건들"
+msgstr "DAY 4 — Boarding Wing · Wet Things"
+
+# --- DAY 1 broadcast rule notice ---
+
+msgid "정기 방송 중에는 움직이지 마십시오. 방송이 끝날 때까지 그 자리에 서 있으십시오. (수칙 p.9 ③)"
+msgstr "Do not move during the regular broadcast. Stay where you are until it ends. (Rule p.9 ③)"

@@ -62,6 +62,22 @@ static func installed_font(names: Array, msdf := false) -> SystemFont:
 	return f if f.get_font_name() in names else null
 
 
+## The UI face for the player's language: Malgun Gothic (Korean, English), or for Japanese a Japanese
+## system face (Yu Gothic UI → Meiryo) with the Korean face behind it for Hangul (player names, signage
+## words); without those, the bundled Noto Sans JP. World signage keeps korean_font() in every language.
+static func ui_font(weight: int) -> Font:
+	var kr := korean_font(weight)
+	if not TranslationServer.get_locale().begins_with("ja"):
+		return kr
+	var jp: Font = installed_font(["Yu Gothic UI", "Yu Gothic", "Meiryo UI", "Meiryo"])
+	if jp:
+		(jp as SystemFont).font_weight = weight
+	else:
+		jp = font_file("res://assets/fonts/NotoSansJP-Variable.ttf", false, weight)
+	jp.fallbacks = [kr]
+	return jp
+
+
 ## Malgun Gothic, or the bundled Noto Sans KR (variable) at the same weight.
 static func korean_font(weight: int, msdf := false) -> Font:
 	var sys := installed_font(["Malgun Gothic"], msdf)

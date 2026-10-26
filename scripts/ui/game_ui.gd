@@ -319,9 +319,11 @@ func _build_reader() -> void:
 
 
 ## Shows a document and waits until the player closes it.
-func read_doc(title: String, body: String, font_kind := "serif") -> void:
+func read_doc(title: String, body: String, font_kind := "serif", extra := {}) -> void:
 	_open_modal("doc")
-	_reader_paper.show_page({"title": title, "body": body, "font": font_kind, "stamp": "none"}, true)
+	var page := {"title": title, "body": body, "font": font_kind, "stamp": "none"}
+	page.merge(extra, true)
+	_reader_paper.show_page(page, true)
 	_reader.visible = true
 	# size the sheet to its text so short notes are not two-thirds blank paper
 	_reader_rig.modulate.a = 0.0

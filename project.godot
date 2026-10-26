@@ -41,7 +41,7 @@ theme/default_font_antialiasing=1
 
 [internationalization]
 
-locale/translations=PackedStringArray("res://assets/i18n/en.po")
+locale/translations=PackedStringArray("res://assets/i18n/en.po", "res://assets/i18n/ja.po")
 locale/fallback="ko"
 
 [physics]

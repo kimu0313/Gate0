@@ -85,6 +85,12 @@ func _ready() -> void:
 		add_child(at)
 		ui.fade_to(0.0, 0.01)
 		return
+	if OS.get_cmdline_user_args().has("--stilltest"):
+		var st = load("res://scripts/debug/still_test.gd").new()
+		st.world = self
+		add_child(st)
+		ui.fade_to(0.0, 0.01)
+		return
 	if OS.get_cmdline_user_args().has("--punchtest"):
 		var pt = load("res://scripts/debug/punch_test.gd").new()
 		pt.world = self

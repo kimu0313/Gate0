@@ -47,10 +47,12 @@ const SPOTS := {
 	# documents and the furniture they lie on
 	"doc_log1": Vector3(-14.6, 0.77, 6.9), "log1_desk": Vector3(-14.6, 0.38, 6.95),
 	"doc_memo_worker": Vector3(-0.45, 1.01, 5.55),
-	"locker": Vector3(9.55, 0.0, -24.6), "doc_log2": Vector3(9.18, 1.02, -24.6),
-	"doc_newspaper": Vector3(8.4, 0.49, -87.2), "doc_log3": Vector3(20.8, 0.49, -94.6),
+	"doc_log3": Vector3(20.8, 0.49, -94.6),
 	"doc_timecard": Vector3(-14.6, 0.93, -2.05), "timecard_shelf": Vector3(-14.6, 0.9, -2.15),
-	"plaque": Vector3(20.4, 0.0, -6.6),
+	"plaque": Vector3(11.45, 0.0, -7.95),     # rusted memorial in the strip's dead-end corner by the storage door
+	# DAY 1 rule pages, collected where each facility is (p.9 comes in on the office fax)
+	"page_p2": Vector3(-19.79, 1.45, 10.0), "page_p3": Vector3(-6.62, 1.45, -2.293),
+	"page_p4": Vector3(0.93, 1.0, 5.86), "page_p9": Vector3(-13.0, 0.802, 5.86),
 	# evening-shift colleague posts (DAY 1–5)
 	"npc_office": Vector3(-16.0, 0, 1.2), "npc_b03": Vector3(-33.2, 0, -55.4), "npc_xray": Vector3(-2.3, 0, -16.4),
 	"npc_wing": Vector3(2.6, 0, -25.4), "npc_info": Vector3(2.5, 0, 7.4),
@@ -67,6 +69,12 @@ const SPOTS := {
 	"view_punch": Vector3(-15.3, 0.05, -1.0), "look_punch": Vector3(-15.3, 1.35, -2.3),
 	"view_breaker": Vector3(-13.3, 0.05, -1.0), "look_breaker": Vector3(-13.3, 1.5, -2.3),
 	"office_inside": Vector3(-16.0, 0.05, 2.5), "office_look": Vector3(-19.6, 1.0, 2.5),
+	# control stands (the green diamond points here for a facility's first inspection)
+	"b03_controls": Vector3(-33.6, 1.25, -57.4), "mw1_controls": Vector3(1.2, 1.25, -29.6),
+	# DAY 1 arrival: in the hall, up to the office door's card reader, through the door and a few steps inside
+	"office_entry": Vector3(-15.2, 0.05, 11.4), "reader_stand": Vector3(-16.95, 0.05, 8.5),
+	"office_door_front": Vector3(-17.9, 0.05, 8.35), "office_doorway": Vector3(-18.1, 0.05, 6.7),
+	"office_arrive": Vector3(-17.9, 0.05, 5.2),
 	"entrance_out": Vector3(-7.8, 0, 16.8),
 	"cut_arrivals": Vector3(2.6, 0.05, 2.4),
 	"boarding_hold": Vector3(-1.5, 0.05, -62.0), "boarding_look": Vector3(-1.5, 1.6, -40.0),
@@ -130,6 +138,14 @@ var keypad: Interactable
 var main_power: Interactable
 var exit_door_use: Interactable
 var syslog_terminal: Interactable
+## story props (Day1~5 초안), each switched on by the day scripts / ShiftDirector
+var office_pc: Interactable        # office desk PC: the job posting (DAY 1), the A0 search (DAY 2)
+var locker_tag: Interactable       # locker 04: your name stuck over everyone else's
+var drawer: Node3D                 # top drawer of the office pedestal (DAY 4: left open, 1987 scraps inside)
+var drawer_use: Interactable
+var lost_found: Interactable       # storage room lost-and-found cabinet (the 1987 boarding pass)
+var crate: Node3D                  # storage room crate of equipment transferred from the old airfield
+var crate_use: Interactable
 var gate0_wall: Node3D
 var gate0_parts: Node3D
 var final_plane: Node3D
@@ -153,6 +169,7 @@ func build() -> void:
 	_build_corridor()
 	_build_gates()
 	_build_service_rooms()
+	_build_story_props()
 	_build_outside()
 	_build_facility_systems()
 	_ceiling_details()
@@ -975,6 +992,88 @@ func _build_service_rooms() -> void:
 	var scr := Props.monitor(term, Vector3(0, 0.95, 0.05), 0.0, Vector2(0.5, 0.32))
 	scr.material_override = Mats.emissive(Color(0.25, 0.9, 0.4), 0.7)
 	syslog_terminal = Interactable.create(term, Vector3(0, 1.0, 0.3), Vector3(0.8, 0.6, 0.4), "시스템 로그 확인", Callable())
+
+
+# --------------------------------------------------------------------------------------------
+## Things the story points at (Day1~5 초안): the office PC, the name tags on locker 04, a drawer pedestal by the
+## desk, the storage room's lost-and-found cabinet and the crate the old airfield's equipment came in. Their
+## Interactables start disabled; ShiftDirector and the day scripts decide what they do.
+func _build_story_props() -> void:
+	office_pc = Interactable.create(self, Vector3(-19.25, 1.0, 1.8), Vector3(0.25, 0.4, 0.6), "PC 화면 보기", Callable())
+	# locker 04 (north wall, door face z -1.80): a fresh tag with your name over older tags, edges lifting
+	var lx := -19.45 + 3 * 0.62
+	var old := [[Vector3(-0.012, 1.468, 0), 0.21, 0.072, 0.05, Color(0.76, 0.68, 0.48)],
+		[Vector3(0.014, 1.474, 0), 0.2, 0.066, -0.06, Color(0.86, 0.9, 0.95)],
+		[Vector3(-0.006, 1.462, 0), 0.19, 0.064, 0.09, Color(0.88, 0.93, 0.86)],
+		[Vector3(0.008, 1.471, 0), 0.19, 0.062, -0.03, Color(0.95, 0.94, 0.9)]]
+	for i in old.size():
+		var o: Array = old[i]
+		var tag := Geo.box(self, Vector3(lx, 0, -1.7992 + i * 0.0009) + o[0], Vector3(o[1], o[2], 0.0008), Mats.std(o[4], 0.9), false)
+		tag.rotation.z = o[3]
+		if i == 1 or i == 3:   # crossed out in pen
+			Geo.box(tag, Vector3(0, 0.002, 0.0005), Vector3(o[1] * 0.8, 0.004, 0.0002), Mats.std(Color(0.12, 0.15, 0.4), 0.8), false)
+	var top := Geo.box(self, Vector3(lx, 1.468, -1.7952), Vector3(0.17, 0.05, 0.0008), Mats.get_mat("plastic_white"), false)
+	top.rotation.z = 0.012
+	Geo.label(top, Game.player_name, Vector3(0, 0, 0.0006), 0.0, 26, Color(0.08, 0.08, 0.1), 0.0018, false, "print")
+	locker_tag = Interactable.create(self, Vector3(lx, 1.45, -1.68), Vector3(0.5, 0.42, 0.2), "사물함 04 이름표 보기", Callable())
+	# drawer pedestal beside the desk (drawers open toward the room, +X)
+	var ped := Vector3(-19.45, 0, 4.1)
+	Geo.box(self, ped + Vector3(0, 0.31, 0), Vector3(0.6, 0.62, 0.45), Mats.get_mat("plastic_grey"))
+	Geo.box(self, ped + Vector3(0.301, 0.16, 0), Vector3(0.012, 0.26, 0.42), Mats.get_mat("plastic_grey"), false)
+	Geo.box(self, ped + Vector3(0.31, 0.24, 0), Vector3(0.012, 0.014, 0.12), Mats.get_mat("metal"), false)
+	drawer = Node3D.new()
+	add_child(drawer)
+	drawer.position = ped + Vector3(0.0, 0.45, 0)
+	Geo.box(drawer, Vector3(0.301, 0, 0), Vector3(0.012, 0.25, 0.42), Mats.get_mat("plastic_grey"), false)
+	Geo.box(drawer, Vector3(0.31, 0.06, 0), Vector3(0.012, 0.014, 0.12), Mats.get_mat("metal"), false)
+	Geo.box(drawer, Vector3(0.02, -0.06, 0), Vector3(0.54, 0.012, 0.38), Mats.get_mat("plastic_dark"), false)   # drawer bottom
+	var bundle := Geo.box(drawer, Vector3(0.12, -0.035, 0.0), Vector3(0.22, 0.04, 0.3), Mats.std(Color(0.78, 0.7, 0.5), 0.95), false)
+	bundle.rotation.y = 0.12
+	Geo.box(bundle, Vector3(0, 0.021, -0.12), Vector3(0.05, 0.004, 0.03), Mats.get_mat("metal_dark"), false)    # binder clip
+	drawer_use = Interactable.create(drawer, Vector3(0.3, 0.0, 0), Vector3(0.3, 0.3, 0.46), "서랍 열어 보기", Callable())
+	drawer_use.enabled = false
+	# storage room: lost-and-found cabinet against the south wall, facing the room (-Z)
+	var lf := Node3D.new()
+	add_child(lf)
+	lf.position = Vector3(14.1, 0, -2.96)
+	lf.rotation.y = PI
+	var steel := Mats.std(Color(0.55, 0.57, 0.58), 0.45, 0.5)
+	Geo.box(lf, Vector3(0, 0.5, 0), Vector3(0.95, 1.0, 0.45), steel)
+	for sx in [-1.0, 1.0]:
+		Geo.box(lf, Vector3(sx * 0.235, 0.46, 0.2265), Vector3(0.45, 0.86, 0.003), Mats.std(Color(0.5, 0.52, 0.53), 0.4, 0.5), false)
+		Geo.box(lf, Vector3(sx * 0.04, 0.6, 0.234), Vector3(0.016, 0.12, 0.012), Mats.get_mat("metal_dark"), false)
+	var plate := Geo.box(lf, Vector3(0, 0.84, 0.2275), Vector3(0.7, 0.09, 0.003), Mats.get_mat("plastic_white"), false)
+	Geo.label(plate, "분실물 보관함  LOST & FOUND", Vector3(0, 0, 0.002), 0.0, 20, Color(0.1, 0.14, 0.35), 0.0018, false, "print")
+	lost_found = Interactable.create(lf, Vector3(0, 0.6, 0.35), Vector3(0.95, 0.9, 0.25), "분실물 보관함 열어 보기", Callable())
+	lost_found.enabled = false
+	# the crate the old airfield's broadcast equipment came over in (DAY 3: the spare amp, a tape, the list)
+	crate = Node3D.new()
+	add_child(crate)
+	crate.position = Vector3(18.6, 0, -6.9)
+	var wood := Mats.std(Color(0.5, 0.38, 0.22), 0.9)
+	var slat := Mats.std(Color(0.42, 0.31, 0.17), 0.9)
+	Geo.box(crate, Vector3(0, 0.27, 0), Vector3(1.0, 0.54, 0.6), wood)
+	for x in [-0.47, 0.47]:
+		Geo.box(crate, Vector3(x, 0.27, 0.302), Vector3(0.06, 0.54, 0.004), slat, false)
+	var lid := Geo.box(crate, Vector3(0, 0.555, 0), Vector3(1.02, 0.03, 0.62), slat, false)
+	lid.name = "Lid"
+	var stencil := Geo.box(crate, Vector3(0.02, 0.27, 0.301), Vector3(0.8, 0.26, 0.002), wood, false)
+	Geo.label(stencil, "구 서해비행장 이관 설비\n재사용 · 2025. 03.", Vector3(0, 0, 0.0015), 0.0, 30, Color(0.1, 0.08, 0.06), 0.0026, false, "print")
+	crate_use = Interactable.create(crate, Vector3(0, 0.45, 0.32), Vector3(1.0, 0.6, 0.3), "이관 장비 상자 열어 보기", Callable())
+	crate_use.enabled = false
+
+
+## DAY 4: the top drawer has been left open.
+func open_drawer(open := true) -> void:
+	drawer.position.x = -19.45 + (0.26 if open else 0.0)
+
+
+## The crate's lid pushed aside once it has been opened.
+func open_crate() -> void:
+	var lid := crate.get_node_or_null("Lid") as Node3D
+	if lid:
+		lid.position = Vector3(0.18, 0.6, 0.08)
+		lid.rotation = Vector3(0.0, 0.25, 0.12)
 
 
 # --------------------------------------------------------------------------------------------

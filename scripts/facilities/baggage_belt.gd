@@ -2,7 +2,8 @@ class_name BaggageBelt
 extends Facility
 ## 수하물 수취대 B-03 — oval carousel. Normal test run = exactly three tagged TEST bags.
 ## Anomalies: bag_extra (a 4th unknown red bag), bag_reverse (belt runs backwards),
-## bag_nostop ([정지] is ignored), bag_name (story: a bag with the player's name).
+## bag_nostop ([정지] is ignored), bag_name (story: a bag with the player's name), bag_wet (a 1980s leather
+## suitcase soaked in sea water, tagged A0 · 87.11.03).
 
 const SPEED := 0.5
 const BELT_Y := CarouselMesh.PLATE_Y
@@ -173,12 +174,16 @@ func _spawn_bag(kind: String) -> void:
 		"name":
 			color = Color(0.2, 0.14, 0.09)
 			tag = "%s\nFLIGHT 000\n→ ---" % Game.player_name
+		"wet":
+			# 1987, back from the sea: old brown leather, still dripping
+			color = Color(0.2, 0.11, 0.05)
+			tag = "A0\n87.11.03"
 		"pax":
 			# 1987: a passenger's bag, finally on a carousel
 			color = Color.from_hsv(randf_range(0.0, 1.0), randf_range(0.15, 0.45), randf_range(0.18, 0.42))
 			tag = "A0 · 1987\n→ HOME"
 			soft = randf() < 0.4
-	var root := Props.suitcase(self, color, tag, soft)
+	var root := Props.suitcase(self, color, tag, soft) if kind != "wet" else Props.old_suitcase(self, color, tag, true)
 	var it := Interactable.create(root, Vector3(0, 0.15, 0), Vector3(0.5, 0.32, 0.72), "가방 들어 확인하기", _on_touch_bag.bind(kind))
 	it.press_sound = ""
 	var b := {"node": root, "s": hatch_s, "kind": kind}
@@ -258,6 +263,8 @@ func _on_start() -> void:
 			spawn_queue.append("extra")
 		elif anomaly == "bag_name":
 			spawn_queue.append("name")
+		elif anomaly == "bag_wet":
+			spawn_queue.insert(2, "wet")   # between the test bags, so it cannot be missed at the end
 		spawn_timer = 1.2
 		expect_bags = 3
 	elif bags.is_empty():
@@ -319,6 +326,9 @@ func _apply_anomaly(anomaly_id: String) -> void:
 		"bag_name":
 			if not has_bag("name"):
 				spawn_queue.append("name")
+		"bag_wet":
+			if running and not has_bag("wet"):
+				spawn_queue.append("wet")
 
 
 func _remove_anomaly(anomaly_id: String) -> void:
@@ -331,6 +341,9 @@ func _remove_anomaly(anomaly_id: String) -> void:
 		"bag_name":
 			spawn_queue.erase("name")
 			remove_bag("name")
+		"bag_wet":
+			spawn_queue.erase("wet")
+			remove_bag("wet")
 
 
 func is_observable() -> bool:

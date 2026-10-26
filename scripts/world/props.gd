@@ -235,6 +235,56 @@ static func suitcase(parent: Node3D, color: Color, tag_text := "", soft := false
 	return root
 
 
+## A 1980s hard-sided leather suitcase: straps, brass corners, a paper tag on string. `wet`: soaked through
+## (glossy and dark, sea water dripping off it).
+static func old_suitcase(parent: Node3D, color: Color, tag_text := "", wet := false) -> Node3D:
+	var root := Node3D.new()
+	parent.add_child(root)
+	var size := Vector3(0.46, 0.2, 0.66)
+	var leather := Mats.std(color.darkened(0.25) if wet else color, 0.12 if wet else 0.7)
+	Geo.box(root, Vector3(0, size.y * 0.5, 0), size, leather, false)
+	Geo.box(root, Vector3(0, size.y * 0.5, 0), Vector3(size.x + 0.006, 0.012, size.z + 0.006), Mats.std(color.darkened(0.5), 0.3), false)   # lid seam
+	var strap := Mats.std(Color(0.1, 0.06, 0.03), 0.2 if wet else 0.6)
+	var brass := Mats.std(Color(0.55, 0.42, 0.18), 0.35, 0.8)
+	for z in [-0.17, 0.17]:
+		Geo.box(root, Vector3(0, size.y * 0.5, z), Vector3(size.x + 0.012, size.y + 0.012, 0.04), strap, false)
+		Geo.box(root, Vector3(0, size.y + 0.007, z), Vector3(0.05, 0.006, 0.045), brass, false)
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			Geo.box(root, Vector3(sx * (size.x * 0.5 - 0.015), size.y * 0.5, sz * (size.z * 0.5 - 0.015)), Vector3(0.035, size.y + 0.006, 0.035), brass, false)
+	Geo.box(root, Vector3(0, size.y * 0.5, size.z * 0.5 + 0.03), Vector3(0.14, 0.03, 0.03), strap, false)   # handle
+	if tag_text != "":
+		var tag := Node3D.new()
+		root.add_child(tag)
+		tag.position = Vector3(0.08, size.y + 0.006, size.z * 0.5 - 0.06)
+		tag.rotation.y = 0.35
+		Geo.box(tag, Vector3.ZERO, Vector3(0.1, 0.004, 0.06), Mats.std(Color(0.62, 0.55, 0.38) if wet else Color(0.85, 0.78, 0.6), 0.9), false)
+		var l := Geo.label(tag, tag_text, Vector3(0, 0.003, 0), 0.0, 24, Color(0.12, 0.1, 0.08), 0.0016, false, "print")
+		l.rotation.x = -PI / 2
+		l.name = "TagLabel"
+	if wet:
+		var drip := CPUParticles3D.new()
+		root.add_child(drip)
+		drip.position = Vector3(0, 0.02, 0)
+		drip.amount = 10
+		drip.lifetime = 0.5
+		drip.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		drip.emission_box_extents = Vector3(size.x * 0.5, 0.0, size.z * 0.5)
+		drip.direction = Vector3.DOWN
+		drip.spread = 5.0
+		drip.gravity = Vector3(0, -9.8, 0)
+		drip.initial_velocity_min = 0.1
+		drip.initial_velocity_max = 0.3
+		var dm := SphereMesh.new()
+		dm.radius = 0.006
+		dm.height = 0.014
+		dm.radial_segments = 6
+		dm.rings = 3
+		drip.mesh = dm
+		drip.material_override = Mats.std(Color(0.55, 0.62, 0.62), 0.02)
+	return root
+
+
 static var _bag_mats := {}
 
 

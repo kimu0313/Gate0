@@ -15,6 +15,8 @@ const STAMINA_MAX := 6.0
 
 var controls_enabled := true
 var look_enabled := true
+var cutscene := false           # a scripted scene: no looking, walking or using things (walk_to still moves you);
+                                # menus closing in between do not hand control back
 var camera_mode := false
 var terminal: Terminal
 
@@ -46,6 +48,12 @@ const STEP_DB := {"tile": 2.0, "tileroom": 3.0, "carpet": 0.0, "metal": 4.0}
 var _breath: AudioStreamPlayer
 var _fl_target := Basis()
 var _forced_look: Tween
+var _walk_to := Vector3.INF     # scripted walk (cutscenes): the floor point the player walks to by itself
+var _walk_path: Array = []      # the points after it (walked through without stopping)
+var _walk_speed := 1.4
+var _glance := Vector3.INF      # cutscenes: a point the view drifts to like a head turning (glance())
+var _glance_rate := 3.0
+var _glance_vel := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -113,6 +121,50 @@ func teleport(xform: Transform3D) -> void:
 	set_look(atan2(-f.x, -f.z), 0.0)
 	velocity = Vector3.ZERO
 	move_vel = Vector3.ZERO
+	_walk_to = Vector3.INF
+	_walk_path.clear()
+	_glance = Vector3.INF
+	_glance_vel = Vector2.ZERO
+
+
+## Cutscenes: the player walks to a floor point by themselves (steps, head bob and collisions as usual) while
+## their own movement input is ignored. walking() is true until they get there.
+func walk_to(p: Vector3, speed := 1.4) -> void:
+	walk_path([p], speed)
+
+
+## Walks through the points one after another without stopping at the corners; slows down only for the last.
+func walk_path(points: Array, speed := 1.4) -> void:
+	_walk_path = points.duplicate()
+	_walk_speed = speed
+	var first: Vector3 = _walk_path.pop_front()
+	_walk_to = Vector3(first.x, global_position.y, first.z)
+
+
+func walking() -> bool:
+	return _walk_to != Vector3.INF
+
+
+## Cutscenes: the view turns toward a point the way a head does — it eases into the turn and settles (a damped
+## spring), so it can run while walking and a new glance blends out of the last one. glance(Vector3.INF) lets go.
+func glance(p: Vector3, rate := 3.0) -> void:
+	if _forced_look and _forced_look.is_valid():
+		_forced_look.kill()
+	_glance = p
+	_glance_rate = rate
+
+
+func _update_glance(delta: float) -> void:
+	if _glance == Vector3.INF:
+		_glance_vel = Vector2.ZERO
+		return
+	var to := _glance - camera.global_position
+	var yaw := atan2(-to.x, -to.z)
+	var pitch := atan2(to.y, Vector2(to.x, to.z).length())
+	var w := _glance_rate
+	_glance_vel.x += (w * w * wrapf(yaw - _yaw, -PI, PI) - 2.0 * w * _glance_vel.x) * delta
+	_glance_vel.y += (w * w * (pitch - _pitch) - 2.0 * w * _glance_vel.y) * delta
+	set_look(_yaw + _glance_vel.x * delta, clampf(_pitch + _glance_vel.y * delta, deg_to_rad(-60), deg_to_rad(60)))
 
 
 ## Smoothly turns the camera to look at a world point (cutscenes / scares).
@@ -123,13 +175,14 @@ func look_at_point(p: Vector3, duration := 0.6) -> void:
 	var dyaw := wrapf(yaw - _yaw, -PI, PI)
 	if _forced_look and _forced_look.is_valid():
 		_forced_look.kill()
+	_glance = Vector3.INF
 	_forced_look = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_forced_look.tween_method(func(v): set_look(v, _pitch), _yaw, _yaw + dyaw, duration)
 	_forced_look.tween_method(func(v): set_look(_yaw, v), _pitch, pitch, duration)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED and look_enabled:
+	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED and look_enabled and not cutscene:
 		var sens: float = 0.0022 * float(Game.settings.mouse_sensitivity)
 		if camera_mode:
 			sens *= 0.6
@@ -138,7 +191,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pitch = clampf(_pitch - event.relative.y * sens * inv, deg_to_rad(-85), deg_to_rad(85))
 		rotation.y = _yaw
 		head.rotation.x = _pitch
-	if not controls_enabled:
+	if not controls_enabled or cutscene:
 		return
 	if event.is_action_pressed("flashlight"):
 		toggle_flashlight()
@@ -156,7 +209,7 @@ func toggle_flashlight(force := -1) -> void:
 
 func _physics_process(delta: float) -> void:
 	# --- eyes ---
-	var want_closed := controls_enabled and Input.is_action_pressed("close_eyes") and not camera_mode
+	var want_closed := controls_enabled and not cutscene and Input.is_action_pressed("close_eyes") and not camera_mode
 	eyes = move_toward(eyes, 1.0 if want_closed else 0.0, delta * (4.5 if want_closed else 3.0))
 	if eyes >= 0.98:
 		eyes_closed_time += delta
@@ -165,7 +218,7 @@ func _physics_process(delta: float) -> void:
 	Snd.set_muffle(eyes * 0.85)
 	# --- movement ---
 	var input := Vector2.ZERO
-	if controls_enabled:
+	if controls_enabled and not cutscene:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var sprinting := Input.is_action_pressed("sprint") and input.y < -0.1 and stamina > 0.2 and controls_enabled and not camera_mode
 	var speed := SPRINT_SPEED if sprinting else WALK_SPEED
@@ -177,6 +230,19 @@ func _physics_process(delta: float) -> void:
 	dir.y = 0.0
 	dir = dir.normalized() * minf(input.length(), 1.0)
 	var target := dir * speed
+	if _walk_to != Vector3.INF:
+		var to := Vector3(_walk_to.x - global_position.x, 0.0, _walk_to.z - global_position.z)
+		var last := _walk_path.is_empty()
+		if not last and to.length() < 0.45:
+			var nxt: Vector3 = _walk_path.pop_front()       # round the corner without stopping
+			_walk_to = Vector3(nxt.x, global_position.y, nxt.z)
+			to = Vector3(_walk_to.x - global_position.x, 0.0, _walk_to.z - global_position.z)
+			last = _walk_path.is_empty()
+		if last and to.length() < 0.12:
+			_walk_to = Vector3.INF
+		else:
+			target = to.normalized() * (minf(_walk_speed, to.length() * 2.2 + 0.25) if last else _walk_speed)
+	_update_glance(delta)
 	move_vel = move_vel.lerp(target, clampf(ACCEL * delta, 0.0, 1.0))
 	stamina = clampf(stamina + (-delta if sprinting else delta * 0.6), 0.0, STAMINA_MAX)
 	_update_breath(delta)
@@ -241,7 +307,7 @@ func _physics_process(delta: float) -> void:
 
 func _update_interact() -> void:
 	var found: Interactable = null
-	if controls_enabled and not camera_mode and eyes < 0.5:
+	if controls_enabled and not cutscene and not camera_mode and eyes < 0.5:
 		var space := get_world_3d().direct_space_state
 		var from := camera.global_position
 		var to := from - camera.global_basis.z * INTERACT_RANGE

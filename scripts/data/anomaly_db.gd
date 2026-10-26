@@ -47,6 +47,12 @@ const DATA := {
 		"miss": "전광판의 한 행이 인수인계 때 본 테스트 목록과 달랐습니다.",
 		"death": "목록 이상인데 전광판 전원을 차단했습니다. (수칙 p.3: 전원을 차단하지 마십시오)",
 	},
+	"fids_a0": {
+		"facility": "fids", "name": "A0편 DEPARTED", "page": "p3",
+		"fix": [["reset", "fids"]], "lethal": [["power_off", "fids"]], "timer": 120.0,
+		"miss": "전광판 맨 위에 없는 항공편 A0(23:40 · GATE 0)이 DEPARTED로 떠 있었습니다.",
+		"death": "목록 이상인데 전광판 전원을 차단했습니다. (수칙 p.3: 전원을 차단하지 마십시오)",
+	},
 	"fids_clock": {
 		"facility": "fids", "name": "거꾸로 가는 시계", "page": "p3",
 		"fix": [["power_off", "fids"]], "lethal": [["reset", "fids"]], "timer": 150.0,
@@ -94,6 +100,12 @@ const DATA := {
 		"miss": "[정지]를 눌러도 벨트가 멈추지 않았습니다.",
 		"death": "멈추지 않는 벨트의 가방에 손을 댔습니다.",
 	},
+	"bag_wet": {
+		"facility": "baggage", "name": "젖은 가방", "page": "p5",
+		"fix": [["estop", "baggage"]], "lethal": [["touch_bag", "wet"]], "timer": 120.0,
+		"miss": "바닷물에 젖은 1980년대 가죽 가방(A0 · 87.11.03 태그)이 함께 나왔습니다.",
+		"death": "바닷물에 젖은 가방에 손을 댔습니다. (수칙 p.5)",
+	},
 	"bag_name": {
 		"facility": "baggage", "name": "당신의 가방", "page": "p5",
 		"fix": [["estop", "baggage"]], "lethal": [["touch_bag", "name"]], "timer": 120.0,
@@ -133,6 +145,12 @@ const DATA := {
 		"miss": "X-ray 화면에 당신의 이름표가 붙은 가방이 승객 수하물로 찍혀 있었습니다.",
 		"death": "당신의 이름이 찍힌 X-ray 모니터를 껐습니다. (수칙 p.7)", "fake": "f7",
 	},
+	"xray_41": {
+		"facility": "xray", "name": "41개의 소지품", "page": "p7",
+		"fix": [["estop", "xray"]], "lethal": [["monitor_off", "xray"]], "timer": 120.0,
+		"miss": "가방 하나를 넣었는데 승객 소지품 41개가 연달아 통과했습니다. 태그는 모두 A0 · 87.11.03.",
+		"death": "승객 소지품이 연달아 찍히는 X-ray 모니터를 껐습니다. (수칙 p.7)", "fake": "f7",
+	},
 	"xray_heart": {
 		"facility": "xray", "name": "뛰는 무언가", "page": "p7",
 		"fix": [["estop", "xray"]], "lethal": [["monitor_off", "xray"]], "timer": 120.0,
@@ -161,19 +179,20 @@ const DATA := {
 
 ## Anomaly pools per facility and the first day they may appear on (5-day schedule):
 ## DAY 1 is the training shift (no anomalies) → DAY 2 체크인 + 수하물 → DAY 3 +X-ray → DAY 4 +무빙워크·탑승 게이트.
-## Story/autonomous anomalies (fids_gate04, pa_auto, bag_name, xray_mybag, auto_run) are placed by the day plans.
+## Story/autonomous anomalies (fids_gate04, pa_auto, bag_name, fids_a0, xray_41, bag_wet, gate_passenger on DAY 4,
+## auto_run) are placed by the day plans; on DAY 5 the A0 board row and the wet bag can come back at random.
 const POOLS := {
 	"lights": [["light_flicker", 2], ["light_dark", 2], ["light_red", 3]],
-	"fids": [["fids_extra", 2], ["fids_changed", 2], ["fids_clock", 2]],
+	"fids": [["fids_extra", 2], ["fids_changed", 2], ["fids_clock", 2], ["fids_a0", 5]],
 	"pa": [["pa_word", 2], ["pa_extra", 2], ["pa_slow", 4]],
-	"baggage": [["bag_extra", 2], ["bag_reverse", 2], ["bag_nostop", 3]],
+	"baggage": [["bag_extra", 2], ["bag_reverse", 2], ["bag_nostop", 3], ["bag_wet", 5]],
 	"xray": [["xray_figure", 3], ["xray_heart", 3]],
 	"walkway": [["walk_reverse", 4], ["walk_fast", 4]],
 	"gate": [["gate_open", 4], ["gate_seats", 4], ["gate_passenger", 4]],
 }
 ## Easy anomalies are obvious at a glance (early in the dawn); the rest need a careful comparison (late).
-const EASY := ["light_flicker", "light_dark", "light_red", "fids_clock", "bag_reverse", "bag_nostop", "xray_heart",
-	"walk_reverse", "gate_open"]
+const EASY := ["light_flicker", "light_dark", "light_red", "fids_clock", "fids_a0", "bag_reverse", "bag_nostop",
+	"bag_wet", "xray_heart", "walk_reverse", "gate_open"]
 
 
 static func get_def(id: String) -> Dictionary:

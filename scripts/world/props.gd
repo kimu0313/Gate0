@@ -56,7 +56,9 @@ static func pedestal(parent: Node3D, pos: Vector3, rot_y: float, title := "") ->
 		holder.add_child(mi)
 		mi.position.y = part[2]
 	Geo.box(holder, Vector3(0, 0.005, 0), Vector3(0.36, 0.01, 0.28), CarouselMesh.mat("kick"), false)
-	Geo.blocker(holder, Vector3(0, 0.55, 0), Vector3(0.6, 1.1, 0.4))
+	# keeps you off the stand but stays under the tilted head: the buttons sit at ~0.99 m, and a blocker reaching over
+	# them caught the [E] ray first (B-03 / MW-1 buttons could not be pressed)
+	Geo.blocker(holder, Vector3(0, 0.42, 0), Vector3(0.66, 0.84, 0.44))
 	var top := Node3D.new()
 	holder.add_child(top)
 	top.position = Vector3(0, 1.0, 0.03)
@@ -102,7 +104,9 @@ static func seat_row(parent: Node3D, pos: Vector3, count: int, rot_y := 0.0, spa
 		Geo.box(row, Vector3(0, 0.3, -0.02), Vector3(width, 0.06, 0.08), frame, false)
 		for x in [-width * 0.5 + 0.2, width * 0.5 - 0.2]:
 			Geo.box(row, Vector3(x, 0.15, 0.05), Vector3(0.05, 0.3, 0.5), frame, false)
-	Geo.blocker(row, Vector3(0, 0.45, 0), Vector3(width, 0.9, 0.62))
+	# under the seats (still too high to step onto): a paper left on a seat (DAY 4 log3) sat inside a waist-high
+	# blocker and could not be picked up
+	Geo.blocker(row, Vector3(0, 0.21, 0), Vector3(width, 0.42, 0.62))
 	return row
 
 

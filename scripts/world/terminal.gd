@@ -777,7 +777,9 @@ func _build_baggage() -> void:
 	doors["maint"] = SlidingDoor.create(self, Vector3(-36, 0, -50), PI / 2, 1.8, 2.4, false, false)
 	LevelKit.plate(self, "plate_maint", Vector3(-35.8, 1.72, -48.55), 90.0, Vector2(0.6, 0.4), 0.3)
 	LevelKit.plate(self, "plate_staffonly", Vector3(-35.8, 1.24, -48.55), 90.0, Vector2(0.42, 0.28), 0.15)
-	var kp := Props.panel_box(self, Vector3(-35.8, 1.3, -51.4), PI / 2, Vector2(0.2, 0.28), "")
+	# on the face of the pilaster south of the door (on the wall beside it, it sat half inside the pilaster, which
+	# caught the [E] ray)
+	var kp := Props.panel_box(self, Vector3(-35.64, 1.3, -51.6), PI / 2, Vector2(0.2, 0.28), "")
 	for i in 9:
 		Geo.box(kp, Vector3(-0.05 + (i % 3) * 0.05, 0.05 - (i / 3) * 0.05, 0.006), Vector3(0.035, 0.035, 0.01), Mats.get_mat("plastic_white"), false)
 	Geo.box(kp, Vector3(0, 0.11, 0.006), Vector3(0.14, 0.03, 0.01), Mats.get_mat("lamp_red"), false)

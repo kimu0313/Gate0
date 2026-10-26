@@ -91,6 +91,17 @@ func _ready() -> void:
 		add_child(st)
 		ui.fade_to(0.0, 0.01)
 		return
+	if OS.get_cmdline_user_args().has("--reach-audit"):
+		var ra = load("res://scripts/debug/reach_audit.gd").new()
+		ra.world = self
+		add_child(ra)
+		return
+	if OS.get_cmdline_user_args().has("--shovetest"):
+		var sv = load("res://scripts/debug/shove_test.gd").new()
+		sv.world = self
+		add_child(sv)
+		ui.fade_to(0.0, 0.01)
+		return
 	if OS.get_cmdline_user_args().has("--punchtest"):
 		var pt = load("res://scripts/debug/punch_test.gd").new()
 		pt.world = self

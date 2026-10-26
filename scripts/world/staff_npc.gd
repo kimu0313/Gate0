@@ -4,11 +4,13 @@ extends Node3D
 ## Built from primitives like every other prop: hi-vis vest, cap, face mask, staff card. Walks waypoint
 ## routes (`walk`), turns its head to the player, waves you over (`beckon`), holds items out (`present`).
 ## No voice: what they say is a subtitle you step through with [E] (ShiftDirector.npc_talk) while they
-## murmur through the mask (`murmur`).
+## mumble through the mask (`murmur`).
 
 const NAME := "교대 근무자"
 const WALK_SPEED := 1.35
 const SKIN := Color(0.82, 0.64, 0.52)
+const MUMBLE_DB := -4.0
+const SHOVE_R := 0.68           # their body (0.28) + the player's (0.32) + a little: walking, they keep you this far off
 
 var director: ShiftDirector
 var player: Player
@@ -21,7 +23,8 @@ var _route: Array = []
 var _speed := WALK_SPEED
 var _phase := 0.0
 var _last_sin := 0.0
-var _blocked := 0.0
+var _walk_dir := Vector3.ZERO   # heading while walking (the push uses it)
+var _collider: CollisionShape3D
 var _body: Node3D
 var _head: Node3D
 var _hips: Array[Node3D] = []
@@ -112,6 +115,7 @@ func _build() -> void:
 	cs.position = Vector3(0, 0.88, 0)
 	body.add_child(cs)
 	add_child(body)
+	_collider = cs
 	interactable = Interactable.create(self, Vector3(0, 0.95, 0), Vector3(0.8, 1.9, 0.8), "교대 근무자와 이야기하기", _on_talk)
 	interactable.press_sound = ""
 	_voice = AudioStreamPlayer3D.new()
@@ -128,24 +132,25 @@ func walk(points: Array, speed := WALK_SPEED) -> void:
 	_route = points.duplicate()
 	_speed = speed
 	walking = not _route.is_empty()
-	_blocked = 0.0
 
 
 func face(point: Vector3) -> void:
 	_face_target = point
 
 
-## Talks you cannot make out (behind the mask) for about `seconds`.
+## Talks you cannot make out (behind the mask) for about `seconds` (npc_mumble_*, tools/gen_mumble.py).
 func murmur(seconds: float) -> void:
-	var s := Snd.stream("npc_murmur_%d" % randi_range(1, 3))
+	var s := Snd.stream(Snd.variant("npc_mumble"))
 	if s == null:
 		return
 	if _murmur_fade and _murmur_fade.is_valid():
 		_murmur_fade.kill()
 	_voice.stream = s
-	_voice.volume_db = -4.0
-	_voice.pitch_scale = randf_range(0.97, 1.05)
+	_voice.volume_db = -30.0
+	_voice.pitch_scale = randf_range(0.97, 1.04)
 	_voice.play(randf() * maxf(0.0, s.get_length() - seconds))
+	_murmur_fade = create_tween()   # in from wherever the clip was picked up, no click
+	_murmur_fade.tween_property(_voice, "volume_db", MUMBLE_DB, 0.06)
 	_murmur_left = seconds
 
 
@@ -229,13 +234,11 @@ func _process(delta: float) -> void:
 			_route.pop_front()
 			if _route.is_empty():
 				walking = false
-		elif _player_in_way(to):
-			_blocked += delta
 		else:
-			_blocked = 0.0
 			moving = true
 			global_position += to.normalized() * minf(_speed * delta, to.length())
 			rotation.y = lerp_angle(rotation.y, yaw_for(to), minf(1.0, delta * 7.0))
+			_walk_dir = to.normalized()
 	elif _face_target != Vector3.INF:
 		var d := _face_target - global_position
 		d.y = 0.0
@@ -243,16 +246,38 @@ func _process(delta: float) -> void:
 			rotation.y = lerp_angle(rotation.y, yaw_for(d), minf(1.0, delta * 4.0))
 			if absf(angle_difference(rotation.y, yaw_for(d))) < 0.02:
 				_face_target = Vector3.INF
+	# walking, they push through instead of colliding (pinned against a wall, they pass through rather than stop)
+	if _collider.disabled != walking:
+		_collider.disabled = walking
+	if not moving:
+		_walk_dir = Vector3.ZERO
 	_animate(delta, moving)
 
 
-## Someone standing right in front: wait for them to step aside (after 3 s, squeeze past).
-func _player_in_way(to: Vector3) -> bool:
-	if player == null or _blocked > 3.0:
-		return false
+func _physics_process(_delta: float) -> void:
+	if _walk_dir != Vector3.ZERO:
+		_shove_player(_walk_dir)   # once per physics tick, so the push is as steady as the player's own walking
+
+
+## They do not stop for you: standing in the way you are pushed aside (to the side you are already on, back along
+## their way where a wall leaves no side), so nobody can block them. The push grows over the last 30 cm before
+## contact and keeps pace with their walk, so you slide out of the way instead of being knocked (no view shake).
+func _shove_player(dir: Vector3) -> void:
+	if player == null:
+		return
 	var rel := player.global_position - global_position
 	rel.y = 0.0
-	return rel.length() < 0.95 and rel.normalized().dot(to.normalized()) > 0.3
+	var dist := rel.length()
+	var k := clampf((SHOVE_R + 0.15 - dist) / 0.3, 0.0, 1.0)
+	if k <= 0.0:
+		return
+	var ahead := rel.dot(dir)
+	var lateral := rel - dir * ahead
+	var side := lateral.normalized() if lateral.length() > 0.04 else dir.cross(Vector3.UP)   # dead centre: their right
+	var out := rel / dist if dist > 0.04 else side
+	if ahead > 0.0:
+		out = (out + side * 1.3).normalized()    # in front: mostly sideways, out of their path
+	player.shove(out * (_speed * 1.15 * k + maxf(0.0, SHOVE_R - dist) * 6.0))
 
 
 func _animate(delta: float, moving: bool) -> void:

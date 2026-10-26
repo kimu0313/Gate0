@@ -114,6 +114,10 @@ var shots := [
 	["page_p2", Vector3(-18.0, 0.05, 10.4), Vector3(-19.8, 1.45, 9.8)],
 	["page_p3", Vector3(-5.6, 0.05, 0.0), Vector3(-6.4, 1.45, -2.3)],
 	["page_p9", Vector3(-14.0, 0.05, 5.4), Vector3(-13.0, 0.85, 5.9)],
+	# things you press or pick up (checked with --reach-audit)
+	["b03_controls", Vector3(-34.5, 0.05, -57.0), Vector3(-33.6, 0.95, -57.4)],
+	["maint_keypad", Vector3(-34.5, 0.05, -51.0), Vector3(-35.64, 1.3, -51.6)],
+	["log3_chair", Vector3(20.2, 0.05, -93.2), Vector3(20.8, 0.5, -94.8)],
 ]
 var out_dir := ""
 var _i := 0

@@ -11,7 +11,8 @@ const ACCEL := 11.0
 const GRAVITY := 18.0
 const EYE_HEIGHT := 1.62
 const INTERACT_RANGE := 2.6
-const STAMINA_MAX := 6.0
+const STAMINA_MAX := 12.0          # seconds of sprinting
+const STAMINA_REGEN := 1.2         # per second while not sprinting (empty to full in 10 s)
 
 var controls_enabled := true
 var look_enabled := true
@@ -46,6 +47,7 @@ var _feet_i := 0
 ## dry steps they replaced (most of all the metal treads).
 const STEP_DB := {"tile": 2.0, "tileroom": 3.0, "carpet": 0.0, "metal": 4.0}
 var _breath: AudioStreamPlayer
+var _breath_wait := 0.0
 var _fl_target := Basis()
 var _forced_look: Tween
 var _walk_to := Vector3.INF     # scripted walk (cutscenes): the floor point the player walks to by itself
@@ -54,6 +56,13 @@ var _walk_speed := 1.4
 var _glance := Vector3.INF      # cutscenes: a point the view drifts to like a head turning (glance())
 var _glance_rate := 3.0
 var _glance_vel := Vector2.ZERO
+var _shove := Vector3.ZERO      # someone pushing past (shove()), this physics tick
+var _shove_vel := Vector3.ZERO  # ... eased
+var _pos_prev := Vector3.ZERO   # body position before the last physics step (the view is drawn between the two)
+var _bob_prev := 0.0
+var _bob_amp := 0.0
+const BOB_WALK := 0.022
+const BOB_SPRINT := 0.032
 
 
 func _ready() -> void:
@@ -104,8 +113,10 @@ func _ready() -> void:
 	_feet = _feet_pool[0]
 	_breath = AudioStreamPlayer.new()
 	_breath.bus = "SFX"
+	_breath.max_polyphony = 2   # a breath's tail rings under the next one
 	add_child(_breath)
 	_yaw = rotation.y
+	_pos_prev = global_position
 
 
 func set_look(yaw: float, pitch := 0.0) -> void:
@@ -121,6 +132,9 @@ func teleport(xform: Transform3D) -> void:
 	set_look(atan2(-f.x, -f.z), 0.0)
 	velocity = Vector3.ZERO
 	move_vel = Vector3.ZERO
+	_shove = Vector3.ZERO
+	_shove_vel = Vector3.ZERO
+	_pos_prev = global_position
 	_walk_to = Vector3.INF
 	_walk_path.clear()
 	_glance = Vector3.INF
@@ -244,7 +258,7 @@ func _physics_process(delta: float) -> void:
 			target = to.normalized() * (minf(_walk_speed, to.length() * 2.2 + 0.25) if last else _walk_speed)
 	_update_glance(delta)
 	move_vel = move_vel.lerp(target, clampf(ACCEL * delta, 0.0, 1.0))
-	stamina = clampf(stamina + (-delta if sprinting else delta * 0.6), 0.0, STAMINA_MAX)
+	stamina = clampf(stamina + (-delta if sprinting else delta * STAMINA_REGEN), 0.0, STAMINA_MAX)
 	_update_breath(delta)
 	# conveyor under our feet?
 	conveyor_vel = Vector3.ZERO
@@ -261,7 +275,10 @@ func _physics_process(delta: float) -> void:
 		vy -= GRAVITY * delta
 	else:
 		vy = -0.5
-	velocity = Vector3(move_vel.x + conveyor_vel.x, vy, move_vel.z + conveyor_vel.z)
+	_shove_vel = _shove_vel.lerp(_shove, clampf(delta * 10.0, 0.0, 1.0))   # eased, so a push never jolts
+	_shove = Vector3.ZERO
+	velocity = Vector3(move_vel.x + conveyor_vel.x + _shove_vel.x, vy, move_vel.z + conveyor_vel.z + _shove_vel.z)
+	_pos_prev = global_position
 	move_and_slide()
 	# --- stillness tracking (for "do not move" rules) ---
 	if move_vel.length() < 0.35:
@@ -270,24 +287,21 @@ func _physics_process(delta: float) -> void:
 		still_time = 0.0
 	# --- head bob + footsteps ---
 	var hspeed := Vector2(move_vel.x, move_vel.z).length()
+	_bob_prev = _bob_t
+	var bob_target := 0.0
 	if is_on_floor() and hspeed > 0.4:
-		# one head dip per step (bob = -|sin|, lowest at PI/2 + k*PI) and the step sounds at the dip, where the heel
-		# lands: ~1.9 steps/s walking, ~3.1 sprinting
+		# one head dip per step (lowest at PI/2 + k*PI) and the step sounds at the dip, where the heel lands:
+		# ~1.9 steps/s walking, ~3.1 sprinting
 		var before := floori(_bob_t / PI + 0.5)
 		_bob_t += delta * hspeed * (2.2 if sprinting else 2.65)
 		if floori(_bob_t / PI + 0.5) > before:
 			_footstep(sprinting)
+		bob_target = (BOB_SPRINT if sprinting else BOB_WALK) * clampf(hspeed / WALK_SPEED, 0.0, 1.0)
 	else:
 		_bob_t = lerpf(_bob_t, roundf(_bob_t / PI) * PI, delta * 4.0)
-	var amp := 0.045 if sprinting else 0.028
-	var bob := Vector3(cos(_bob_t * 0.5) * amp * 0.6, -absf(sin(_bob_t)) * amp, 0)
-	# shake
+	_bob_amp = lerpf(_bob_amp, bob_target, clampf(delta * 4.0, 0.0, 1.0))   # eases between still, walk and sprint
 	_shake = maxf(0.0, _shake - delta * 1.2)
 	_shake_t += delta * 40.0
-	var sh := _shake * _shake
-	var shake_off := Vector3(sin(_shake_t * 1.3) * sh * 0.05, cos(_shake_t * 1.7) * sh * 0.05, 0)
-	head.position = Vector3(0, EYE_HEIGHT, 0) + bob + shake_off
-	head.rotation.z = sin(_bob_t * 0.5) * (0.006 if not sprinting else 0.012) + sin(_shake_t) * sh * 0.03
 	var target_fov: float = Game.settings.fov * (0.7 if camera_mode else 1.0) + (4.0 if sprinting and hspeed > 3.4 else 0.0)
 	camera.fov = lerpf(camera.fov, target_fov, delta * 6.0)
 	# flashlight sway (lags slightly behind the view)
@@ -303,6 +317,21 @@ func _physics_process(delta: float) -> void:
 		if z != zone:
 			zone = z
 			Events.zone_entered.emit(z)
+
+
+## The view, every drawn frame: the body moves at the physics rate (60 Hz), so on a faster screen the camera is
+## placed between the last two physics positions (and bob phases) instead of jumping once per tick, which stuttered.
+## The bob is a smooth dip (sin², no corner at the top of the step) with a slow sway and roll.
+func _process(_delta: float) -> void:
+	var f := Engine.get_physics_interpolation_fraction()
+	var t := lerpf(_bob_prev, _bob_t, f)
+	var dip := sin(t)
+	var bob := Vector3(cos(t * 0.5) * _bob_amp * 0.5, -dip * dip * _bob_amp, 0)
+	var sh := _shake * _shake
+	var shake_off := Vector3(sin(_shake_t * 1.3) * sh * 0.05, cos(_shake_t * 1.7) * sh * 0.05, 0)
+	var lag := global_basis.inverse() * ((_pos_prev - global_position) * (1.0 - f))
+	head.position = Vector3(0, EYE_HEIGHT, 0) + bob + shake_off + lag
+	head.rotation.z = sin(t * 0.5) * _bob_amp * 0.22 + sin(_shake_t) * sh * 0.03
 
 
 func _update_interact() -> void:
@@ -358,18 +387,30 @@ func _on_metal() -> bool:
 	return false
 
 
+## Out of breath after a run: one breath at a time (breath_run_*, tools/gen_breath.py), closer together and louder the
+## more stamina is spent, so the rhythm slows down by itself as it comes back.
 func _update_breath(delta: float) -> void:
-	var want := stamina < STAMINA_MAX * 0.35
-	if want and not _breath.playing:
-		_breath.stream = Snd.stream("breath_loop")
-		if _breath.stream:
-			_breath.volume_db = -30.0
-			_breath.play()
-	if _breath.playing:
-		var target := -14.0 if want else -60.0
-		_breath.volume_db = move_toward(_breath.volume_db, target, delta * 20.0)
-		if not want and _breath.volume_db <= -59.0:
-			_breath.stop()
+	_breath_wait -= delta
+	var spent := 1.0 - stamina / STAMINA_MAX
+	if spent < 0.3 or _breath_wait > 0.0:
+		return
+	var s := Snd.stream(Snd.variant("breath_run"))
+	if s == null:
+		return
+	var k := clampf((spent - 0.3) / 0.6, 0.0, 1.0)
+	_breath.stream = s
+	_breath.volume_db = lerpf(-33.0, -22.0, k) + randf_range(-0.8, 0.8)
+	_breath.pitch_scale = randf_range(0.98, 1.02) * lerpf(0.98, 1.02, k)
+	_breath.play()
+	_breath_wait = lerpf(2.8, 1.5, k) + randf_range(-0.12, 0.12)
+
+
+## Someone pushing past moves you (StaffNpc walking off). Like the conveyor it is not your own steps, so the "do not
+## move" rules never count it; walls still stop it. Fades within a few frames unless they keep pushing.
+func shove(v: Vector3) -> void:
+	v.y = 0.0
+	if v.length() > _shove.length():
+		_shove = v
 
 
 func add_shake(amount: float) -> void:

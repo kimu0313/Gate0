@@ -351,11 +351,36 @@ func _do_inspect(task: Task) -> void:
 		if (mistakes and randf() < 0.3) or always_wrong:
 			claim = not claim
 		log_line("  report %s" % ("ANOMALY" if claim else "NORMAL"))
-		d.report(task, claim)
+		await _report_on_tablet(task, claim)
 	if task.state == "responding":
 		await _apply_fix(f, task.anomaly)
 	await _until(func(): return task.state == "done", 40.0)
 	log_line("  -> result=%s  erosion=%d" % [task.result, int(Game.erosion)])
+
+
+## Reports the way a player does: open the tablet and press its 정상 / 이상 button (calling d.report() directly
+## once hid a tablet that showed no buttons at all). A missing button is logged and the run carries on.
+func _report_on_tablet(task: Task, claim: bool) -> void:
+	var tab: Tablet = world.ui.tablet
+	world.ui.open_tablet()
+	await wait(0.6)
+	tab._selected = task
+	tab.refresh()
+	await wait(0.1)
+	var btn: Button = null
+	for b in tab._detail.find_children("*", "Button", true, false):
+		if b.has_meta("report") and bool(b.get_meta("report")) == claim:
+			btn = b as Button
+	if btn == null or btn.disabled:
+		log_line("  !! tablet has no usable %s button (%s)" % ["이상" if claim else "정상", "missing" if btn == null else "disabled"])
+		await shot("no_report_button")
+		d.report(task, claim)
+	else:
+		btn.pressed.emit()
+	await wait(1.2)
+	if world.ui.modal == "tablet":
+		world.ui.close_modal()
+		await wait(0.3)
 
 
 func _apply_fix(f: Facility, a: String) -> void:

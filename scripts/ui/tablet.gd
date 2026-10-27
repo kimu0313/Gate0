@@ -534,7 +534,9 @@ func refresh() -> void:
 		c.queue_free()
 	if director == null:
 		return
-	if boarding_mode:
+	# BOARDING turns on mid-shift (DAY 4 after the passenger lane, all of DAY 5) while orders still need a report:
+	# the pass only takes over the page once no order is left open
+	if boarding_mode and director.tasks.all(func(tk: Task): return tk.state == "done"):
 		_build_boarding_pass()
 		return
 	if _selected == null or not director.tasks.has(_selected):
@@ -690,6 +692,7 @@ func _report_button(task: Task, anomaly: bool, enabled: bool) -> Button:
 	b.custom_minimum_size = Vector2(0, 112)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.disabled = not enabled
+	b.set_meta("report", anomaly)   # the autotest reports through these buttons, like a player
 	b.add_theme_stylebox_override("normal", UiKit.box(bg, col, 0, 2, 0))
 	b.add_theme_stylebox_override("hover", UiKit.box(bg.lightened(0.08), col.lightened(0.2), 0, 4, 0))
 	b.add_theme_stylebox_override("pressed", UiKit.box(Color(col, 0.35), col, 0, 4, 0))

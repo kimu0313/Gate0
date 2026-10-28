@@ -7,6 +7,7 @@ extends Node3D
 ##   HALL (lobby) x[-20,12] z[-2.5,14] (7.5 m, glass facade on the apron to the south) + its north strip
 ##                x[-12.2,12] z[-8.5,-2.5]; self check-in blocks x[-12.2,-6.9] / x[6.2,12] z[0,7.6] (sketch)
 ##   OFFICE   x[-20,-12.2] z[-2.5,7.6]    STORAGE x[12,22] z[-8.5,-2.5]    2F lounge (closed) x[12,24.5] z[-2.5,14]
+##   SECURITY OFFICE (보안실) x[-20,-12.4] z[-21,-11], its door on the staff passage's west wall at z -16
 ##   SECURITY x[-10,10] z[-27.3,-8.5]     CORRIDOR x[-10,10] z[-76,-27.3] (walkways on its east side)
 ##   BAGGAGE  x[-36,-10] z[-64,-39.6] + staff passage x[-12.4,-10] z[-39.6,-8.5] from the strip (open from DAY 2,
 ##            before security; the public opening from the corridor opens with the corridor)
@@ -22,11 +23,15 @@ const LANE_X := [-4.8, 3.25]  # X-ray tunnel centres (lane 1 west, lane 2 east),
 const LANE_Z := -18.0
 const MD_DX := 3.6
 const BELT_POS := Vector3(-25.5, 0, -59.0)
+## The floor point at the far end of the dark vestibule outside the security office's west door, the way in: the
+## main story's boarding-bridge gate door lands here (Chapter1's portal; +X = on into the office).
+const SEC_ENTRY_PLANE := Vector3(-22.0, 0, -14.6)
 
 ## Zone footprints (one Rect2 or an Array of them). Checked in this order by zone_at, so rooms inside the hall's
 ## rect (the office) come first.
 const ZONE_RECTS := {
 	"office": Rect2(-20, -2.5, 7.8, 10.1),
+	"secoffice": Rect2(-20, -21, 7.6, 10),
 	"hall": [Rect2(-20, -2.5, 32, 16.5), Rect2(-12.2, -8.5, 24.2, 6)],
 	"storage": Rect2(12, -8.5, 10, 6),
 	"security": Rect2(-10, -27.3, 20, 18.8),
@@ -39,7 +44,7 @@ const ZONE_RECTS := {
 const ZONE_NAMES := {
 	"office": "시설관리실", "hall": "체크인 홀", "baggage": "수하물 수취", "storage": "자재창고",
 	"maint": "정비 통로", "security": "보안검색", "corridor": "탑승동 통로", "gates": "탑승 게이트",
-	"bridge0": "0번 탑승교", "outside": "외부", "jetbridge": "위치 불명",
+	"bridge0": "0번 탑승교", "outside": "외부", "jetbridge": "위치 불명", "warped": "위치 불명", "secoffice": "보안실",
 }
 
 ## Named floor points the story scripts, the NPC and the debug bots use instead of their own coordinates.
@@ -131,7 +136,20 @@ var pickups := {}          # id -> Pickup
 var spawns := {}           # name -> Transform3D
 var triggers := {}         # name -> Area3D
 var lights_panel: LightPanel
-var passage_plug: MeshInstance3D   # fills the staff passage's doorway (see _build_baggage)
+var sec_door: Node3D              # the security office's steel door on the staff passage (_build_security_office)
+var sec_signs: Array[Node3D] = [] # its plate beside it and the SECURITY OFFICE sign over the passage
+var sec_passage: Dictionary        # the same door as {root, leaf, block, use} (rattle / swing_door)
+var sec_entry: Dictionary          # the office's west door (OfficeKit.door), locked; past it a dark vestibule
+var sec_closet: Dictionary         # the store-room door in the north wall, locked
+var sec_reader: CardReader         # by the passage door, room side; off until the story wants it
+var sec_drawers := {}              # a1..a3 CRT desk, b1..b3 CCTV desk, c1..c3 the guard's desk, f1..f4 filing, l1..l4 lateral
+var sec_vestibule_end: MeshInstance3D   # the far wall of the dark vestibule outside the west door
+var sec_leaf: Node3D              # its leaf, a hinge node: rotation.y > 0 swings it into the room
+var sec_block: StaticBody3D       # the shut leaf's collider
+var sec_use: Interactable         # [E] on the door from either side; the story sets its prompt and callback
+## Props the main story's warped airport moves (WarpedTerminal): kiosks, the broadcast desk, the lobby benches, the
+## gate seat rows, the aircraft on the apron and the control tower.
+var warp := {"kiosks": [], "benches": [], "gate_seats": [], "aircraft": [], "desk": null, "tower": null}
 var lights_panel_gates: LightPanel
 var breaker: BreakerPanel
 var punch_clock: Interactable
@@ -158,6 +176,7 @@ func build() -> void:
 	_build_hall()
 	_build_lounge()
 	_build_baggage()
+	_build_security_office()
 	_build_security()
 	_build_corridor()
 	_build_gates()
@@ -227,6 +246,7 @@ func route(from: Vector3, goal: String) -> Array:
 func _build_zones() -> void:
 	var defs := [
 		["office", "사무실", 2.6],
+		["secoffice", "보안실", 2.6],
 		["hall", "홀", 3.4],
 		["baggage", "수하물", 3.0],
 		["security", "보안검색", 3.0],
@@ -447,10 +467,14 @@ func _build_hall() -> void:
 	_checkin_block(1.0)
 	_checkin_block(-1.0)
 	_escalator()
-	_info_desk()
+	var desk := Node3D.new()
+	desk.name = "InfoDesk"
+	add_child(desk)
+	info_desk(desk)
+	warp.desk = desk
 	# two benches in front of the desk, turned at an angle like the sketch's foreground
-	Props.seat_row(self, Vector3(0.2, 0, 0.1), 3, -1.87)
-	Props.seat_row(self, Vector3(0.55, 0, -2.1), 3, -1.87)
+	warp.benches.append(Props.seat_row(self, Vector3(0.2, 0, 0.1), 3, -1.87))
+	warp.benches.append(Props.seat_row(self, Vector3(0.55, 0, -2.1), 3, -1.87))
 	# bins against walls, out of the walking lines: the corners beside the security opening, the west block's end
 	for p in [Vector3(5.85, 0, -1.95), Vector3(-6.6, 0, -1.95), Vector3(-8.2, 0, 7.6)]:
 		Props.trash_bin(self, p)
@@ -519,7 +543,7 @@ func _checkin_block(side: float) -> void:
 ## (1.18 m), open to the south where the operator stands: dark recessed plinth, blue accent line on the public face,
 ## quartz tops overhanging 3 cm, a drawer pedestal and a knee space under the worktop. Built from closed rounded
 ## volumes (the stretched Tripo desk showed open, paper-thin panels).
-func _info_desk() -> void:
+static func info_desk(parent: Node3D) -> void:
 	var body := Mats.std(Color(0.88, 0.88, 0.86), 0.35)
 	var top := Mats.std(Color(0.74, 0.75, 0.74), 0.22, 0.05)
 	var blue := Mats.std(Color(0.07, 0.25, 0.56), 0.4)
@@ -544,23 +568,23 @@ func _info_desk() -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = CarouselMesh.rounded_prism(pt[1], pt[2], pt[4])
 		mi.material_override = pt[3]
-		add_child(mi)
+		parent.add_child(mi)
 		mi.position = pt[0]
 	# knee space: a dark back under the worktop between the modesty panel and the pedestal
-	Geo.box(self, Vector3((x0 + x1 - 0.52) * 0.5, 0.53, z_front + 0.085), Vector3(x1 - x0 - 0.52, 0.86, 0.01), dark, false)
+	Geo.box(parent, Vector3((x0 + x1 - 0.52) * 0.5, 0.53, z_front + 0.085), Vector3(x1 - x0 - 0.52, 0.86, 0.01), dark, false)
 	# blue accent line wrapping the public face and the returns' outer faces
-	Geo.box(self, Vector3((x0 + x1) * 0.5, 0.82, z_front - 0.003), Vector3(x1 - x0, 0.035, 0.008), blue, false)
+	Geo.box(parent, Vector3((x0 + x1) * 0.5, 0.82, z_front - 0.003), Vector3(x1 - x0, 0.035, 0.008), blue, false)
 	for rx in [-1.0, 1.4]:
-		Geo.box(self, Vector3(rx, 0.82, 5.3 - 0.003), Vector3(0.42, 0.035, 0.008), blue, false)
+		Geo.box(parent, Vector3(rx, 0.82, 5.3 - 0.003), Vector3(0.42, 0.035, 0.008), blue, false)
 	# drawer fronts: dark seams and finger pulls on the pedestal's operator face
 	for i in 3:
 		var dy := 0.24 + i * 0.25
-		Geo.box(self, Vector3(x1 - 0.26, dy + 0.11, 6.172), Vector3(0.4, 0.006, 0.006), dark, false)
-		Geo.box(self, Vector3(x1 - 0.26, dy + 0.06, 6.175), Vector3(0.14, 0.012, 0.012), CarouselMesh.mat("steel"), false)
+		Geo.box(parent, Vector3(x1 - 0.26, dy + 0.11, 6.172), Vector3(0.4, 0.006, 0.006), dark, false)
+		Geo.box(parent, Vector3(x1 - 0.26, dy + 0.06, 6.175), Vector3(0.14, 0.012, 0.012), CarouselMesh.mat("steel"), false)
 	# colliders
-	Geo.blocker(self, Vector3((x0 + x1) * 0.5, 0.5, (z_front + z_back) * 0.5), Vector3(x1 - x0, 1.0, z_back - z_front))
+	Geo.blocker(parent, Vector3((x0 + x1) * 0.5, 0.5, (z_front + z_back) * 0.5), Vector3(x1 - x0, 1.0, z_back - z_front))
 	for rx in [-1.0, 1.4]:
-		Geo.blocker(self, Vector3(rx, 0.59, 6.05), Vector3(0.5, 1.18, 1.5))
+		Geo.blocker(parent, Vector3(rx, 0.59, 6.05), Vector3(0.5, 1.18, 1.5))
 
 
 ## Self check-in kiosk: an off-white cabinet on a dark plinth with a blue band, a service door, boarding-pass and
@@ -568,14 +592,15 @@ func _info_desk() -> void:
 ## steel neck. `facing` = direction the screen looks (deg). Built once, then copied (shared meshes and materials).
 func _kiosk(pos: Vector3, facing: float) -> void:
 	if _kiosk_proto == null:
-		_kiosk_proto = _build_kiosk()
+		_kiosk_proto = build_kiosk()
 	var k := _kiosk_proto.duplicate() as Node3D
 	add_child(k)
+	warp.kiosks.append(k)
 	k.position = pos
 	k.rotation.y = deg_to_rad(facing)
 
 
-func _build_kiosk() -> Node3D:
+static func build_kiosk() -> Node3D:
 	var k := Node3D.new()
 	var body := Mats.std(Color(0.84, 0.85, 0.84), 0.35)
 	var dark := Mats.std(Color(0.14, 0.15, 0.17), 0.45, 0.2)
@@ -718,9 +743,8 @@ func _build_baggage() -> void:
 	var pr := Rect2(-12.4, -39.6, 2.4, 31.1)
 	_floor(pr, "floor_service")
 	_ceiling(pr, 3.0, "ceiling_dark")
-	# a doorway at z -16.5..-15.5, plain wall (passage_plug) until the prologue's SECURITY OFFICE door takes it (Prologue._build_escape)
+	# a doorway at z -16.5..-15.5: the security office's door (_build_security_office)
 	Geo.wall(self, Vector2(-12.4, -39.6), Vector2(-12.4, -8.5), 3.0, Mats.get_mat("wall_service"), 0.3, [[23.1, 24.1, 2.15]])
-	passage_plug = Geo.box(self, Vector3(-12.4, 1.075, -16.0), Vector3(0.3, 2.15, 1.0), Mats.get_mat("wall_service"))
 	# beams across the hall every 6 m, pilasters on the west wall under them
 	for zz in [-45.6, -51.6, -57.6]:
 		Geo.box(self, Vector3(-23, BAG_H - 0.175, zz), Vector3(26, 0.35, 0.5), wm, false)
@@ -781,6 +805,231 @@ func _build_baggage() -> void:
 	keypad.press_sound = "keypad_beep"
 	# the staff passage is closed until DAY 2 (zones open one per day)
 	shutters["baggage"] = Shutter.create(self, Vector3(-11.2, 0, -8.5), 0.0, 1.5, 2.4, "점검 구역 외 · 통제")
+
+
+## The security office (보안실), off the staff passage's west wall, laid out as in the user's sketch (seen from the south
+## end): where the night shift starts (the prologue opens here) and the door the chase comes back to. A drop ceiling
+## with three linear fittings and a duct along the back; on the north wall two windows with their blinds drawn and the
+## clock (2:17) between, a glass cabinet, a bookshelf of binders, two lateral cabinets, a filing cabinet and the store
+## room's door; the CRT desk along the west wall by the west door, the CCTV desk and the guard's desk in the room, an
+## armchair and cartons by the south wall, the radio chargers and the whiteboard either side of the passage door.
+## Seventeen drawers open ([E], Drawer; sec_drawers), with odds and ends in them. Doors: the passage door (sec_door,
+## east), the west door (sec_entry; past it a dark vestibule — the main story comes in that way) and the store room
+## (sec_closet); the last two are locked and only rattle (rattle()).
+func _build_security_office() -> void:
+	var r: Rect2 = ZONE_RECTS.secoffice
+	_floor(r, "floor_office")
+	_ceiling(r, 2.85)
+	var wm := Mats.get_mat("wall_office")
+	Geo.wall(self, Vector2(-20, -21), Vector2(-20, -11), 3.0, wm, 0.3, [[5.925, 6.875, 2.13]])
+	Geo.wall(self, Vector2(-20, -21), Vector2(-12.4, -21), 3.0, wm, 0.3, [[6.225, 7.175, 2.13]])
+	Geo.wall(self, Vector2(-20, -11), Vector2(-12.4, -11), 3.0, wm, 0.3)
+	# the passage wall's room side, lined like the rest of the room (round the doorway)
+	for seg in [[-20.85, -16.55], [-15.45, -11.15]]:
+		Geo.box(self, Vector3(-12.56, 1.425, (seg[0] + seg[1]) * 0.5), Vector3(0.02, 2.85, seg[1] - seg[0]), wm, false)
+	Geo.box(self, Vector3(-12.56, 2.5, -16.0), Vector3(0.02, 0.7, 1.1), wm, false)
+	# three long linear fittings down the room, a duct along the back wall dropping at both ends
+	var z: LightZone = zones.secoffice
+	z.add_panel(Vector3(-18.6, 2.82, -15.9), Vector2(0.2, 3.4), true, 0.8, 7.0, Color(1.0, 0.96, 0.9), true)
+	z.add_panel(Vector3(-16.2, 2.82, -15.4), Vector2(0.24, 3.8), true, 1.0, 8.0, Color(1.0, 0.96, 0.9))
+	z.add_panel(Vector3(-13.8, 2.82, -15.9), Vector2(0.2, 3.4), true, 0.8, 7.0, Color(1.0, 0.96, 0.9))
+	z.add_hum(Vector3(-16.5, 2.6, -16.0), -26.0)
+	var duct := Mats.std(Color(0.7, 0.71, 0.72), 0.45, 0.6)
+	Geo.cyl(self, Vector3(-16.8, 2.64, -20.6), 0.12, 5.8, duct).rotation.z = PI / 2
+	for dx in [-19.4, -14.3]:
+		Geo.cyl(self, Vector3(dx, 2.3, -20.6), 0.1, 0.62, duct)
+		Geo.cyl(self, Vector3(dx, 1.99, -20.6), 0.12, 0.03, Mats.get_mat("metal_dark"))
+	# north wall: windows with the blinds drawn, the clock between them
+	OfficeKit.blinds_window(self, Vector3(-18.35, 1.7, -20.84), 0.0, Vector2(1.6, 1.25))
+	OfficeKit.blinds_window(self, Vector3(-15.25, 1.7, -20.84), 0.0, Vector2(1.5, 1.25))
+	var clock := Node3D.new()
+	add_child(clock)
+	clock.position = Vector3(-16.78, 2.38, -20.82)
+	Geo.cyl(clock, Vector3.ZERO, 0.18, 0.04, Mats.get_mat("plastic_white")).rotation.x = PI / 2
+	Geo.label(clock, "2:17", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true, "lcd")
+	# along the back: glass cabinet, bookshelf, lateral cabinets, filing cabinet, the store-room door
+	OfficeKit.glass_cabinet(self, Vector3(-19.3, 0, -20.63), 0.0)
+	OfficeKit.bookshelf(self, Vector3(-18.05, 0, -20.65), 0.0)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2170
+	var lat: Array = []
+	lat.append_array(OfficeKit.lateral_cabinet(self, Vector3(-16.75, 0, -20.61), 0.0))
+	lat.append_array(OfficeKit.lateral_cabinet(self, Vector3(-15.8, 0, -20.61), 0.0))
+	OfficeKit.carton(self, Vector3(-16.9, 0.74, -20.62), Vector3(0.42, 0.26, 0.34), 0.08)
+	OfficeKit.paper_stack(self, Vector3(-15.75, 0.74, -20.6), 9, 0.1)
+	OfficeKit.carton(self, Vector3(-14.3, 1.32, -20.5), Vector3(0.38, 0.3, 0.42), -0.05)
+	OfficeKit.carton(self, Vector3(-14.25, 1.62, -20.52), Vector3(0.3, 0.2, 0.32), 0.15)
+	sec_closet = OfficeKit.door(self, Vector3(-13.3, 0, -21.0), -PI / 2)
+	LevelKit.plate(self, "plate_storage", Vector3(-13.3, 2.42, -20.84), 0.0, Vector2(0.45, 0.3), 0.0)
+	# west wall: the CRT desk, the door out to the vestibule, a poster and a cork board
+	sec_entry = OfficeKit.door(self, Vector3(-20.0, 0, -14.6), 0.0)
+	LevelKit.plate(self, "plate_staffonly", Vector3(-19.84, 2.42, -14.6), 90.0, Vector2(0.42, 0.28), 0.0)
+	var sets := {
+		"a": OfficeKit.desk(self, Vector3(-19.4, 0, -12.55), PI / 2, Vector3(1.6, OfficeKit.DESK_H, 0.7)),
+		"b": OfficeKit.desk(self, Vector3(-18.4, 0, -17.4), 0.0, Vector3(1.6, OfficeKit.DESK_H, 0.75)),
+		"c": OfficeKit.desk(self, Vector3(-14.3, 0, -17.3), PI, Vector3(1.5, OfficeKit.DESK_H, 0.75)),
+		"f": OfficeKit.filing_cabinet(self, Vector3(-14.3, 0, -20.53), 0.0),
+		"l": lat,
+	}
+	for k: String in sets:
+		var arr: Array = sets[k]
+		for i in arr.size():
+			var dr: Drawer = arr[i]
+			sec_drawers["%s%d" % [k, i + 1]] = dr
+			OfficeKit.clutter(dr.inside, rng, dr.size.x, dr.size.z)
+	var crt := OfficeKit.crt(self, Vector3(-19.5, OfficeKit.DESK_H, -12.2), PI / 2)
+	crt.material_override = Mats.emissive(Color(0.1, 0.18, 0.14), 0.6)
+	OfficeKit.desk_lamp(self, Vector3(-19.6, OfficeKit.DESK_H, -11.8), PI / 2 + 0.35)
+	OfficeKit.carton(self, Vector3(-19.4, OfficeKit.DESK_H, -12.95), Vector3(0.32, 0.2, 0.28), 0.2)
+	for p in [Vector3(-19.84, 1.7, -12.4), Vector3(-19.84, 1.6, -17.6)]:
+		Geo.box(self, p, Vector3(0.02, 0.62 if p.z > -15.0 else 0.8, 0.46 if p.z > -15.0 else 1.1), Mats.std(Color(0.3, 0.26, 0.2), 0.7), false)
+		Geo.box(self, p + Vector3(0.012, 0, 0), Vector3(0.004, 0.52 if p.z > -15.0 else 0.7, 0.36 if p.z > -15.0 else 1.0), Mats.get_mat("paper") if p.z > -15.0 else Mats.std(Color(0.62, 0.48, 0.3), 0.95), false)
+	# the CCTV desk: two monitors on the lobby and the staff passage (dead), a keyboard
+	var cams := [["CAM 01  로비", false], ["CAM 05  직원 통로", true]]
+	for i in 2:
+		var sc := Props.monitor(self, Vector3(-18.95 + i * 0.62, 0.86, -17.6), 0.0, Vector2(0.48, 0.3))
+		var dead: bool = cams[i][1]
+		sc.material_override = Mats.emissive(Color(0.03, 0.03, 0.04) if dead else Color(0.17, 0.21, 0.21), 0.5)
+		Geo.label(sc, cams[i][0], Vector3(-0.1, 0.11, 0.004), 0.0, 22, Color(0.85, 0.95, 0.85), 0.0018, true).set_meta("no_fit", true)
+		if dead:
+			Geo.label(sc, "NO SIGNAL", Vector3(0, -0.01, 0.004), 0.0, 30, Color(0.85, 0.85, 0.85), 0.002, true).set_meta("no_fit", true)
+	Geo.box(self, Vector3(-18.6, OfficeKit.DESK_H + 0.012, -17.22), Vector3(0.44, 0.02, 0.15), Mats.get_mat("plastic_dark"), false)
+	# the guard's desk: lamp, paper, the radio base station, a mug
+	OfficeKit.desk_lamp(self, Vector3(-13.75, OfficeKit.DESK_H, -17.45), PI + 0.5)
+	OfficeKit.paper_stack(self, Vector3(-14.05, OfficeKit.DESK_H, -17.25), 7, 0.3)
+	Geo.box(self, Vector3(-14.75, OfficeKit.DESK_H + 0.05, -17.2), Vector3(0.26, 0.1, 0.32), Mats.get_mat("plastic_dark"), false)
+	Geo.box(self, Vector3(-14.7, OfficeKit.DESK_H + 0.105, -17.36), Vector3(0.012, 0.012, 0.012), Mats.get_mat("lamp_green"), false)
+	Geo.cyl(self, Vector3(-14.35, OfficeKit.DESK_H + 0.05, -17.45), 0.04, 0.1, Mats.get_mat("plastic_white"))
+	for c in [[Vector3(-18.6, 0, -12.45), -PI / 2], [Vector3(-18.6, 0, -16.55), PI], [Vector3(-14.2, 0, -18.15), 0.0]]:
+		if TripoProps.exists("security", "SEC_OfficeChair"):
+			TripoProps.spawn(self, "security", "SEC_OfficeChair", c[0], c[1], true)
+		else:
+			Geo.box(self, c[0] + Vector3(0, 0.45, 0), Vector3(0.5, 0.08, 0.5), Mats.get_mat("seat"))
+	# by the south wall: a table with cartons, more cartons, the armchair
+	Geo.box(self, Vector3(-14.2, 0.72, -11.5), Vector3(1.1, 0.04, 0.58), Mats.get_mat("wood"), false)
+	for sx in [-1.0, 1.0]:
+		Geo.box(self, Vector3(-14.2 + sx * 0.52, 0.35, -11.5), Vector3(0.04, 0.7, 0.54), Mats.get_mat("metal_dark"), false)
+	Geo.blocker(self, Vector3(-14.2, 0.37, -11.5), Vector3(1.1, 0.74, 0.58))
+	OfficeKit.carton(self, Vector3(-14.4, 0.74, -11.5), Vector3(0.44, 0.3, 0.36), -0.1)
+	OfficeKit.carton(self, Vector3(-13.85, 0.74, -11.45), Vector3(0.3, 0.22, 0.3), 0.2)
+	OfficeKit.carton(self, Vector3(-15.1, 0, -11.45), Vector3(0.5, 0.36, 0.4), 0.05)
+	Geo.blocker(self, Vector3(-15.1, 0.18, -11.45), Vector3(0.5, 0.36, 0.4))
+	OfficeKit.armchair(self, Vector3(-13.05, 0, -12.65), -2.5)
+	# east wall: radio chargers south of the passage door, the whiteboard north of it, the card reader by it
+	Geo.box(self, Vector3(-12.74, 1.0, -13.2), Vector3(0.34, 0.04, 1.3), Mats.get_mat("steel_frame"), false)
+	for i in 4:
+		var rz := -13.65 + i * 0.3
+		Geo.box(self, Vector3(-12.72, 1.06, rz), Vector3(0.14, 0.08, 0.16), Mats.get_mat("plastic_dark"), false)
+		Geo.box(self, Vector3(-12.72, 1.2, rz), Vector3(0.035, 0.2, 0.06), Mats.get_mat("plastic_grey"), false)
+		Geo.cyl(self, Vector3(-12.72, 1.38, rz + 0.02), 0.006, 0.16, Mats.get_mat("plastic_dark"))
+		Geo.box(self, Vector3(-12.647, 1.06, rz + 0.05), Vector3(0.004, 0.015, 0.015), Mats.get_mat("lamp_green"), false)
+	var wb := Node3D.new()
+	add_child(wb)
+	wb.position = Vector3(-12.585, 1.55, -18.9)
+	wb.rotation.y = -PI / 2
+	Geo.box(wb, Vector3.ZERO, Vector3(1.7, 1.0, 0.03), Mats.get_mat("plastic_white"), false)
+	Geo.fit(Geo.label(wb, "야간 점검  02:00 – 05:00\n수하물 구역 — 출입 통제\n직원 통로 소등 유지\n이상 시 즉시 무전 보고", Vector3(-0.08, 0.04, 0.02),
+			0.0, 30, Color(0.1, 0.2, 0.6), 0.0035, false, "hand"), 1.4).rotation.z = 0.02
+	sec_reader = CardReader.create(self, Vector3(-12.575, 1.2, -16.85), -PI / 2)
+	sec_reader.interactable.enabled = false
+	# outside the west door: a short dark vestibule (black, no light), its far wall where the way in arrives
+	var black := Mats.get_mat("black")
+	Geo.box(self, Vector3(-21.25, -0.05, -14.6), Vector3(2.3, 0.1, 2.9), black)
+	Geo.box(self, Vector3(-21.25, 2.55, -14.6), Vector3(2.3, 0.1, 2.9), black, false)
+	for sz in [-1.0, 1.0]:
+		Geo.box(self, Vector3(-21.25, 1.3, -14.6 + sz * 1.4), Vector3(2.3, 2.6, 0.1), black)
+	sec_vestibule_end = Geo.box(self, Vector3(-22.35, 1.3, -14.6), Vector3(0.1, 2.6, 2.9), black)
+	_security_door()
+	sec_passage = {"root": sec_door, "leaf": sec_leaf, "block": sec_block, "use": sec_use}
+	for dd: Dictionary in [sec_entry, sec_closet]:
+		var d := dd
+		(d.use as Interactable).callback = func(): rattle(d)
+
+
+## The security office's door: a steel leaf with a narrow wired-glass light, a push plate on the passage side and a
+## pull handle in the room, hung on the south jamb; it opens into the room. Shut and dead to [E] until the story
+## gives it a prompt and a callback.
+func _security_door() -> void:
+	sec_door = Node3D.new()
+	sec_door.name = "SecurityDoor"
+	add_child(sec_door)
+	sec_door.position = Vector3(-12.4, 0.0, -16.0)          # on the wall's centre line; local +X = the passage
+	var frame := Mats.std(Color(0.3, 0.32, 0.35), 0.4, 0.6)
+	for side in [1.0, -1.0]:
+		for sz in [-1.0, 1.0]:
+			Geo.box(sec_door, Vector3(side * 0.17, 1.07, sz * 0.53), Vector3(0.07, 2.14, 0.07), frame, false)
+		Geo.box(sec_door, Vector3(side * 0.17, 2.18, 0), Vector3(0.07, 0.07, 1.13), frame, false)
+	sec_leaf = Node3D.new()
+	sec_door.add_child(sec_leaf)
+	sec_leaf.position = Vector3(0.1, 0, 0.49)
+	var steel := Mats.std(Color(0.42, 0.45, 0.5), 0.5, 0.45)
+	var metal := Mats.get_mat("metal")
+	var wired := Mats.std(Color(0.05, 0.06, 0.07), 0.15, 0.3)
+	Geo.box(sec_leaf, Vector3(0, 1.05, -0.485), Vector3(0.045, 2.08, 0.96), steel, false)
+	for side in [1.0, -1.0]:
+		Geo.box(sec_leaf, Vector3(side * 0.024, 1.5, -0.75), Vector3(0.006, 0.5, 0.13), wired, false)
+		Geo.box(sec_leaf, Vector3(side * 0.025, 0.14, -0.485), Vector3(0.004, 0.24, 0.9), metal, false)
+	Geo.box(sec_leaf, Vector3(0.027, 1.08, -0.84), Vector3(0.008, 0.32, 0.1), metal, false)      # push plate
+	Geo.box(sec_leaf, Vector3(-0.07, 1.05, -0.84), Vector3(0.028, 0.32, 0.028), metal, false)    # pull handle
+	for hy in [0.92, 1.18]:
+		Geo.box(sec_leaf, Vector3(-0.045, hy, -0.84), Vector3(0.05, 0.025, 0.025), metal, false)
+	sec_block = Geo.blocker(sec_door, Vector3(0.0, 1.07, 0), Vector3(0.3, 2.14, 1.0))
+	sec_use = Interactable.create(sec_door, Vector3(0.0, 1.1, 0.0), Vector3(1.0, 2.1, 1.1), "문 열기", Callable())
+	sec_use.press_sound = ""
+	sec_use.enabled = false
+	# its plate beside it on the passage side, and the way to it hung over the passage
+	var plate := Node3D.new()
+	add_child(plate)
+	plate.position = Vector3(-12.238, 1.55, -15.05)
+	plate.rotation.y = PI / 2
+	Geo.box(plate, Vector3.ZERO, Vector3(0.5, 0.2, 0.012), Mats.std(Color(0.16, 0.17, 0.19), 0.45, 0.3), false)
+	Geo.fit(Geo.label(plate, "보안실  SECURITY OFFICE", Vector3(0, 0, 0.008), 0.0, 40, Color(0.95, 0.95, 0.92), 0.003), 0.44, 0.15).set_meta("no_fit", true)
+	sec_signs = [plate, LevelKit.hanging_sign(self, Vector3(-11.25, 3.0, -25.5), 0.0, "SECURITY OFFICE  →\n보안실", 1.9, "")]
+
+
+## The chase: the security office's door is gone. The doorway is plain passage wall again (the same world-space
+## material, so no seam), and its plate and the sign to it go with it.
+func remove_security_door() -> void:
+	if not sec_door.visible:
+		return
+	sec_door.visible = false
+	sec_block.collision_layer = 0
+	sec_use.enabled = false
+	for n in sec_signs:
+		n.visible = false
+	Geo.box(self, Vector3(-12.4, 1.075, -16.0), Vector3(0.3, 2.15, 1.0), Mats.get_mat("wall_service"))
+
+
+## A locked door tried ({root, leaf, block, use}): it rattles in its frame (door_rattle) and the leaf jiggles.
+func rattle(door: Dictionary) -> void:
+	var leaf: Node3D = door.leaf
+	if leaf.has_meta("rattling"):
+		return
+	leaf.set_meta("rattling", true)
+	Snd.play_at(Snd.variant("door_rattle"), (door.root as Node3D).global_position + Vector3(0, 1.0, 0), -3.0, randf_range(0.95, 1.08), 5.0)
+	var tw := leaf.create_tween()
+	for k in 3:
+		tw.tween_property(leaf, "rotation:y", deg_to_rad(randf_range(0.8, 1.5)), 0.05)
+		tw.tween_property(leaf, "rotation:y", 0.0, 0.07)
+		tw.tween_interval(randf_range(0.1, 0.16))
+	tw.tween_callback(func(): leaf.remove_meta("rattling"))
+
+
+## Swings a door ({root, leaf, block, use}) to `deg` into the room (0 = shut) over `time` s; its collider goes with it.
+func swing_door(door: Dictionary, deg: float, time: float) -> Tween:
+	(door.block as StaticBody3D).collision_layer = 0 if deg > 1.0 else Geo.LAYER_WORLD
+	var leaf: Node3D = door.leaf
+	var tw := leaf.create_tween()
+	tw.tween_property(leaf, "rotation:y", deg_to_rad(deg), time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT if deg > 1.0 else Tween.EASE_IN)
+	return tw
+
+
+## Swings the security office's door: `deg` into the room (0 = shut) over `time` s; its collider goes with it.
+func swing_sec_door(deg: float, time: float) -> Tween:
+	sec_block.collision_layer = 0 if deg > 1.0 else Geo.LAYER_WORLD
+	var tw := sec_leaf.create_tween()
+	tw.tween_property(sec_leaf, "rotation:y", deg_to_rad(deg), time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	return tw
 
 
 # --------------------------------------------------------------------------------------------
@@ -928,7 +1177,7 @@ func _build_gates() -> void:
 	# central seating facing the windows
 	for x in [-9.0, 9.0]:
 		for zz in [-85.0, -87.2, -91.5, -93.7]:
-			Props.seat_row(self, Vector3(x, 0, zz), 8, PI)
+			warp.gate_seats.append(Props.seat_row(self, Vector3(x, 0, zz), 8, PI))
 	signs["gates_main"] = Props.hanging_sign(self, Vector3(0, 4.2, -79.0), 0.0, Vector2(9.0, 0.9), [
 		["◀  GATE 01 · 02", 52, Color(1, 1, 1), Vector2(-2.3, 0)],
 		["@icon_departures", 0.62, Color(1, 1, 1), Vector2(0, 0)],
@@ -1037,90 +1286,13 @@ func _build_outside() -> void:
 	cab.light_volumetric_fog_energy = 0.6
 	outside_lights.append(cab)
 	Geo.box(tower, Vector3(0, 51.0, 0), Vector3(0.3, 0.3, 0.3), Mats.get_mat("lamp_red"), false)
+	warp.tower = tower
 	# parked aircraft: one off the corridor windows, one on the apron south of the lobby glass
-	_aircraft(Vector3(45, 0, -58), PI, false)
-	_aircraft(Vector3(18, 0, 104), PI / 2, false)
+	warp.aircraft.append(Props.aircraft(self, Vector3(45, 0, -58), PI, false))
+	warp.aircraft.append(Props.aircraft(self, Vector3(18, 0, 104), PI / 2, false))
 	# the impossible aircraft at Gate 0 (finale only)
-	final_plane = _aircraft(Vector3(0, 0, -168), 0.0, true)
+	final_plane = Props.aircraft(self, Vector3(0, 0, -168), 0.0, true)
 	final_plane.visible = false
-
-
-func _aircraft(pos: Vector3, rot_y: float, gate0: bool) -> Node3D:
-	var root := Node3D.new()
-	add_child(root)
-	root.position = pos
-	root.rotation.y = rot_y
-	if TripoProps.exists("apron", "APR_Aircraft"):
-		return _tripo_aircraft(root, gate0)
-	var body := Mats.get_mat("plane_body")
-	var dark := Mats.get_mat("plane_dark")
-	var fus := Geo.cyl(root, Vector3(0, 4.2, 0), 2.6, 52.0, body, false, 24)
-	fus.rotation.x = PI / 2
-	var nose := Geo.sphere(root, Vector3(0, 4.2, 26.0), 2.6, body)
-	nose.scale = Vector3(1.0, 1.0, 1.6)
-	Geo.sphere(root, Vector3(0, 4.6, -26.0), 2.4, body).scale = Vector3(1.0, 0.9, 2.2)
-	# cockpit windows
-	for sx in [-0.9, 0.0, 0.9]:
-		Geo.box(root, Vector3(sx, 5.6, 28.6), Vector3(0.7, 0.4, 0.4), dark, false)
-	# wings
-	var wing := Geo.box(root, Vector3(0, 3.3, 2.0), Vector3(58.0, 0.5, 7.0), body, false)
-	wing.rotation.y = 0.0
-	for sx in [-9.0, 9.0]:
-		Geo.cyl(root, Vector3(sx, 2.3, 5.0), 1.3, 4.5, dark, false, 16).rotation.x = PI / 2
-	# tail
-	var fin := Geo.box(root, Vector3(0, 10.0, -27.0), Vector3(0.5, 10.0, 6.0), body, false)
-	fin.rotation.x = -0.35
-	Geo.box(root, Vector3(0, 5.5, -28.0), Vector3(18.0, 0.4, 4.0), body, false)
-	# windows row
-	for i in 30:
-		for sx in [-2.58, 2.58]:
-			Geo.box(root, Vector3(sx, 4.9, 20.0 - i * 1.4), Vector3(0.05, 0.35, 0.25), dark, false)
-	# landing gear
-	for p in [Vector3(0, 0.9, 22), Vector3(-3.5, 0.9, 0), Vector3(3.5, 0.9, 0)]:
-		Geo.cyl(root, p, 0.55, 0.5, Mats.get_mat("rubber")).rotation.z = PI / 2
-		Geo.cyl(root, p + Vector3(0, 1.4, 0), 0.12, 2.6, Mats.get_mat("metal"))
-	# nav lights
-	var red := Geo.omni(root, Vector3(-29, 3.4, 2.0), Color(1, 0.1, 0.05), 1.0, 6.0)
-	var green := Geo.omni(root, Vector3(29, 3.4, 2.0), Color(0.1, 1, 0.2), 1.0, 6.0)
-	Geo.box(root, Vector3(-29, 3.4, 2.0), Vector3(0.3, 0.3, 0.3), Mats.get_mat("lamp_red"), false)
-	Geo.box(root, Vector3(29, 3.4, 2.0), Vector3(0.3, 0.3, 0.3), Mats.get_mat("lamp_green"), false)
-	if gate0:
-		var cabin := Geo.omni(root, Vector3(0, 4.6, 26.0), Color(1.0, 0.9, 0.7), 2.0, 10.0)
-		cabin.light_volumetric_fog_energy = 2.0
-		Geo.label(root, "SH 000", Vector3(2.62, 6.2, 12.0), PI / 2, 200, Color(0.1, 0.1, 0.12), 0.02, false, "print")
-	else:
-		Geo.label(root, "SEOHAE", Vector3(2.62, 6.2, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02, false, "print")
-	red.light_volumetric_fog_energy = 1.0
-	green.light_volumetric_fog_energy = 1.0
-	return root
-
-
-## Tripo airliner 61 m long (nose +Z); nav lights on its wingtips, the registration on the fuselage's right side.
-func _tripo_aircraft(root: Node3D, gate0: bool) -> Node3D:
-	var n := TripoProps.spawn(root, "apron", "APR_Aircraft")
-	var bb := TripoProps.bounds(n)
-	var k := 61.0 / bb.size.z
-	n.scale = Vector3.ONE * k
-	n.position = -Vector3(bb.get_center().x, bb.position.y, bb.get_center().z) * k
-	# fuselage side: outermost vertex near mid-length, inboard of the wing roots
-	var side := Vector3(2.6, 5.0, 0)
-	for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
-		for v: Vector3 in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
-			var p := n.position + mi.transform * v * k
-			if absf(p.z - 12.0) < 1.5 and p.x > side.x and p.x < 4.5 and p.y > 3.0:
-				side = Vector3(p.x, p.y, 0)
-	var tip := bb.size.x * k * 0.5 - 0.3
-	var red := Geo.omni(root, Vector3(-tip, 3.4, 2.0), Color(1, 0.1, 0.05), 1.0, 6.0)
-	var green := Geo.omni(root, Vector3(tip, 3.4, 2.0), Color(0.1, 1, 0.2), 1.0, 6.0)
-	red.light_volumetric_fog_energy = 1.0
-	green.light_volumetric_fog_energy = 1.0
-	if gate0:
-		var cabin := Geo.omni(root, Vector3(0, side.y, 26.0), Color(1.0, 0.9, 0.7), 2.0, 10.0)
-		cabin.light_volumetric_fog_energy = 2.0
-		Geo.label(root, "SH 000", Vector3(side.x + 0.05, side.y + 0.6, 12.0), PI / 2, 200, Color(0.1, 0.1, 0.12), 0.02, false, "print")
-	else:
-		Geo.label(root, "SEOHAE", Vector3(side.x + 0.05, side.y + 0.6, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02, false, "print")
-	return root
 
 
 # --------------------------------------------------------------------------------------------

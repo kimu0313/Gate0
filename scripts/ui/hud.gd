@@ -63,7 +63,7 @@ var _clock_override := ""        # "--:--" where time has stopped
 var _items: HBoxContainer        # what you carry (bottom right)
 
 ## Names and icons of the things you can carry (Game.inventory).
-const ITEMS := {"key_gate": ["열쇠", "key"]}
+const ITEMS := {"key_gate": ["열쇠", "key"], "keycard": ["키 카드", "card"]}
 
 
 func _ready() -> void:

@@ -409,3 +409,84 @@ static func monitor(parent: Node3D, pos: Vector3, rot_y: float, size := Vector2(
 		Geo.box(holder, Vector3(0, size.y * 0.5, -0.03), Vector3(size.x + 0.04, size.y + 0.04, 0.04), Mats.get_mat("plastic_dark"), false)
 	var screen := Geo.box(holder, Vector3(0, size.y * 0.5, screen_z), Vector3(size.x, size.y, 0.004), Mats.get_mat("screen_off"), false)
 	return screen
+
+
+## Airliner, 61 m long at scale 1 (nose +Z, wheels on y 0). `length` scales it; `lights` = wingtip nav lights. The
+## fuselage axis height and radius (unscaled) are kept in meta "fus" (Vector2), for fitting it through holes.
+static func aircraft(parent: Node3D, pos: Vector3, rot_y: float, gate0: bool, length := 61.0, lights := true) -> Node3D:
+	var root := Node3D.new()
+	parent.add_child(root)
+	root.scale = Vector3.ONE * (length / 61.0)
+	root.position = pos
+	root.rotation.y = rot_y
+	if TripoProps.exists("apron", "APR_Aircraft"):
+		return _tripo_aircraft(root, gate0, lights)
+	var body := Mats.get_mat("plane_body")
+	var dark := Mats.get_mat("plane_dark")
+	root.set_meta("fus", Vector2(4.2, 2.6))
+	var fus := Geo.cyl(root, Vector3(0, 4.2, 0), 2.6, 52.0, body, false, 24)
+	fus.rotation.x = PI / 2
+	var nose := Geo.sphere(root, Vector3(0, 4.2, 26.0), 2.6, body)
+	nose.scale = Vector3(1.0, 1.0, 1.6)
+	Geo.sphere(root, Vector3(0, 4.6, -26.0), 2.4, body).scale = Vector3(1.0, 0.9, 2.2)
+	# cockpit windows
+	for sx in [-0.9, 0.0, 0.9]:
+		Geo.box(root, Vector3(sx, 5.6, 28.6), Vector3(0.7, 0.4, 0.4), dark, false)
+	# wings
+	var wing := Geo.box(root, Vector3(0, 3.3, 2.0), Vector3(58.0, 0.5, 7.0), body, false)
+	wing.rotation.y = 0.0
+	for sx in [-9.0, 9.0]:
+		Geo.cyl(root, Vector3(sx, 2.3, 5.0), 1.3, 4.5, dark, false, 16).rotation.x = PI / 2
+	# tail
+	var fin := Geo.box(root, Vector3(0, 10.0, -27.0), Vector3(0.5, 10.0, 6.0), body, false)
+	fin.rotation.x = -0.35
+	Geo.box(root, Vector3(0, 5.5, -28.0), Vector3(18.0, 0.4, 4.0), body, false)
+	# windows row
+	for i in 30:
+		for sx in [-2.58, 2.58]:
+			Geo.box(root, Vector3(sx, 4.9, 20.0 - i * 1.4), Vector3(0.05, 0.35, 0.25), dark, false)
+	# landing gear
+	for p in [Vector3(0, 0.9, 22), Vector3(-3.5, 0.9, 0), Vector3(3.5, 0.9, 0)]:
+		Geo.cyl(root, p, 0.55, 0.5, Mats.get_mat("rubber")).rotation.z = PI / 2
+		Geo.cyl(root, p + Vector3(0, 1.4, 0), 0.12, 2.6, Mats.get_mat("metal"))
+	# nav lights
+	if lights:
+		Geo.omni(root, Vector3(-29, 3.4, 2.0), Color(1, 0.1, 0.05), 1.0, 6.0).light_volumetric_fog_energy = 1.0
+		Geo.omni(root, Vector3(29, 3.4, 2.0), Color(0.1, 1, 0.2), 1.0, 6.0).light_volumetric_fog_energy = 1.0
+		Geo.box(root, Vector3(-29, 3.4, 2.0), Vector3(0.3, 0.3, 0.3), Mats.get_mat("lamp_red"), false)
+		Geo.box(root, Vector3(29, 3.4, 2.0), Vector3(0.3, 0.3, 0.3), Mats.get_mat("lamp_green"), false)
+	if gate0:
+		var cabin := Geo.omni(root, Vector3(0, 4.6, 26.0), Color(1.0, 0.9, 0.7), 2.0, 10.0)
+		cabin.light_volumetric_fog_energy = 2.0
+		Geo.label(root, "SH 000", Vector3(2.62, 6.2, 12.0), PI / 2, 200, Color(0.1, 0.1, 0.12), 0.02, false, "print")
+	else:
+		Geo.label(root, "SEOHAE", Vector3(2.62, 6.2, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02, false, "print")
+	return root
+
+
+## Tripo airliner 61 m long (nose +Z); nav lights on its wingtips, the registration on the fuselage's right side.
+static func _tripo_aircraft(root: Node3D, gate0: bool, lights: bool) -> Node3D:
+	root.set_meta("fus", Vector2(6.38, 3.68))
+	var n := TripoProps.spawn(root, "apron", "APR_Aircraft")
+	var bb := TripoProps.bounds(n)
+	var k := 61.0 / bb.size.z
+	n.scale = Vector3.ONE * k
+	n.position = -Vector3(bb.get_center().x, bb.position.y, bb.get_center().z) * k
+	# fuselage side: outermost vertex near mid-length, inboard of the wing roots
+	var side := Vector3(2.6, 5.0, 0)
+	for mi: MeshInstance3D in n.find_children("*", "MeshInstance3D", true, false):
+		for v: Vector3 in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
+			var p := n.position + mi.transform * v * k
+			if absf(p.z - 12.0) < 1.5 and p.x > side.x and p.x < 4.5 and p.y > 3.0:
+				side = Vector3(p.x, p.y, 0)
+	if lights:
+		var tip := bb.size.x * k * 0.5 - 0.3
+		Geo.omni(root, Vector3(-tip, 3.4, 2.0), Color(1, 0.1, 0.05), 1.0, 6.0).light_volumetric_fog_energy = 1.0
+		Geo.omni(root, Vector3(tip, 3.4, 2.0), Color(0.1, 1, 0.2), 1.0, 6.0).light_volumetric_fog_energy = 1.0
+	if gate0:
+		var cabin := Geo.omni(root, Vector3(0, side.y, 26.0), Color(1.0, 0.9, 0.7), 2.0, 10.0)
+		cabin.light_volumetric_fog_energy = 2.0
+		Geo.label(root, "SH 000", Vector3(side.x + 0.05, side.y + 0.6, 12.0), PI / 2, 200, Color(0.1, 0.1, 0.12), 0.02, false, "print")
+	else:
+		Geo.label(root, "SEOHAE", Vector3(side.x + 0.05, side.y + 0.6, 8.0), PI / 2, 200, Color(0.08, 0.2, 0.5), 0.02, false, "print")
+	return root

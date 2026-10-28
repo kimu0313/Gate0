@@ -45,7 +45,7 @@ var _scatter_last := ""
 ## Zone ambience beds layered over the global room tone (Events.zone_entered): [bed, bed dB, how much the big-hall
 ## tone ducks there] (closed rooms hear less of the hall).
 const BEDS := {
-	"office": ["amb_office_loop", -8.0, -9.0], "storage": ["amb_service_loop", -9.0, -8.0], "maint": ["amb_service_loop", -6.0, -10.0],
+	"office": ["amb_office_loop", -8.0, -9.0], "secoffice": ["amb_office_loop", -8.0, -9.0], "storage": ["amb_service_loop", -9.0, -8.0], "maint": ["amb_service_loop", -6.0, -10.0],
 	"baggage": ["amb_baggage_loop", -7.0, -4.0], "security": ["amb_baggage_loop", -12.0, -2.0],
 	"corridor": ["amb_corridor_loop", -7.0, -4.0], "gates": ["amb_gates_loop", -6.0, -5.0], "bridge0": ["amb_gates_loop", -13.0, -8.0],
 }

@@ -85,6 +85,10 @@ func _draw() -> void:
 			draw_line(Vector2(14.5, 15), Vector2(27, 15), c, w)
 			draw_line(Vector2(22, 15), Vector2(22, 20), c, w)
 			draw_line(Vector2(26, 15), Vector2(26, 19), c, w)
+		"card":
+			draw_rect(Rect2(3, 8, 24, 15), c, false, w)
+			draw_line(Vector2(3, 12.5), Vector2(27, 12.5), c, w)
+			draw_rect(Rect2(6, 16, 6, 4), c, false, w)
 		"lamp":
 			draw_arc(Vector2(15, 12), 8.0, PI * 0.75, PI * 2.25, 24, c, w, true)
 			draw_polyline(PackedVector2Array([Vector2(9.5, 17.5), Vector2(10, 23), Vector2(20, 23), Vector2(20.5, 17.5)]), c, w)

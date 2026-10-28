@@ -7,7 +7,13 @@ Writes assets/audio/sfx/<name>.wav (44.1 kHz 16-bit mono), pure Python on gen_sf
   cart_rattle_loop   the same at a steady run (it follows you in SCENE 03), 4 s seamless loop
   paper_tear_1..4    a baggage tag torn in two (찌익)
   bone_crack_1..3    a joint giving the wrong way (뚝)
+  creature_croak_1..3  the rattle in its throat as it comes (그르르륵): glottal clicks far too slow for a voice
   door_slam          a door slamming (쿵!)
+  door_rattle_1..3   a locked steel fire door tried: the push bar clacks down, the leaves knock against the latch
+  drawer_open_1..2   a steel desk / filing drawer pulled out on its runners, the things in it sliding
+  drawer_close_1..2  the same pushed shut: the run, then the clunk against the carcass
+  lock_click         an electric door strike letting go (the card was good)
+  card_pickup        a plastic key card picked up out of a drawer
   monster_scream     the creature screaming as it catches you
   body_fall          going down hard on the carpet as you stumble through the door
   wall_rub           a palm feeling along a painted wall
@@ -214,6 +220,47 @@ def s_crack_3(rng):
     return _crack(rng, 1.2)
 
 
+def _croak(rng, dur, rate0, rate1, pitch):
+    """glottal clicks far too slow to be a voice (ㄱㄱㄱㄱ), through a narrow, wet throat"""
+    n = ns(dur + 0.25)
+    pulses = g.zeros(n)
+    t = 0.03
+    while t < dur:
+        u = t / dur
+        rate = rate0 + (rate1 - rate0) * u + rng.uniform(-3.0, 3.0)
+        amp = rng.uniform(0.55, 1.0) * (0.6 + 0.4 * g._sin(g.TAU * 1.3 * t))
+        g.mix(pulses, g.burst(ns(0.012), rng, 0.0025, 120.0, 4000.0), ns(t), amp)
+        t += 1.0 / max(6.0, rate)
+    # the throat: the formants of a vowel nobody makes
+    throat = g.zeros(n)
+    for fc, q, gain in ((420.0 * pitch, 6.0, 1.0), (1080.0 * pitch, 7.0, 0.7), (2550.0 * pitch, 8.0, 0.35)):
+        throat = g.addv(throat, g.svf(pulses, fc, q, "bp"), gain)
+    throat = g.sat(g.nrm(throat), 3.0)
+    # wet: air gurgling through it
+    wob = g.smooth_rand(n, max(8, int(dur * 40)), rng)
+    gurgle = g.mul(g.band(g.white(n, rng), 250.0, 1400.0), [0.4 + 0.6 * abs(v) for v in wob])
+    env = g.env_pts(n, [(0, 0.0), (0.04, 1.0), (dur * 0.7, 0.85), (dur, 0.0), (dur + 0.25, 0.0)])
+    out = g.mul(g.addv(g.nrm(throat), g.nrm(gurgle), 0.18), env)
+    return g.verb(out, 0.1, 1.0, rt60=0.3, size=0.4, damp=4000.0)
+
+
+@reg("creature_croak_1", 1.6, fade_out=0.1)
+def s_croak_1(rng):
+    return _croak(rng, 1.3, 14.0, 30.0, 1.0)
+
+
+@reg("creature_croak_2", 1.4, fade_out=0.1)
+def s_croak_2(rng):
+    return _croak(rng, 1.1, 32.0, 12.0, 0.85)
+
+
+@reg("creature_croak_3", 2.0, fade_out=0.1)
+def s_croak_3(rng):
+    out = _croak(rng, 0.7, 20.0, 34.0, 1.12)
+    g.mix(out, _croak(rng, 0.8, 26.0, 10.0, 0.95), ns(0.95), 0.9)     # a second, lower rattle after a catch
+    return out
+
+
 # ------------------------------------------------------------------ doors, walls, the key
 
 @reg("door_slam", 1.8, fade_out=0.3)
@@ -231,6 +278,133 @@ def s_door_slam(rng):
         g.mix(out, g.modes(ns(0.15), [330.0 * rng.uniform(0.9, 1.1), 780.0, 1240.0], [0.3, 0.2, 0.1],
                            [0.05, 0.03, 0.02], rng), ns(t), 0.5 * (1.0 - k / 8.0))
     return g.verb(out, 0.3, 1.0, rt60=1.1, size=0.9, damp=3000.0)
+
+
+def _door_rattle(rng, pushes):
+    """a locked steel door tried: each push the bar clacks down, the leaves knock against the stop and ring, the
+    latch rattles in its keep"""
+    n = ns(1.4)
+    out = g.zeros(n)
+    t = 0.0
+    for k in range(pushes):
+        amp = rng.uniform(0.7, 1.0)
+        sc = rng.uniform(0.94, 1.06)
+        clack = g.modes(ns(0.12), [1850.0 * sc, 3100.0 * sc, 4700.0 * sc], [0.5, 0.3, 0.15], [0.02, 0.014, 0.009], rng)
+        g.mix(clack, g.click(rng, ns(0.004), 0.0005, 1500.0), 0, 0.6)
+        g.mix(out, clack, ns(t), 0.55 * amp)
+        g.mix(out, g.thump(ns(0.2), 110.0, 70.0, 0.01, 0.04, 0.001), ns(t + 0.03), 0.9 * amp)
+        g.mix(out, g.modes(ns(0.35), [240.0 * sc, 610.0 * sc, 1150.0 * sc, 1900.0 * sc], [0.4, 0.3, 0.18, 0.1],
+                           [0.08, 0.05, 0.03, 0.02], rng), ns(t + 0.03), 0.6 * amp)
+        for j in range(rng.randint(2, 4)):
+            s2 = rng.uniform(0.9, 1.15)
+            g.mix(out, g.modes(ns(0.06), [2300.0 * s2, 3600.0 * s2], [0.4, 0.25], [0.012, 0.008], rng),
+                  ns(t + 0.05 + j * rng.uniform(0.02, 0.04)), rng.uniform(0.2, 0.45) * amp)
+        t += rng.uniform(0.24, 0.32)
+    return out
+
+
+@reg("door_rattle_1", 1.4, fade_out=0.15)
+def s_door_rattle_1(rng):
+    return _door_rattle(rng, 3)
+
+
+@reg("door_rattle_2", 1.4, fade_out=0.15)
+def s_door_rattle_2(rng):
+    return _door_rattle(rng, 2)
+
+
+@reg("door_rattle_3", 1.4, fade_out=0.15)
+def s_door_rattle_3(rng):
+    return _door_rattle(rng, 4)
+
+
+def _runner(rng, dur, speed_at):
+    """steel drawer runners: a rolling rumble with the ball bearings ticking, louder as it moves faster"""
+    n = ns(dur)
+    v = [speed_at(i / SR) for i in range(n)]
+    roll = g.nrm(g.band(g.white(n, rng), 300.0, 2400.0))
+    roll = [r * s for r, s in zip(roll, v)]
+    out = g.scale(roll, 0.45)
+    t = 0.0
+    while t < dur:
+        s = v[min(n - 1, int(t * SR))]
+        t += rng.expovariate(20.0 + 90.0 * s)
+        if s > 0.08 and t < dur:
+            sc = rng.uniform(0.85, 1.2)
+            g.mix(out, g.modes(ns(0.03), [3100.0 * sc, 4900.0 * sc], [0.4, 0.2], [0.006, 0.004], rng), ns(t), rng.uniform(0.1, 0.35) * s)
+    return out
+
+
+def _contents(rng, n_hits, t0, spread, amp):
+    """the things in the drawer sliding and knocking"""
+    out = g.zeros(ns(t0 + spread + 0.2))
+    for k in range(n_hits):
+        sc = rng.uniform(0.8, 1.3)
+        ev = g.modes(ns(0.08), [900.0 * sc, 2100.0 * sc, 3300.0 * sc], [0.4, 0.25, 0.12], [0.02, 0.012, 0.008], rng)
+        g.mix(out, ev, ns(t0 + rng.uniform(0.0, spread)), rng.uniform(0.2, 0.5) * amp)
+    return out
+
+
+@reg("drawer_open_1", 0.8, fade_out=0.1)
+def s_drawer_open_1(rng):
+    out = _runner(rng, 0.8, _env3(0.04, 0.22, 0.12))
+    g.mix(out, g.thump(ns(0.12), 140.0, 90.0, 0.01, 0.03, 0.001), ns(0.36), 0.6)        # it stops against its stop
+    g.mix(out, _contents(rng, 4, 0.34, 0.15, 1.0), 0, 1.0)
+    return out
+
+
+@reg("drawer_open_2", 0.8, fade_out=0.1)
+def s_drawer_open_2(rng):
+    out = _runner(rng, 0.8, _env3(0.03, 0.26, 0.1))
+    g.mix(out, g.thump(ns(0.12), 150.0, 95.0, 0.01, 0.03, 0.001), ns(0.38), 0.55)
+    g.mix(out, _contents(rng, 2, 0.36, 0.1, 0.8), 0, 1.0)
+    return out
+
+
+def _drawer_close(rng, run):
+    out = _runner(rng, run + 0.4, _env3(0.03, run - 0.05, 0.03))
+    t = run
+    g.mix(out, g.thump(ns(0.2), 120.0, 75.0, 0.01, 0.04, 0.001), ns(t), 1.0)                  # home: the clunk
+    g.mix(out, g.modes(ns(0.3), [430.0, 980.0, 1720.0], [0.4, 0.3, 0.18], [0.06, 0.04, 0.025], rng), ns(t), 0.6)
+    g.mix(out, g.click(rng, ns(0.004), 0.0005, 1800.0), ns(t + 0.01), 0.5)                    # the catch
+    g.mix(out, _contents(rng, 3, t, 0.08, 0.8), 0, 1.0)
+    return out
+
+
+@reg("drawer_close_1", 0.8, fade_out=0.1)
+def s_drawer_close_1(rng):
+    return _drawer_close(rng, 0.28)
+
+
+@reg("drawer_close_2", 0.8, fade_out=0.1)
+def s_drawer_close_2(rng):
+    return _drawer_close(rng, 0.22)
+
+
+@reg("lock_click", 0.6, fade_out=0.1)
+def s_lock_click(rng):
+    n = ns(0.6)
+    out = g.zeros(n)
+    # the strike's solenoid letting go: a buzz-clack, then the latch dropping back a little later
+    buzz = g.mul(g.band(g.saw_var([120.0] * ns(0.06)), 200.0, 3000.0), g.env_exp(ns(0.06), 0.03))
+    g.mix(out, g.nrm(buzz), 0, 0.35)
+    g.mix(out, g.modes(ns(0.15), [1650.0, 2900.0, 4300.0], [0.5, 0.3, 0.15], [0.025, 0.015, 0.01], rng), ns(0.03), 0.8)
+    g.mix(out, g.click(rng, ns(0.004), 0.0005, 1600.0), ns(0.03), 0.7)
+    g.mix(out, g.thump(ns(0.1), 260.0, 180.0, 0.01, 0.02, 0.001), ns(0.03), 0.5)
+    g.mix(out, g.modes(ns(0.1), [2200.0, 3600.0], [0.4, 0.2], [0.015, 0.01], rng), ns(0.21), 0.35)
+    return out
+
+
+@reg("card_pickup", 0.5, peak_db=-3.0, fade_out=0.1)
+def s_card_pickup(rng):
+    n = ns(0.5)
+    out = g.zeros(n)
+    # a fingernail under the card's edge, the card ticking off the drawer floor, the slide into a hand
+    g.mix(out, g.modes(ns(0.06), [2600.0, 4100.0, 5800.0], [0.4, 0.25, 0.12], [0.01, 0.007, 0.005], rng), 0, 0.6)
+    g.mix(out, g.click(rng, ns(0.004), 0.0004, 3000.0), ns(0.07), 0.5)
+    slide = g.mul(g.band(g.white(ns(0.18), rng), 1500.0, 6000.0), g.env_pts(ns(0.18), [(0, 0.0), (0.04, 1.0), (0.18, 0.0)]))
+    g.mix(out, g.nrm(slide), ns(0.12), 0.25)
+    return out
 
 
 @reg("monster_scream", 2.0, fade_out=0.35)

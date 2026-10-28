@@ -2886,9 +2886,6 @@ msgstr "鍵で南京錠を開ける"
 msgid "자물쇠 열기"
 msgstr "南京錠を開ける"
 
-msgid "……자물쇠로 잠겨 있다."
-msgstr "……南京錠がかかっている。"
-
 msgid "열쇠 찾기"
 msgstr "鍵を探す"
 
@@ -2916,23 +2913,11 @@ msgstr "A国際空港ターミナル"
 msgid "정상 근무"
 msgstr "通常勤務"
 
-msgid "……이제 마지막 구역이네."
-msgstr "……あとは最後の区域だ。"
-
 msgid "태블릿으로 점검 목록 확인하기  [Tab]"
 msgstr "タブレットで点検リストを確認する  [Tab]"
 
 msgid "수하물 운송 설비 확인하기"
 msgstr "手荷物搬送設備を確認する"
-
-msgid "달그락…… 덜컹…… 달그락……"
-msgstr "カタカタ…… ガタン…… カタカタ……"
-
-msgid "……덜컹…… 달그락……"
-msgstr "……ガタン…… カタカタ……"
-
-msgid "……이 시간에 저쪽을 쓸 직원은 없는데."
-msgstr "……この時間、あっちを使う職員はいないはずだ。"
 
 msgid "[F] 손전등을 켜고 끌 수 있습니다."
 msgstr "[F] で懐中電灯をつけたり消したりできます。"
@@ -2943,38 +2928,20 @@ msgstr "音のした場所を確かめる"
 msgid "종잇조각 살펴보기"
 msgstr "紙切れを調べる"
 
-msgid "수하물 태그 조각이다. ‘…IGHT 000’, ‘GATE 0’…… 나머지는 찢겨 나갔다."
-msgstr "手荷物タグの切れ端だ。「…IGHT 000」「GATE 0」…… 残りは破り取られている。"
-
 msgid "저 사람에게 말 걸기"
 msgstr "あの人に話しかける"
-
-msgid "……저기요?"
-msgstr "……あの？"
 
 msgid "다시 말 걸기"
 msgstr "もう一度話しかける"
 
-msgid "저기요…… 여기는 출입 통제 구역입니다."
-msgstr "あの…… ここは立入禁止区域です。"
-
-msgid "찌익……"
-msgstr "ビリッ……"
-
 msgid "손전등으로 얼굴 확인하기"
 msgstr "懐中電灯で顔を確かめる"
-
-msgid "뚝……"
-msgstr "ゴキッ……"
 
 msgid "도망쳐라"
 msgstr "逃げろ"
 
 msgid "[SHIFT] 달리기"
 msgstr "[SHIFT] 走る"
-
-msgid "달그락. 덜컹. 달그락."
-msgstr "カタカタ。ガタン。カタカタ。"
 
 msgid "보안실  SECURITY OFFICE"
 msgstr "보안실  SECURITY OFFICE"
@@ -3000,17 +2967,11 @@ msgstr "壁を手で探る"
 msgid "들어온 문 찾기"
 msgstr "入ってきた扉を探す"
 
-msgid "손잡이도, 문틈도…… 아무것도 없어."
-msgstr "取っ手も、扉の隙間も…… 何もない。"
-
 msgid "벽 살펴보기"
 msgstr "壁を調べる"
 
 msgid "태블릿으로 현재 위치 확인하기  [Tab]"
 msgstr "タブレットで現在地を確認する  [Tab]"
-
-msgid "여기 보안실이 아닙니다. 지금 제가 어디에 있는 거죠?"
-msgstr "ここは保安室じゃありません。私は今どこにいるんですか？"
 
 msgid "담당자"
 msgstr "担当者"
@@ -3018,17 +2979,8 @@ msgstr "担当者"
 msgid "……현재 위치를 다시 확인해 주세요."
 msgstr "……現在地をもう一度確認してください。"
 
-msgid "출입문이 사라졌습니다. 제가 들어온 문이 없습니다."
-msgstr "出入口が消えました。入ってきた扉がありません。"
-
 msgid "그쪽으로 들어가시면 안 됩니다."
 msgstr "そちらに入ってはいけません。"
-
-msgid "[무전이 끊긴다]"
-msgstr "[無線が切れる]"
-
-msgid "……돌아갈 길이 없어."
-msgstr "……戻る道がない。"
 
 msgid "승객 여러분께 안내 말씀드립니다."
 msgstr "ご搭乗のお客様にご案内いたします。"
@@ -3111,15 +3063,6 @@ msgstr "搭乗橋"
 msgid "위치 불명"
 msgstr "位置不明"
 
-msgid "보안실 문으로 피하기"
-msgstr "保安室の扉へ逃げ込む"
-
-msgid "문 열고 들어가기"
-msgstr "扉を開けて入る"
-
-msgid "……문이, 없어?"
-msgstr "……扉が、ない？"
-
 msgid "벽 다시 살펴보기"
 msgstr "もう一度壁を調べる"
 
@@ -3128,3 +3071,62 @@ msgstr "スキップ"
 
 msgid "계속하려면 아무 키나 누르세요"
 msgstr "何かキーを押して続行"
+
+
+
+
+
+
+
+
+
+msgid "SECURITY OFFICE  →\n보안실"
+msgstr "SECURITY OFFICE  →\n保安室"
+
+msgid "보안실"
+msgstr "保安室"
+
+msgid "CAM 01  로비"
+msgstr "CAM 01  ロビー"
+
+msgid "CAM 05  직원 통로"
+msgstr "CAM 05  職員通路"
+
+msgid "야간 점검  02:00 – 05:00\n수하물 구역 — 출입 통제\n직원 통로 소등 유지\n이상 시 즉시 무전 보고"
+msgstr "夜間点検  02:00 – 05:00\n手荷物エリア — 立入禁止\n職員通路 消灯のまま\n異常時はすぐ無線で報告"
+
+msgid "찢긴 수하물 태그 — ‘…IGHT 000’ ‘GATE 0’"
+msgstr "破れた手荷物タグ — ‘…IGHT 000’ ‘GATE 0’"
+
+msgid "문 열고 나가기"
+msgstr "ドアを開けて出る"
+
+msgid "방화문"
+msgstr "防火扉"
+
+msgid "키 카드로 문 열기"
+msgstr "キーカードでドアを開ける"
+
+msgid "키 카드 찾기"
+msgstr "キーカードを探す"
+
+msgid "보안실에서 나가기"
+msgstr "保安室から出る"
+
+msgid "밖으로 나가기"
+msgstr "外に出る"
+
+msgid "키 카드 줍기"
+msgstr "キーカードを取る"
+
+msgid "키 카드를 주웠다."
+msgstr "キーカードを拾った。"
+
+msgid "키 카드"
+msgstr "キーカード"
+
+msgid "서랍 열기"
+msgstr "引き出しを開ける"
+
+msgid "서랍 닫기"
+msgstr "引き出しを閉める"

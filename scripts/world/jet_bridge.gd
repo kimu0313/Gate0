@@ -6,7 +6,8 @@ extends Node3D
 ##
 ## Local frame: you come in at the south end (z = 0; the wall behind you is where the door was) and look north
 ## (-Z) down LENGTH metres to the gate door. Built far below the terminal (ORIGIN), so nothing of it shows through
-## the windows: black boxes stand outside the glass.
+## the windows: black boxes stand outside the glass. In the main story it is moved onto Gate 0 (attach): the gate
+## door then opens straight into the terminal's gate lounge.
 
 const ORIGIN := Vector3(0, -200, 320)
 const W := 5.2              # inner width
@@ -29,6 +30,9 @@ var _leaves: Array[Node3D] = []
 var _chain: Node3D
 var _padlock: Node3D
 var _door_block: StaticBody3D
+var _detach: Array[Node3D] = []     # what only the far-below bridge has: the black outside, the vestibule
+var south_wall: MeshInstance3D      # the blank wall where you came in (hidden while the prologue looks in through a door)
+var vestibule: Array[MeshInstance3D] = []   # the dark space past the gate door (floor, ceiling, sides, back)
 var _board_face: MeshInstance3D
 var _board_lines: Array[Label3D] = []
 var _board_glow: OmniLight3D
@@ -46,7 +50,7 @@ func build() -> void:
 	# floor, ceiling, south wall (no door on this side)
 	Geo.box(self, Vector3(0, -0.05, mid_z), Vector3(W + 0.6, 0.1, LENGTH + 0.6), Mats.get_mat("carpet"))
 	Geo.box(self, Vector3(0, H + 0.1, mid_z), Vector3(W + 0.6, 0.2, LENGTH + 0.6), Mats.get_mat("ceiling"), false)
-	Geo.box(self, Vector3(0, H * 0.5, 0.15), Vector3(W + 0.6, H, 0.3), wall_m)
+	south_wall = Geo.box(self, Vector3(0, H * 0.5, 0.15), Vector3(W + 0.6, H, 0.3), wall_m)
 	# side walls: solid below the sill and above the head, glass in between, mullions every 2.5 m
 	for sx in [-1.0, 1.0]:
 		var x: float = sx * (hw + 0.15)
@@ -61,7 +65,7 @@ func build() -> void:
 		Geo.box(self, Vector3(x - sx * 0.17, SILL, mid_z), Vector3(0.06, 0.04, LENGTH), frame, false)      # sill
 		Geo.cyl(self, Vector3(sx * (hw - 0.06), 0.95, mid_z), 0.022, LENGTH, Mats.get_mat("metal")).rotation.x = PI / 2   # handrail
 		# nothing out there: a black box a few metres out, so the glass only ever shows the dark (and the room in it)
-		Geo.box(self, Vector3(sx * (hw + 4.0), 1.5, mid_z), Vector3(0.2, 9.0, LENGTH + 12.0), Mats.get_mat("black"), false)
+		_detach.append(Geo.box(self, Vector3(sx * (hw + 4.0), 1.5, mid_z), Vector3(0.2, 9.0, LENGTH + 12.0), Mats.get_mat("black"), false))
 	# telescoping joints: steel floor plates across the carpet, the walls step a little there
 	for jz in [-9.0, -18.0]:
 		Geo.box(self, Vector3(0, 0.006, jz), Vector3(W, 0.012, 0.5), Mats.get_mat("metal_dark"), false)
@@ -176,11 +180,13 @@ func _build_end(wall_m: Material, frame: Material) -> void:
 	door_use.press_sound = ""
 	# a dark vestibule behind it, then a wall (what lies past it is the next part of the story)
 	var vz := ez - 1.8
-	Geo.box(self, Vector3(0, -0.05, vz), Vector3(DOOR_W + 1.2, 0.1, 3.6), Mats.get_mat("carpet"))
-	Geo.box(self, Vector3(0, DOOR_H + 0.4, vz), Vector3(DOOR_W + 1.2, 0.2, 3.6), Mats.get_mat("ceiling_dark"), false)
+	vestibule.append(Geo.box(self, Vector3(0, -0.05, vz), Vector3(DOOR_W + 1.2, 0.1, 3.6), Mats.get_mat("carpet")))
+	vestibule.append(Geo.box(self, Vector3(0, DOOR_H + 0.4, vz), Vector3(DOOR_W + 1.2, 0.2, 3.6), Mats.get_mat("ceiling_dark"), false))
 	for sx in [-1.0, 1.0]:
-		Geo.box(self, Vector3(sx * (DOOR_W * 0.5 + 0.45), DOOR_H * 0.5 + 0.2, vz), Vector3(0.3, DOOR_H + 0.4, 3.6), Mats.get_mat("black"))
-	Geo.box(self, Vector3(0, DOOR_H * 0.5 + 0.2, vz - 1.95), Vector3(DOOR_W + 1.2, DOOR_H + 0.4, 0.3), Mats.get_mat("black"))
+		vestibule.append(Geo.box(self, Vector3(sx * (DOOR_W * 0.5 + 0.45), DOOR_H * 0.5 + 0.2, vz), Vector3(0.3, DOOR_H + 0.4, 3.6), Mats.get_mat("black")))
+	vestibule.append(Geo.box(self, Vector3(0, DOOR_H * 0.5 + 0.2, vz - 1.95), Vector3(DOOR_W + 1.2, DOOR_H + 0.4, 0.3), Mats.get_mat("black")))
+	for v in vestibule:
+		_detach.append(v)
 	beyond = Geo.area(self, Vector3(0, 1.0, ez - 1.3), Vector3(DOOR_W, 2.0, 1.4))
 	# departure board over the door
 	var board := Node3D.new()
@@ -197,6 +203,17 @@ func _build_end(wall_m: Material, frame: Material) -> void:
 	# a cold downlight on the door, so the chain and the padlock read from down the corridor
 	var dl := Geo.spot(self, Vector3(0, H - 0.1, ez + 1.6), Vector3(0, 1.0, ez), Color(0.85, 0.9, 1.0), 1.4, 6.0, 38.0)
 	dl.light_volumetric_fog_energy = 0.8
+
+
+## The main story: the bridge stands at a real gate (`pos`, turned `yaw`; its gate door at local z -LENGTH faces the
+## gate lounge) with its door opening straight into the lounge: no vestibule behind the door, and the airport outside
+## the glass instead of black.
+func attach(pos: Vector3, yaw: float) -> void:
+	position = pos
+	rotation.y = yaw
+	for n in _detach:
+		n.queue_free()
+	_detach.clear()
 
 
 ## Departure board: BOARD_OFF, BOARD_BOARDING or BOARD_NO_DEST. `flicker` brings it on like a failing tube.

@@ -34,7 +34,7 @@ func _ready() -> void:
 	director.setup(self)
 	ui.bind(player, director)
 	for tool in [["--tour", "tour"], ["--level-shots", "level_shots"], ["--audio-walk", "audio_walk"],
-			["--shutter-clip", "shutter_clip"], ["--level-plan", "level_plan"]]:
+			["--shutter-clip", "shutter_clip"], ["--level-plan", "level_plan"], ["--warped-shots", "warped_shots"]]:
 		if OS.get_cmdline_user_args().has(tool[0]):
 			_debug_tool(tool[1], true)
 			return

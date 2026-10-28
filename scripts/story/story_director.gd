@@ -1,9 +1,9 @@
 class_name StoryDirector
 extends Node
 ## Runs the part of the story being played (Game.chapter): the prologue's scenes (Prologue) or the main story
-## (Chapter1). Holds the world and gives the part scripts their vocabulary: objectives with a marker, the
-## inspector's own lines, sound captions, radio calls, the PA from a speaker, waits and cutscene holds, and
-## being caught.
+## (Chapter1). Holds the world and gives the part scripts their vocabulary: objectives (text only — no markers), a
+## sound that leads the way to the next thing to do (guide), radio calls, the PA from a speaker, waits and cutscene
+## holds, and being caught. The inspector has no lines of their own and sounds get no captions.
 
 var world: Node3D
 var terminal: Terminal
@@ -15,6 +15,9 @@ var dead := false
 var tablet_allowed := true
 var objective_text := ""
 var _pa: AudioStreamPlayer3D
+var _guide: AudioStreamPlayer3D
+var _guide_path: Array = []      # [point, reach m] still ahead of the player, the guide waiting at the first
+var _guide_speed := 4.0
 
 
 func setup(w: Node3D) -> void:
@@ -40,11 +43,11 @@ func start() -> void:
 
 
 # --- objectives ---------------------------------------------------------------------------------
-## The objective sign (top right); `marker` = a world point for the green diamond (null = none).
-func objective(text: String, marker: Variant = null) -> void:
+## The objective sign (top right). There is no marker: the way is found by eye, or by ear (guide).
+func objective(text: String) -> void:
 	objective_text = text
 	ui.hud.set_objective(text)
-	ui.hud.set_marker(marker)
+	ui.hud.set_marker(null)
 	if text != "":
 		Snd.play("ui_notify", -14.0, 1.1)
 
@@ -55,21 +58,53 @@ func clear_objective() -> void:
 	ui.hud.set_marker(null)
 
 
+# --- the way by ear ----------------------------------------------------------------------------
+## A sound that leads the way: it waits at the first point of `path` ([Vector3 point, float reach m], in order) and
+## rolls on to the next as soon as the player comes within `reach` of it, so following it by ear takes you round
+## corners and through doors. It plays until guide_stop() — the next thing to do is reached.
+func guide(sound: String, path: Array, db := 0.0, unit := 6.0, speed := 4.0) -> void:
+	guide_stop(0.0)
+	_guide = Snd.make_loop(sound, world, db, unit, 70.0)
+	_guide_path = path.duplicate()
+	_guide_speed = speed
+	_guide.global_position = _guide_path[0][0]
+	_guide.play()
+
+
+func guide_stop(fade := 0.8) -> void:
+	if _guide == null:
+		return
+	var g := _guide
+	_guide = null
+	_guide_path.clear()
+	if fade <= 0.0:
+		g.queue_free()
+		return
+	var tw := g.create_tween()
+	tw.tween_property(g, "volume_db", -60.0, fade)
+	tw.tween_callback(g.queue_free)
+
+
+func _process(delta: float) -> void:
+	if _guide == null or player == null:
+		return
+	var q := Vector2(player.global_position.x, player.global_position.z)
+	while _guide_path.size() > 1:
+		# on to the next point once you are within reach of this one, or have gone by it (somewhat nearer to the
+		# next than this one is, not far off to the side)
+		var at := Vector2(_guide_path[0][0].x, _guide_path[0][0].z)
+		var nx := Vector2(_guide_path[1][0].x, _guide_path[1][0].z)
+		var reach := float(_guide_path[0][1])
+		var gone_by := q.distance_to(at) < reach * 2.5 and q.distance_to(nx) < at.distance_to(nx) - 2.0
+		if q.distance_to(at) > reach and not gone_by:
+			break
+		_guide_path.pop_front()
+	_guide.global_position = _guide.global_position.move_toward(_guide_path[0][0], _guide_speed * delta)
+
+
 # --- lines --------------------------------------------------------------------------------------
 static func _dur(text: String) -> float:
 	return clampf(1.4 + text.length() * 0.075, 1.8, 6.0)
-
-
-## The inspector's own words (subtitle "나"). Waits about as long as the line takes to read.
-func say(text: String, hold := 0.0) -> void:
-	var d := hold if hold > 0.0 else _dur(text)
-	Events.subtitle.emit("self", text, d)
-	await wait(d)
-
-
-## A caption for a sound (accessibility: "달그락…… 덜컹……"). Returns at once.
-func caption(text: String, hold := 3.0) -> void:
-	Events.subtitle.emit("sound", text, hold)
 
 
 ## One radio line from `who` (with the radio's own click and a little static), waits it out.

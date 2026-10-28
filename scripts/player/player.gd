@@ -131,6 +131,8 @@ func set_look(yaw: float, pitch := 0.0) -> void:
 
 
 func teleport(xform: Transform3D) -> void:
+	if _forced_look and _forced_look.is_valid():
+		_forced_look.kill()                    # a look still turning toward a point in the old place would take the view
 	global_position = xform.origin
 	var f := -xform.basis.z
 	set_look(atan2(-f.x, -f.z), 0.0)
@@ -360,12 +362,14 @@ func _footstep(sprinting: bool) -> void:
 	var surface := "tile"
 	if terminal:
 		var p := global_position
-		match zone:
+		# the main story's warped airport is the terminal: its floors are where they always were
+		var z := terminal.zone_at(p) if zone == "warped" else zone
+		match z:
 			"gates":
 				surface = "tile" if absf(p.x) < 3.0 else "carpet"
 			"bridge0", "jetbridge":
 				surface = "carpet"
-			"office", "storage", "maint":
+			"office", "secoffice", "storage", "maint":
 				surface = "tileroom"
 	if conveyor_vel.length() > 0.01 or _on_metal():
 		surface = "metal"

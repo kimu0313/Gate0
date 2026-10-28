@@ -33,7 +33,7 @@ void fragment() {
 	float s = max(max(step(f.x, sw), step(1.0 - sw, f.x)), max(step(f.y, sh), step(1.0 - sh, f.y)));
 	vec3 col = color * (0.94 + 0.08 * hash(cell));
 	col = mix(col, seam_color, s * 0.8);
-	float sk = step(wpos.y, skirting);
+	float sk = step(wpos.y - base_height, skirting);
 	if (abs(wnrm.y) > 0.5) {
 		sk = 0.0;
 		s = 0.0;

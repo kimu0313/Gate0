@@ -61,6 +61,15 @@ $lines = [ordered]@{
 	"pa_v2_attention"          = @($KO, -2, "승객 여러분께 안내 말씀드립니다.")
 	"pa_v2_boarding_start"     = @($KO, -3, "플라이트 공공공편의 탑승을 시작하겠습니다.")
 	"pa_v2_boarding_started"   = @($KO, -3, "플라이트 공공공편의 탑승이 시작되었습니다.")
+	# Gate 0 v2 — 1장, 뒤틀린 터미널: 출발 안내 (한국어 다음 영어). 마지막 둘은 0편이 플레이어를 부른다.
+	"pa_v3_000_ready_ko"       = @($KO, -2, "서해항공 플라이트 공공공편이 출발 준비를 마쳤습니다. 아직 탑승하지 않으신 승객께서는, 영번 탑승구로 오시기 바랍니다.")
+	"pa_v3_000_ready_en"       = @($EN, -2, "Seohae Air flight zero zero zero is ready for departure. Passengers not yet on board, please come to gate zero.")
+	"pa_v3_depart_ko"          = @($KO, -1, "서해항공 이백십칠편 제주행, 서해항공 사백일편 김포행 항공기가, 지금 출발합니다.")
+	"pa_v3_depart_en"          = @($EN, -1, "Seohae Air flight two one seven to Jeju, and flight four zero one to Gimpo, are now departing.")
+	"pa_v3_000_wait_ko"        = @($KO, -3, "플라이트 공공공편은, 승객 한 분을 기다리고 있습니다. 승객님, 영번 탑승구로 오시기 바랍니다.")
+	"pa_v3_000_wait_en"        = @($EN, -3, "Flight zero zero zero is waiting for one passenger. Passenger, please come to gate zero.")
+	"pa_v3_000_final_ko"       = @($KO, -4, "플라이트 공공공편, 최종 탑승 안내입니다. 탑승하지 않으신 승객께서는, 저희가, 모시러 가겠습니다.")
+	"pa_v3_000_final_en"       = @($EN, -4, "This is the final call for flight zero zero zero. If you will not come to us, we will come for you.")
 }
 
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer

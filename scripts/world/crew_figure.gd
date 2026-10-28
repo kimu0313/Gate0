@@ -77,6 +77,7 @@ var _croak_t := 2.0
 var _jaw_t := 0.0
 var _hush_t := 0.0
 var _snap: Array[float] = [0.0, 0.0]      # a knee giving further backwards as its foot lands
+var _sight_t := 0
 
 
 static func create(parent: Node3D, pos: Vector3, rot_y := 0.0) -> CrewFigure:
@@ -283,6 +284,42 @@ func _process(delta: float) -> void:
 		_chase_step(delta)
 
 
+func _physics_process(_delta: float) -> void:
+	if chasing and _walking and player:
+		_sight_t -= 1
+		if _sight_t <= 0:
+			_sight_t = 6
+			_cut_trail()
+
+
+## It follows your trail only where it cannot see the way: whatever part of it it can see straight to — you, most of
+## all — it goes for directly. Walked in order, every few steps you took back toward it when you turned round to look
+## had it back away from you and come on again, and standing them out instead let you pull away for nothing; now a look
+## back costs you ground.
+func _cut_trail() -> void:
+	if _clear_to(player.global_position):
+		trail.clear()
+		return
+	var k := 0
+	for i in range(1, mini(trail.size(), 40)):
+		if not _clear_to(trail[i]):
+			break
+		k = i
+	if k > 0:
+		trail = trail.slice(k)
+
+
+## Nothing solid between it and `p` (low, and at either shoulder).
+func _clear_to(p: Vector3) -> bool:
+	var space := get_world_3d().direct_space_state
+	var side := Vector3(p.z - _pos.z, 0.0, _pos.x - p.x).normalized() * 0.28
+	for o: Vector3 in [Vector3(0, 0.35, 0), Vector3(0, 0.9, 0) + side, Vector3(0, 0.9, 0) - side]:
+		var q := PhysicsRayQueryParameters3D.create(Vector3(_pos.x, p.y, _pos.z) + o, p + o, Geo.LAYER_WORLD)
+		if not space.intersect_ray(q).is_empty():
+			return false
+	return true
+
+
 ## One rip: hands jerk apart, the sound, a scrap flutters down beside its feet.
 func _tear(db := 0.0) -> void:
 	_tear_k = 1.0
@@ -486,7 +523,8 @@ func _chase_step(delta: float) -> void:
 		_footfall(0 if was > 0.0 else 1)
 	for i in 2:
 		_snap[i] = move_toward(_snap[i], 0.0, delta * 2.2)
-	_stretch = move_toward(_stretch, _stretch_to, delta * (5.0 if _stretch_to > _stretch else 9.0))
+	# the neck draws back in slowly enough that its lunge carries the head on toward you while it does
+	_stretch = move_toward(_stretch, _stretch_to, delta * (5.0 if _stretch_to > _stretch else 2.2))
 	_jolt = _jolt.move_toward(Vector3.ZERO, delta * 2.5)
 	_rattle.volume_db = lerpf(-16.0, 0.0, clampf(_pace, 0.0, 1.0))
 	_rattle.pitch_scale = 0.8 + 0.22 * clampf(_pace, 0.0, 1.8)
@@ -511,8 +549,9 @@ func _chase_step(delta: float) -> void:
 		_draw_walk()
 
 
-## run → (now and then) stall: it stops dead, cracks, croaks, the head turns over and the neck draws out toward you →
-## lunge: a burst of lurching strides (only when you have pulled away; never onto you) → run.
+## run → (now and then, when it is more than 8 m back) stall: it stops dead, cracks, croaks, the head turns over and
+## the neck draws out toward you → lunge: a burst of lurching strides (only when you have pulled away; never onto you)
+## → run.
 func _update_phase(delta: float, dist: float) -> void:
 	_phase_t -= delta
 	if _phase == "lunge" and dist < 2.6:
@@ -520,7 +559,9 @@ func _update_phase(delta: float, dist: float) -> void:
 	if _phase_t <= 0.0:
 		match _phase:
 			"run":
-				if randf() < 0.55:
+				# only when it is far behind already (and lunges after): once it is close it never stops, or it would
+				# drop back for nothing
+				if dist > 8.0 and randf() < 0.55:
 					_phase = "stall"
 					_phase_t = randf_range(0.35, 0.6)
 					_stretch_to = 1.0

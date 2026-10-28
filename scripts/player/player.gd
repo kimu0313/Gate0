@@ -26,6 +26,7 @@ var camera: Camera3D
 var flashlight: SpotLight3D
 var flashlight_on := false
 var eyes := 0.0                 # 0 open .. 1 closed
+var eyes_script := -1.0         # >= 0: a scripted moment holds the eyelids there (coming round, a blink)
 var eyes_closed_time := 0.0     # continuous seconds with eyes fully closed
 var stamina := STAMINA_MAX
 var current_interactable: Interactable
@@ -230,7 +231,10 @@ func toggle_flashlight(force := -1) -> void:
 func _physics_process(delta: float) -> void:
 	# --- eyes ---
 	var want_closed := controls_enabled and not cutscene and Input.is_action_pressed("close_eyes") and not camera_mode
-	eyes = move_toward(eyes, 1.0 if want_closed else 0.0, delta * (4.5 if want_closed else 3.0))
+	if eyes_script >= 0.0:
+		eyes = eyes_script
+	else:
+		eyes = move_toward(eyes, 1.0 if want_closed else 0.0, delta * (4.5 if want_closed else 3.0))
 	if eyes >= 0.98:
 		eyes_closed_time += delta
 	else:

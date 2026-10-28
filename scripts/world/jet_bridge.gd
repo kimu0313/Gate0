@@ -6,8 +6,8 @@ extends Node3D
 ##
 ## Local frame: you come in at the south end (z = 0; the wall behind you is where the door was) and look north
 ## (-Z) down LENGTH metres to the gate door. Built far below the terminal (ORIGIN), so nothing of it shows through
-## the windows: black boxes stand outside the glass. In the main story it is moved onto Gate 0 (attach): the gate
-## door then opens straight into the terminal's gate lounge.
+## the windows: black boxes stand outside the glass. The gate door is a steel fire door (FireDoor), chained and
+## padlocked through its push bars: nothing past it shows until it opens.
 
 const ORIGIN := Vector3(0, -200, 320)
 const W := 5.2              # inner width
@@ -22,7 +22,7 @@ const BOARD_BOARDING := ["FLIGHT 000  —  GATE 0", "BOARDING"]
 const BOARD_NO_DEST := ["FLIGHT 000   ———   GATE 0", ""]
 
 var zone: LightZone
-var gate_door: Node3D            # the double glass door (leaves, push bars, chain and padlock)
+var gate_door: Node3D            # the steel double fire door (leaves, push bars, chain and padlock)
 var door_use: Interactable       # [E] on the padlock / door; the chapter decides what it does
 var beyond: Area3D               # just past the door (where the main story continues)
 var locked := true
@@ -134,41 +134,31 @@ func _build_end(wall_m: Material, frame: Material) -> void:
 	gate_door.name = "GateDoor"
 	add_child(gate_door)
 	gate_door.position = Vector3(0, 0, ez)
-	var lw := DOOR_W * 0.5 - 0.01
+	# a steel double fire door (FireDoor), pushed from your side and swinging away from you (-Z): nothing past it shows
 	for sx in [-1.0, 1.0]:
-		# each leaf hangs on its outer jamb and swings away from you (-Z)
-		var hinge := Node3D.new()
-		gate_door.add_child(hinge)
-		hinge.position = Vector3(sx * DOOR_W * 0.5, 0, 0)
-		var leaf := Node3D.new()
-		hinge.add_child(leaf)
-		leaf.position = Vector3(-sx * lw * 0.5, 0, 0)
-		Geo.box(leaf, Vector3(0, DOOR_H * 0.5, 0), Vector3(lw - 0.02, DOOR_H - 0.04, 0.025), Mats.get_mat("glass"), false)
-		for fx in [-1.0, 1.0]:
-			Geo.box(leaf, Vector3(fx * (lw * 0.5 - 0.04), DOOR_H * 0.5, 0), Vector3(0.07, DOOR_H - 0.04, 0.06), frame, false)
-		Geo.box(leaf, Vector3(0, 0.08, 0), Vector3(lw - 0.02, 0.16, 0.06), frame, false)
-		Geo.box(leaf, Vector3(0, DOOR_H - 0.08, 0), Vector3(lw - 0.02, 0.1, 0.06), frame, false)
-		# vertical pull bar on the inner edge, on your side
-		var bx: float = -sx * (lw * 0.5 - 0.16)
-		Geo.cyl(leaf, Vector3(bx, 1.05, 0.11), 0.018, 0.9, Mats.get_mat("metal"))
-		for by in [0.65, 1.45]:
-			Geo.box(leaf, Vector3(bx, by, 0.065), Vector3(0.03, 0.03, 0.07), Mats.get_mat("metal"), false)
-		_leaves.append(hinge)
-	# a chain wound through both pull bars, a padlock hanging off it
+		_leaves.append(FireDoor.leaf(gate_door, sx, 1.0, sx * DOOR_W * 0.5, DOOR_W * 0.5 - 0.005, DOOR_H - 0.04))
+	# a chain wound round both push bars where they meet, a padlock hanging off it
 	_chain = Node3D.new()
 	gate_door.add_child(_chain)
+	var path: Array[Vector3] = []
+	for i in 7:                                          # round the left bar
+		var a := TAU * i / 6.0
+		path.append(Vector3(-0.2 + 0.012 * sin(a * 0.5), 1.0 + 0.035 * sin(a), 0.0615 + 0.0285 * cos(a)))
+	for i in range(1, 10):                               # across the front, sagging
+		var u := i / 10.0
+		path.append(Vector3(lerpf(-0.2, 0.2, u), 1.0 - 0.06 * sin(u * PI), 0.095))
+	for i in 7:                                          # round the right bar
+		var a := TAU * i / 6.0
+		path.append(Vector3(0.2 - 0.012 * sin(a * 0.5), 1.0 + 0.035 * sin(a), 0.0615 + 0.0285 * cos(a)))
 	var link_m := Mats.std(Color(0.42, 0.42, 0.43), 0.35, 0.8)
-	var bar := lw * 0.5 - 0.16
-	for i in 15:
-		var u := i / 14.0
-		var x := lerpf(-bar - 0.02, bar + 0.02, u)
-		var y := 1.12 - sin(u * PI) * 0.07 + (0.035 if i % 2 == 0 else -0.01)
-		var l := Geo.box(_chain, Vector3(x, y, 0.13), Vector3(0.05, 0.022, 0.012), link_m, false)
-		l.rotation.z = 0.5 if i % 2 == 0 else -0.5
-		l.rotation.x = 0.0 if i % 3 else PI / 2
+	for i in path.size() - 1:
+		var seg := path[i + 1] - path[i]
+		var up := Vector3.RIGHT if absf(seg.normalized().x) < 0.7 else Vector3.UP
+		var l := Geo.box(_chain, (path[i] + path[i + 1]) * 0.5, Vector3(0.022, 0.007, seg.length() + 0.014), link_m, false)
+		l.basis = Basis.looking_at(seg, up) * Basis(Vector3.BACK, PI / 2 if i % 2 else 0.0)
 	_padlock = Node3D.new()
 	gate_door.add_child(_padlock)
-	_padlock.position = Vector3(0.02, 0.98, 0.14)
+	_padlock.position = Vector3(0.01, 0.915, 0.1)
 	var brass := Mats.std(Color(0.62, 0.48, 0.2), 0.35, 0.85)
 	Geo.box(_padlock, Vector3(0, -0.05, 0), Vector3(0.075, 0.065, 0.028), brass, false)
 	Geo.box(_padlock, Vector3(0, -0.06, 0.0145), Vector3(0.012, 0.02, 0.002), Mats.get_mat("black"), false)    # keyhole
@@ -260,14 +250,21 @@ func unlock() -> void:
 	tw.tween_property(_padlock, "position", Vector3(0.1, 0.03, 0.32), 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(_padlock, "rotation", Vector3(1.2, 0.4, 1.4), 0.38)
 	tw.tween_callback(func(): Snd.play_at("chain_drop", _chain.global_position, -2.0, 1.0, 4.0))
-	tw.tween_property(_chain, "position", Vector3(0, -1.05, 0.12), 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(_chain, "position", Vector3(0, -0.96, 0.12), 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(_chain, "rotation:z", 0.25, 0.32)
 	tw.tween_interval(0.5)
 	tw.tween_callback(func(): Snd.play_at("door_heavy", gate_door.global_position, -4.0, 0.85, 6.0))
 	for i in _leaves.size():
 		var sx := -1.0 if i == 0 else 1.0
-		tw.parallel().tween_property(_leaves[i], "rotation:y", sx * deg_to_rad(-80.0), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(_leaves[i], "rotation:y", FireDoor.open_angle(sx, 1.0, 80.0), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(func(): _door_block.collision_layer = 0)
+
+
+## Locked: the push bars go down, the leaves knock against the latch and the chain, and stay shut.
+func rattle() -> void:
+	Snd.play_at(Snd.variant("door_rattle"), gate_door.global_position + Vector3(0, 1.0, 0.1), -2.0, randf_range(0.95, 1.05), 5.0)
+	Snd.play_at("chain_drop", _chain.global_position + Vector3(0, 1.0, 0.1), -18.0, 1.6, 4.0)
+	FireDoor.jiggle(_leaves, 1.0)
 
 
 func _build_reverb() -> void:

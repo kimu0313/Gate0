@@ -389,12 +389,6 @@ func _refresh_pause_status() -> void:
 		zh.add_child(UiIcon.make("pin", 18, UiKit.TEXT_DIM))
 		zh.add_child(UiKit.label(str(Terminal.ZONE_NAMES.get(player.zone, "—")), 18, UiKit.BODY))
 	_pause_status.add_child(HSeparator.new())
-	_pause_status.add_child(UiKit.caption("OBJECTIVE · 현재 목표", UiKit.SIGNAL_TEXT, 15))
-	var cur := story.objective_text if story and story.objective_text != "" else "—"
-	var cl := UiKit.label(cur, 22, UiKit.TEXT, "sans", 700)
-	cl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	cl.custom_minimum_size = Vector2(430, 0)
-	_pause_status.add_child(cl)
 	var keys := UiKit.key_hints([[Game.key_label("tablet"), "태블릿"], [Game.key_label("flashlight"), "손전등"], ["ESC", "돌아가기"]], UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 	_pause_status.add_child(keys)
 

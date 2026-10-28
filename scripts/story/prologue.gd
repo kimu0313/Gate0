@@ -13,9 +13,11 @@ extends StoryScript
 ##    GATE 0 now, under a lit sign that should say EXIT. Push them open ([E]; running into them does nothing) — you
 ##    fall through into the dark: a wide boarding-bridge connector, black glass. Down on its floor you look back for
 ##    the doors: wall. You look ahead again as you get up.
-## 04 사라진 문 — on the floor you turn to shut the door: wall. Getting up you call it in on the radio ("그쪽으로 들어가시면
-##    안 됩니다"), the tablet has lost you, the wall again, the PA starts boarding FLIGHT 000 and the board at the end
-##    lights up: FLIGHT 000 — GATE 0. Forward, and black. (SCENE 05: the title.)
+## 04 사라진 문 — you get up. A second after you set off, the chime: the PA starts boarding FLIGHT 000 and the board
+##    at the end lights up, FLIGHT 000 — GATE 0. On the way the radio answers your call ("그쪽으로 들어가시면 안 됩니다") and the
+##    tablet, if you look, has lost you — neither is waited for. At the end a steel fire door, chained and padlocked
+##    (it only rattles), and a key on the carpet in front of it: pick it up and black. (SCENE 05: the title; the main
+##    story opens at this door with the key.)
 ##
 ## The inspector never speaks on screen (no lines of their own, no subtitles for them), sounds get no captions, there
 ## are no markers (the way is found by eye, or by ear: StoryDirector.guide) and the game never takes the controls away
@@ -29,6 +31,7 @@ const CART_POS := Vector3(-13.1, 0.0, -46.8)
 const CHASE_SPAWN := Vector3(-12.2, 0.05, -42.8)
 const SEC_DOOR := Vector3(-12.25, 0.0, -16.0)        # the office door on the passage's west wall (Terminal.sec_door)
 const FIRE_DOOR := Vector3(-11.2, 0.0, -8.5)         # the staff passage's mouth on the strip: the chase's way out
+const KEY_LOCAL := Vector3(0.32, 0.0, -JetBridge.LENGTH + 0.75)   # bridge space, on the floor before the gate door
 ## The cart you hear from the office, a little ahead of you all the way: behind the office door, up the passage, at
 ## the cart in the baggage hall ([point, reach m]: it rolls on when you come within reach).
 const CART_PATH := [
@@ -56,7 +59,11 @@ var _fire_gate0: Array[Node3D] = []  # what reads GATE 0 (the sign's lettering, 
 var _rattle_at := -10000
 var _portal: PortalView          # behind the fire doors: the boarding bridge you are about to fall into
 var _near_door := false
-var _wall_felt := false
+var key_node: Node3D              # on the carpet before the boarding bridge's gate door: picking it up ends the prologue
+var _board_on := false
+var _at_door := false
+var _door_tried := false
+var _ended := false
 var _lamp: OmniLight3D
 var _lamp_panel: MeshInstance3D
 var _lamp_t := 0.0
@@ -73,6 +80,9 @@ func setup() -> void:
 	d.ui.tablet.set_target("수하물 운송 설비 확인", "baggage", Terminal.BELT_POS)
 	d.bridge.set_board(JetBridge.BOARD_OFF, false)
 	d.bridge.get_node("GateDoor").visible = true
+	d.bridge.door_use.prompt = "문 열기"
+	d.bridge.door_use.callback = _gate_pressed
+	_place_key()
 	_build_scene_02()
 	_build_fire_door()
 	_door_use = t.sec_use
@@ -115,18 +125,17 @@ func _scene_01() -> void:
 	d.ui.place_card(["A국제공항 터미널", "AM 02:17", "정상 근무"], 3.5)
 	d.player.controls_enabled = true
 	d.ui.hud.show_key_hints(25.0)
-	await d.wait(1.2)
-	d.objective("태블릿으로 점검 목록 확인하기  [Tab]")
-	await d.until(func(): return d.ui.modal == "tablet")
-	await d.until(func(): return d.ui.modal == "")
-	d.objective("수하물 운송 설비 확인하기")
 	_door_use.prompt = "문 열기"
 	_door_use.enabled = true
-	# the moment you set off for it: a cart, rattling, just beyond the door — and it keeps on, a little ahead of you,
-	# all the way to the baggage hall
+	await d.wait(1.2)
+	d.objective("태블릿으로 점검 목록 확인하기  [Tab]")
+	# nothing says what to do (the tablet's checklist does, if you look): the moment you set off — or after a while
+	# anyway — a cart, rattling, just beyond the door, and it keeps on, a little ahead of you, all the way to the
+	# baggage hall
 	var from := d.player.global_position
 	var t0 := Time.get_ticks_msec()
-	await d.until(func(): return d.player.global_position.distance_to(from) > 1.5 or Time.get_ticks_msec() - t0 > 7000)
+	await d.until(func(): return d.ui.modal == "" and (d.player.global_position.distance_to(from) > 1.5 or Time.get_ticks_msec() - t0 > 10000))
+	d.objective("수하물 운송 설비 확인하기")
 	d.guide("cart_rattle_loop", CART_PATH, 2.0, 6.0, 3.6)
 	await d.wait(2.4)
 	if not d.player.flashlight_on:
@@ -210,7 +219,7 @@ func _dist_to_fig() -> float:
 
 
 ## When it turns: you try to see its face (walk round it, or come right up with the light on it after speaking),
-## or you come too close, or you hang about long enough after it would not answer.
+## or you come too close, or you hang about near it long enough (sooner once it would not answer you).
 func _turn_now(t0: int) -> bool:
 	var dist := _dist_to_fig()
 	var rel := d.player.global_position - fig.global_position
@@ -223,7 +232,7 @@ func _turn_now(t0: int) -> bool:
 		return true
 	if _talked and dist < 3.0 and d.player.flashlight_on and d.player.facing_dot(fig.head_position()) > 0.9:
 		return true
-	return _talked and dist < 8.0 and Time.get_ticks_msec() - t0 > 30000
+	return dist < 8.0 and Time.get_ticks_msec() - t0 > (30000 if _talked else 45000)
 
 
 ## [E] speaks to it: it goes still, as if listening, then tears again, louder.
@@ -305,15 +314,14 @@ func _physics_process(delta: float) -> void:
 	if p.distance_to(_crumb) > 0.45:
 		_crumb = p
 		fig.trail.append(p)
-	# never long out of earshot: slower when it is right on you, faster when you pull away
-	var dist := Vector2(p.x - fig.global_position.x, p.z - fig.global_position.z).length()
-	var want := 3.9
+	# a little under your running pace, steady: flat out you gain on it slowly, falter or look back and it gains on
+	# you (it no longer eases off when it is close); and it never lets you get far ahead
+	var dist := Vector2(p.x - fig._pos.x, p.z - fig._pos.z).length()
+	var want := 4.0
 	if _chase_t < 1.3:
 		want = 1.2
 	elif dist > 9.0:
-		want = 5.2
-	elif dist < 3.5:
-		want = 3.4
+		want = 5.0
 	fig.speed = move_toward(fig.speed, want, delta * 3.5)
 
 
@@ -353,16 +361,13 @@ func _build_fire_door() -> void:
 	t.add_child(root)
 	root.position = FIRE_DOOR                            # local -Z = the passage, +Z = the strip
 	var frame := Mats.std(Color(0.22, 0.23, 0.25), 0.45, 0.6)
-	var paint := Mats.std(Color(0.5, 0.49, 0.45), 0.55, 0.35)
-	var metal := Mats.get_mat("metal")
-	var wired := Mats.std(Color(0.035, 0.04, 0.045), 0.15, 0.3)
 	# steel frame in the 1.5 x 2.4 opening, a steel transom panel over the leaves
 	for sx in [-1.0, 1.0]:
 		Geo.box(root, Vector3(sx * 0.72, 1.08, 0), Vector3(0.06, 2.16, 0.42), frame, false)
 	Geo.box(root, Vector3(0, 2.13, 0), Vector3(1.5, 0.06, 0.42), frame, false)
-	Geo.box(root, Vector3(0, 2.28, 0), Vector3(1.5, 0.24, 0.1), paint, false)
-	_fire_l = _fire_leaf(root, -1.0, paint, metal, wired)
-	_fire_r = _fire_leaf(root, 1.0, paint, metal, wired)
+	Geo.box(root, Vector3(0, 2.28, 0), Vector3(1.5, 0.24, 0.1), FireDoor.paint(), false)
+	_fire_l = _fire_leaf(root, -1.0)
+	_fire_r = _fire_leaf(root, 1.0)
 	_fire_block = Geo.blocker(root, Vector3(0, 1.2, 0), Vector3(1.5, 2.4, 0.42))
 	_fire_use = Interactable.create(root, Vector3(0, 1.1, -0.12), Vector3(1.4, 2.1, 0.4), "문 열기", _fire_pressed)
 	_fire_use.press_sound = ""
@@ -396,31 +401,12 @@ func _build_fire_door() -> void:
 	Geo.box(root, Vector3(0, 0.004, 1.07), Vector3(1.9, 0.008, 1.76), lining, false)
 
 
-## One leaf on a hinge node at its jamb (side -1 = west, +1 = east; turning `side` x angle opens it away from the
-## passage): a narrow wired-glass light, a push bar across it on the passage side, kick plates, the closer at its head
-## and the red 방화문 plate.
-func _fire_leaf(root: Node3D, side: float, paint: Material, metal: Material, wired: Material) -> Node3D:
-	var hinge := Node3D.new()
-	root.add_child(hinge)
-	hinge.position = Vector3(side * 0.69, 0, 0)
+## One leaf (FireDoor.leaf) on a hinge node at its jamb (side -1 = west, +1 = east; turning `side` x angle opens it
+## away from the passage), with its half of the GATE 0 stencil (hidden until the chase).
+func _fire_leaf(root: Node3D, side: float) -> Node3D:
 	var w := 0.685
+	var hinge := FireDoor.leaf(root, side, -1.0, side * 0.69, w, 2.07)
 	var c := -side * w * 0.5                             # the leaf's middle, from its hinge
-	Geo.box(hinge, Vector3(c, 1.055, 0), Vector3(w, 2.07, 0.05), paint, false)
-	Geo.box(hinge, Vector3(c + side * 0.08, 1.76, 0), Vector3(0.15, 0.36, 0.054), wired, false)
-	Geo.box(hinge, Vector3(c, 1.0, -0.06), Vector3(w - 0.16, 0.04, 0.035), metal, false)
-	for bx in [-1.0, 1.0]:
-		Geo.box(hinge, Vector3(c + bx * (w * 0.5 - 0.09), 1.0, -0.04), Vector3(0.06, 0.09, 0.04), metal, false)
-	for fz in [-1.0, 1.0]:
-		Geo.box(hinge, Vector3(c, 0.14, fz * 0.0265), Vector3(w - 0.04, 0.24, 0.003), metal, false)
-	Geo.box(hinge, Vector3(c + side * 0.12, 1.99, -0.05), Vector3(0.3, 0.06, 0.05), metal, false)      # closer
-	Geo.box(hinge, Vector3(c + side * 0.2, 2.05, -0.06), Vector3(0.24, 0.02, 0.02), metal, false)     # its arm
-	var plate := Node3D.new()
-	hinge.add_child(plate)
-	plate.position = Vector3(c, 0.62, -0.027)
-	Geo.box(plate, Vector3.ZERO, Vector3(0.2, 0.07, 0.003), Mats.std(Color(0.72, 0.1, 0.08), 0.5), false)
-	var l := Geo.label(plate, "방화문", Vector3(0, 0, -0.002), PI, 40, Color(1, 1, 1), 0.0016, false, "print")
-	Geo.fit(l, 0.17, 0.05)
-	l.set_meta("no_fit", true)
 	# stencilled across the pair at eye height, read from the passage: GATE on the left leaf, 0 on the right
 	var st := Geo.label(hinge, "GATE" if side > 0.0 else "0", Vector3(c - side * 0.04, 1.33, -0.027), PI, 96,
 		Color(0.9, 0.9, 0.86), 0.0035, false, "print")
@@ -442,12 +428,7 @@ func _fire_pressed() -> void:
 		return
 	_rattle_at = now
 	Snd.play_at(Snd.variant("door_rattle"), FIRE_DOOR + Vector3(0, 1.0, -0.1), -2.0, randf_range(0.95, 1.05), 5.0)
-	for leaf: Array in [[_fire_l, -1.0], [_fire_r, 1.0]]:
-		var tw := create_tween()
-		for k in 3:
-			tw.tween_property(leaf[0], "rotation:y", leaf[1] * deg_to_rad(randf_range(0.8, 1.4)), 0.05)
-			tw.tween_property(leaf[0], "rotation:y", 0.0, 0.07)
-			tw.tween_interval(randf_range(0.1, 0.16))
+	FireDoor.jiggle([_fire_l, _fire_r], -1.0)
 
 
 ## The chase: the locked doors at the passage's end are GATE 0 now — the sign over them lights up green with it, it is
@@ -534,9 +515,27 @@ func _through_the_door() -> void:
 	p.view_roll = 0.45
 	p.set_look(0.0, deg_to_rad(-38.0))                   # on your side, the carpet in the flashlight
 	p.stamina = 0.0
-	await d.wait(0.6)
-	await d.ui.fade_to(0.0, 0.7)
+	p.eyes_script = 1.0                                  # out for a moment
+	d.ui.hud.set_visible_all(false)                      # (it would sit over the eyelids) until you are up
+	await d.wait(1.5)
+	d.ui.cut_to(0.0)                                     # from here the eyelids are what is dark
+	await _come_round()
 	await _down_inside()
+
+
+## Coming round on the floor: the eyes flutter open — a slit, shut again, half open, a blink or two, open — while the
+## head comes up a little off the carpet and the eyes find the corridor ahead.
+func _come_round() -> void:
+	var p := d.player
+	var lift := create_tween().set_parallel(true)
+	lift.tween_property(p, "view_drop", 1.15, 2.6).set_trans(Tween.TRANS_SINE)
+	lift.tween_property(p, "view_roll", 0.36, 2.6).set_trans(Tween.TRANS_SINE)
+	p.look_at_point(d.bridge.to_global(Vector3(0.3, 0.3, -7.0)), 2.6)
+	var lids := create_tween()
+	for step: Array in [[0.74, 0.45], [0.97, 0.2], [0.97, 0.35], [0.45, 0.55], [0.9, 0.12], [0.3, 0.3], [0.85, 0.1], [0.0, 0.55]]:
+		lids.tween_property(p, "eyes_script", step[0], step[1]).set_trans(Tween.TRANS_SINE)
+	await lids.finished
+	p.eyes_script = -1.0
 
 
 ## Into the corridor at once, just inside its south wall (where the door should be), running forward.
@@ -575,12 +574,12 @@ func _scene_03_end() -> void:
 
 ## On the corridor floor where you fell, face down the way you were running, out of breath. Still down, you look back
 ## over your shoulder for the doors you came through: there is only wall. Then SCENE 04: you look ahead again as you
-## get up, and call it in on the radio.
+## get up.
 func _down_inside() -> void:
 	var b := d.bridge
 	var p := d.player
 	d.cutscene(true)
-	await d.wait(1.6)
+	await d.wait(0.8)
 	# still down, you look back over your shoulder for the doors you came through: wall
 	p.look_at_point(b.to_global(Vector3(0.0, 1.1, 0.0)), 1.1)
 	var turn := create_tween().set_parallel(true)
@@ -613,60 +612,138 @@ func _scene_04() -> void:
 	p.view_drop = 0.0
 	p.view_roll = 0.0
 	d.cutscene(false)
-	# you call it in (the inspector's words are not shown: the radio keys up, then the answer)
-	await d.wait(0.8)
+	d.ui.hud.set_visible_all(true)
+	d.ui.tablet.set_target("", "", Vector3.INF)
+	_tablet_lost()                                       # if you look at the tablet in here
+	_door_watch()
+	# a second after you set off, the chime: the PA from the far end (not waited for), and as it starts boarding
+	# FLIGHT 000 the board over the door lights up
+	var stood := p.global_position
+	await d.until(func(): return _ended or Vector2(p.global_position.x - stood.x, p.global_position.z - stood.z).length() > 0.3)
+	await d.wait(1.0)
+	if _ended:
+		return
+	d.pa_at(b.pa_point(), ["pa_v2_attention", "pa_v2_boarding_start"],
+		["승객 여러분께 안내 말씀드립니다.", "Flight 000편의 탑승을 시작하겠습니다."], 1.4)
+	await d.until(func(): return _ended or d.pa_clip == "pa_v2_boarding_start")
+	if _ended:
+		return
+	await d.wait(1.0)
+	b.set_board(JetBridge.BOARD_BOARDING)
+	_board_on = true
+	_door_objective()
+	await d.until(func(): return _ended or d.pa_clip != "pa_v2_boarding_start")
+	await d.wait(1.6)
+	if not _ended:
+		await _call_in()
+
+
+## You call it in on the way (the inspector's words are not shown: the radio keys up, then the answer). Nothing waits
+## for it: pick up the key and it is cut off.
+func _call_in() -> void:
 	Snd.play("radio_on", -8.0, 1.0, "SFX")
 	await d.wait(1.6)
+	if _ended:
+		return
 	Snd.play("radio_off", -10.0, 1.0, "SFX")
 	await d.wait(0.6)
+	if _ended:
+		return
 	await d.radio("담당자", "……현재 위치를 다시 확인해 주세요.")
 	await d.wait(1.2)
+	if _ended:
+		return
 	await d.radio("담당자", "……", 2.6)
+	if _ended:
+		return
 	await d.radio("담당자", "그쪽으로 들어가시면 안 됩니다.", 3.2)
+	if _ended:
+		return
 	Snd.radio_static(true)
 	await d.wait(0.5)
 	Snd.radio_static(false)
 	Snd.play("glitch", -12.0, 0.7, "SFX")
-	await d.wait(1.2)
-	# the tablet: the plan, but no you on it — then not even the plan
-	d.ui.tablet.set_target("", "", Vector3.INF)
-	d.objective("태블릿으로 현재 위치 확인하기  [Tab]")
-	await d.until(func(): return d.ui.modal == "tablet")
-	d.clear_objective()
+
+
+## The tablet, if you look at it in here: the plan, but no you on it — then not even the plan. Nothing waits for it.
+func _tablet_lost() -> void:
+	await d.until(func(): return _ended or d.ui.modal == "tablet")
+	if _ended:
+		return
 	d.ui.tablet_locked = true
 	d.ui.tablet._show_tab("map", false)
 	await d.wait(0.6)
 	await d.ui.tablet.lose_signal()
 	await d.wait(1.0)
 	d.ui.tablet_locked = false
-	await d.until(func(): return d.ui.modal == "")
-	await d.wait(0.6)
-	# one more look at the wall: there is no way back
-	var wall := Interactable.create(b, Vector3(0, 1.2, -0.12), Vector3(2.6, 2.0, 0.2), "벽 더듬기", func():
-		Snd.play_at("wall_rub", d.player.global_position + d.player.forward() * 0.6, -4.0, randf_range(0.95, 1.05), 3.0)
-		_wall_felt = true)
-	wall.press_sound = ""
-	d.objective("벽 다시 살펴보기")
-	await d.until(func(): return _wall_felt)
-	wall.enabled = false
-	d.clear_objective()
-	await d.wait(1.8)
-	# the PA, from the far end
-	await d.pa_at(b.pa_point(), ["pa_v2_attention"], ["승객 여러분께 안내 말씀드립니다."])
-	await d.wait(1.6)
-	await d.pa_at(b.pa_point(), ["pa_v2_boarding_start"], ["Flight 000편의 탑승을 시작하겠습니다."])
-	await d.wait(0.6)
-	# the board at the end that was not there a moment ago
-	b.set_board(JetBridge.BOARD_BOARDING)
-	await d.wait(2.0)
-	d.objective("앞으로 나아가기")
-	# on toward it until the board can be read, then black
-	await d.until(func(): return b.to_local(d.player.global_position).z < -JetBridge.LENGTH + 11.0)
-	# black
-	d.clear_objective()
-	d.cutscene(true)
+
+
+## Up at the door: chained shut. [E] only rattles it — and the key lies on the carpet right in front of it.
+func _door_watch() -> void:
+	var b := d.bridge
+	await d.until(func(): return _ended or d.player.global_position.distance_to(b.door_front()) < 2.4)
+	_at_door = true
+	_door_objective()
+
+
+func _door_objective() -> void:
+	if _ended:
+		return
+	if _door_tried:
+		d.objective("열쇠 찾기")
+	elif _at_door:
+		d.objective("문 열기")
+	elif _board_on:
+		d.objective("앞으로 나아가기")
+
+
+func _gate_pressed() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _rattle_at < 900:
+		return
+	_rattle_at = now
+	d.bridge.rattle()
+	_door_tried = true
+	_door_objective()
+
+
+## A small brass key on the carpet before the gate door, catching the light.
+func _place_key() -> void:
+	key_node = Node3D.new()
+	key_node.name = "GateKey"
+	d.bridge.add_child(key_node)
+	key_node.position = KEY_LOCAL
+	key_node.rotation.y = 0.7
+	key_node.scale = Vector3.ONE * 1.4                  # nothing points you to it: big enough to catch the eye
+	var brass := Mats.std(Color(0.78, 0.6, 0.26), 0.3, 0.9)
+	var bow := Geo.cyl(key_node, Vector3(-0.035, 0.004, 0), 0.016, 0.004, brass, false, 20)
+	Geo.cyl(bow, Vector3(0, 0.0005, 0), 0.007, 0.0045, Mats.get_mat("black"), false, 12)     # the ring's hole
+	Geo.box(key_node, Vector3(0.012, 0.004, 0), Vector3(0.06, 0.004, 0.008), brass, false)
+	for i in 3:
+		Geo.box(key_node, Vector3(0.025 + i * 0.011, 0.004, 0.007), Vector3(0.006, 0.004, 0.008), brass, false)
+	var glint := Geo.omni(key_node, Vector3(0, 0.25, 0), Color(1.0, 0.9, 0.7), 0.35, 1.2)
+	glint.light_volumetric_fog_energy = 0.0
+	var use := Interactable.create(key_node, Vector3(0, 0.1, 0), Vector3(0.4, 0.3, 0.4), "열쇠 줍기", _take_key)
+	use.press_sound = ""
+
+
+## The key in your hand, and black at once: the end of the prologue (SCENE 05, the title, follows straight on; the main
+## story opens at this door with the key).
+func _take_key() -> void:
+	if _ended:
+		return
+	_ended = true
 	d.ui.cut_to(1.0)
+	d.cutscene(true)
+	d.clear_objective()
+	d.pa_stop()
+	Snd.radio_static(false)
+	d.ui.hud.hide_subtitle()
 	Snd.stop_all_world()
+	Snd.play("key_pickup", -4.0)
 	Snd.play("sub_boom", -10.0, 0.7)
-	await d.wait(2.4)
+	Game.add_item("key_gate")
+	key_node.queue_free()
+	key_node = null
+	await d.wait(0.6)
 	Game.finish_prologue()

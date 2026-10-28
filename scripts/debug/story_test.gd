@@ -178,6 +178,9 @@ func _prologue() -> void:
 			return
 	else:
 		await _obj("도망쳐라", 30.0)
+	if _mode == "chaseturn":
+		await _chase_turn()
+		return
 	await _wait(0.3)
 	if world.terminal.sec_door.visible:
 		_end(1, "the security office door is still on the passage wall in the chase")
@@ -213,62 +216,181 @@ func _prologue() -> void:
 	await _shot("08b_door_swings", 0.0)
 	await _wait(0.15)
 	await _shot("08c_stumbling", 0.0)
-	await _wait(1.9)
-	await _shot("09_fallen", 0.0)
-	await _wait(2.6)
+	# the impact: out for a moment, then the eyes flutter open on the floor
+	await _wait(1.15)
+	if _p.eyes < 0.9:
+		_end(1, "the eyes are not shut after the fall (eyes %.2f)" % _p.eyes)
+		return
+	await _shot("09_dark", 0.0)
+	await _wait(1.05)
+	await _shot("09a_waking", 0.0)
+	await _wait(1.1)
+	await _shot("09b_waking", 0.0)
+	await _wait(1.15)
+	await _shot("09c_awake", 0.0)
+	await _wait(2.0)
 	await _shot("10_door_gone", 0.0)
-	await _wait(4.0)
+	await _wait(2.7)
 	await _shot("11_getting_up", 0.0)
-	await _obj("태블릿으로 현재 위치", 60.0)
+	while _p.cutscene:
+		await _tree.process_frame
+	if _p.eyes > 0.05 or _p.eyes_script >= 0.0 or not world.ui.hud.visible:
+		_end(1, "up, but the eyes are not open (eyes %.2f, held %.2f) or the HUD is hidden" % [_p.eyes, _p.eyes_script])
+		return
+	# on your feet: the tablet (nothing waits for it) has lost you; nothing happens until you set off — a second after
+	# your first step, the chime, the PA and the board
 	world.ui.open_tablet()
 	await _wait(1.0)
 	while world.ui.tablet_locked:
 		await _tree.process_frame
 	await _shot("12_unknown", 0.3)
 	_log("tablet lost=%s sys=%s" % [world.ui.tablet.lost, world.ui.tablet._sys.visible])
-	await _wait(0.5)
+	if not world.ui.tablet.lost:
+		_end(1, "the tablet did not lose the player in the boarding bridge")
+		return
 	world.ui.close_modal()
-	await _obj("벽 다시 살펴보기", 20.0)
-	_p.look_at_point(_d.bridge.to_global(Vector3(0, 1.2, 0.0)), 0.3)
-	await _wait(0.5)
-	_use(world.bridge, "벽 더듬기")
-	await _obj("앞으로 나아가기", 90.0)
-	await _shot("13_board", 0.2)
-	# walk on toward the gate; the blackout comes on the way (the title follows a couple of seconds later, so quit at once)
-	var b: JetBridge = world.bridge
-	_p.walk_path([b.to_global(Vector3(0, 0.05, -JetBridge.LENGTH + 9.0))], 2.2)
-	var t1 := Time.get_ticks_msec()
-	while world.ui.fade_alpha() < 0.99 and Time.get_ticks_msec() - t1 < 12000:
+	await _wait(1.5)
+	if Snd.pa_busy or _d.pa_clip != "":
+		_end(1, "the PA started before the player set off")
+		return
+	var t_go := Time.get_ticks_msec()
+	_p.walk_to(_p.global_position + _p.forward() * 1.2, 1.4)
+	while Snd.pa_busy == false:
 		await _tree.process_frame
+	_log("PA chime %.1f s after the first step" % ((Time.get_ticks_msec() - t_go) / 1000.0))
+	await _obj("앞으로 나아가기", 30.0)
+	_log("board lit %.1f s after the first step" % ((Time.get_ticks_msec() - t_go) / 1000.0))
+	await _shot("13_board", 0.2)
+	# up to the gate door: a fire door chained shut, it only rattles; the key on the carpet in front of it ends the
+	# prologue (the title follows a couple of seconds after the blackout, so quit at once)
+	var b: JetBridge = world.bridge
+	await _walk([b.door_front()], 2.2)
+	await _obj("문 열기", 6.0)
+	_p.look_at_point(b.gate_door.global_position + Vector3(0, 1.1, 0), 0.05)
+	await _wait(0.2)
+	if _p.current_interactable != b.door_use:
+		_end(1, "the [E] ray does not reach the gate door")
+		return
+	_p.current_interactable.interact()
+	_log("[E] 문 열기 (gate door, chained)")
+	await _obj("열쇠 찾기", 6.0)
+	if world.ui.hud._obj_head.visible:
+		_end(1, "an objective is shown on the HUD (none should be)")
+		return
+	await _shot("13b_gate_chained", 0.1)
+	if not b.locked:
+		_end(1, "the chained gate door opened in the prologue")
+		return
+	var key: Node3D = (_d.part as Prologue).key_node
+	_p.look_at_point(key.global_position, 0.1)
+	await _wait(0.25)
+	if _p.current_interactable == null or _p.current_interactable.prompt != "열쇠 줍기":
+		_end(1, "the [E] ray does not reach the key")
+		return
+	await _shot("13c_key", 0.0)
+	_p.current_interactable.interact()
+	_log("[E] 열쇠 줍기")
 	if world.ui.fade_alpha() < 0.99:
-		_end(1, "no blackout at the end of SCENE 04")
+		_end(1, "picking up the key did not go black at once")
 		return
 	if _mode == "loop":
-		_log("prologue played through to the blackout; the game goes on")
+		_log("prologue played through to the key and the blackout; the game goes on")
 		return
-	_end(0, "prologue played through to the blackout (SCENE 05 next)")
+	_end(0, "prologue played through to the key and the blackout (SCENE 05 next)")
+
+
+## `chaseturn` (from checkpoint chase): run up the passage and turn round now and then with the run key still held —
+## which takes you a few steps back toward it — and watch it come: from one drawn frame to the next its body and its
+## head must never move away from you (a backward step reads as it falling back and coming again).
+func _chase_turn() -> void:
+	var fig: CrewFigure = (_d.part as Prologue).fig
+	# one run without stopping: twice a look back that carries you `--back` metres (default 2.5) toward it before you turn
+	# again
+	var back_m := 2.5
+	var args := OS.get_cmdline_user_args()
+	var bi := args.find("--back")
+	if bi >= 0 and bi + 1 < args.size():
+		back_m = float(args[bi + 1])
+	var turns := [-34.0, -25.0]
+	var pts: Array = []
+	for z: float in turns:
+		pts.append(Vector3(-11.2, 0.05, z))
+		pts.append(Vector3(-11.2, 0.05, z - back_m))
+	pts.append(Vector3(-11.2, 0.05, -16.0))
+	_p.walk_path(pts, 4.4)
+	var last := fig.global_position
+	var last_head := fig.head_position()
+	var back := 0.0
+	var back_head := 0.0
+	var n_back := 0
+	var n_frames := 0
+	var closest := 100.0
+	var gaps: Array = []                  # [time s, gap m]: the gap must never open up much while it is close
+	var worst_open := 0.0
+	var next_log := 0.0
+	var t0 := Time.get_ticks_msec()
+	while _p.walking():
+		if _d.dead:
+			_end(2, "caught while running up the passage (closest %.1f m)" % closest)
+			return
+		await _tree.process_frame
+		if fig._walking and fig.speed >= 3.9:               # (not the head start while it wrings itself round)
+			var gap := Vector2(_p.global_position.x - fig._pos.x, _p.global_position.z - fig._pos.z).length()
+			closest = minf(closest, gap)
+			var now := (Time.get_ticks_msec() - t0) / 1000.0
+			gaps.append([now, gap])
+			while gaps.size() > 1 and now - float(gaps[0][0]) > 1.0:
+				var was: Array = gaps.pop_front()
+				if float(was[1]) < 6.0:
+					worst_open = maxf(worst_open, gap - float(was[1]))
+			if now >= next_log:
+				next_log = now + 0.5
+				_log("  t %.1f  you at z %.1f  it is %.1f m behind" % [now, _p.global_position.z, gap])
+		var at := fig.global_position
+		var head := fig.head_position()
+		if at.is_equal_approx(last):
+			continue
+		n_frames += 1
+		var to_p := _p.global_position - last
+		to_p.y = 0.0
+		var dir := to_p.normalized()
+		var b := -(at - last).dot(dir)
+		var bh := -(head - last_head).dot(dir)
+		if b > 0.05 or bh > 0.12:
+			n_back += 1
+			_log("drawn frame moves away: body %.2f m, head %.2f m (it at z %.1f, you at z %.1f)" % [b, bh, at.z, _p.global_position.z])
+		back = maxf(back, b)
+		back_head = maxf(back_head, bh)
+		last = at
+		last_head = head
+	_log("%d drawn frames, %d moved away; worst body %.2f m, head %.2f m; closest it came %.1f m; once close, the gap opened at most %.1f m in a second" % [n_frames, n_back, back, back_head, closest, worst_open])
+	if n_back > 0:
+		_end(1, "it was drawn moving away from the player %d times" % n_back)
+		return
+	if worst_open > 1.0:
+		_end(1, "once it was close, the gap opened %.1f m within a second (it fell back)" % worst_open)
+		return
+	_end(0, "chase: it never falls back, turning round or not")
 
 
 # =========================================================================================
 func _ch1() -> void:
 	var b: JetBridge = world.bridge
-	await _obj("앞으로 나아가기")
-	await _walk([b.door_front()], 2.2)
-	await _obj("문 열기")
-	b.door_use.interact()
-	await _obj("열쇠 찾기", 10.0)
 	var part := _d.part as Chapter1
-	_p.look_at_point(part.key_node.global_position, 0.3)
-	await _shot("20_door_key", 0.5)
-	await _walk([b.to_global(Chapter1.KEY_LOCAL + Vector3(-0.3, 0, 0.6))], 1.4)
-	if not _use(part.key_node, "열쇠 줍기"):
-		_end(1, "no key")
+	# where the prologue ended: at the chained door with the key in hand
+	await _obj("자물쇠 열기")
+	_log("carrying %s, %.1f m from the door" % [str(Game.inventory), _p.global_position.distance_to(b.door_front())])
+	if not Game.has_item("key_gate"):
+		_end(1, "ch1 opens without the key the prologue ended on")
 		return
-	_log("carrying %s" % str(Game.inventory))
-	await _shot("20b_key_held", 0.6)
-	await _obj("자물쇠 열기", 10.0)
+	_p.look_at_point(b.gate_door.global_position + Vector3(0, 1.1, 0), 0.05)
+	await _wait(0.2)
+	if _p.current_interactable != b.door_use:
+		_end(1, "the [E] ray does not reach the gate door")
+		return
+	await _shot("20_door_chained", 0.4)
 	_log("door prompt: " + b.door_use.prompt)
-	b.door_use.interact()
+	_p.current_interactable.interact()
 	await _obj("문 너머로", 10.0)
 	_p.look_at_point(b.gate_door.global_position + Vector3(0, 1.2, 0), 0.3)
 	await _shot("21_open", 0.8)
@@ -302,6 +424,9 @@ func _ch1() -> void:
 	_log("[E] 문 열기 (passage door, locked)")
 	await _obj("키 카드 찾기", 6.0)
 	await _wait(0.6)
+	if world.ui.hud._obj_head.visible:
+		_end(1, "an objective is shown on the HUD (none should be)")
+		return
 	if t.sec_leaf.rotation.y > 0.05:
 		_end(1, "the locked passage door opened")
 		return

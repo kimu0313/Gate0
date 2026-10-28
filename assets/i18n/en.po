@@ -5027,17 +5027,11 @@ msgstr "……This isn't the security office."
 msgid "문이…… 없어?"
 msgstr "The door…… is gone?"
 
-msgid "벽 더듬기"
-msgstr "Feel along the wall"
-
 msgid "들어온 문 찾기"
 msgstr "Find the door you came through"
 
 msgid "벽 살펴보기"
 msgstr "Examine the wall"
-
-msgid "태블릿으로 현재 위치 확인하기  [Tab]"
-msgstr "Check where you are on the tablet  [Tab]"
 
 msgid "담당자"
 msgstr "Supervisor"
@@ -5128,9 +5122,6 @@ msgstr "Boarding bridge"
 
 msgid "위치 불명"
 msgstr "Unknown location"
-
-msgid "벽 다시 살펴보기"
-msgstr "Look at the wall again"
 
 msgid "건너뛰기"
 msgstr "Skip"

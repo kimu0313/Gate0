@@ -2961,17 +2961,11 @@ msgstr "……ここ、保安室じゃない。"
 msgid "문이…… 없어?"
 msgstr "扉が…… ない？"
 
-msgid "벽 더듬기"
-msgstr "壁を手で探る"
-
 msgid "들어온 문 찾기"
 msgstr "入ってきた扉を探す"
 
 msgid "벽 살펴보기"
 msgstr "壁を調べる"
-
-msgid "태블릿으로 현재 위치 확인하기  [Tab]"
-msgstr "タブレットで現在地を確認する  [Tab]"
 
 msgid "담당자"
 msgstr "担当者"
@@ -3062,9 +3056,6 @@ msgstr "搭乗橋"
 
 msgid "위치 불명"
 msgstr "位置不明"
-
-msgid "벽 다시 살펴보기"
-msgstr "もう一度壁を調べる"
 
 msgid "건너뛰기"
 msgstr "スキップ"

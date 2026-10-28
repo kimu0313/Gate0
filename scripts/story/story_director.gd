@@ -14,7 +14,9 @@ var part: StoryScript
 var dead := false
 var tablet_allowed := true
 var objective_text := ""
+var pa_clip := ""                # the pa_at clip on air ("" between them)
 var _pa: AudioStreamPlayer3D
+var _pa_cut := false
 var _guide: AudioStreamPlayer3D
 var _guide_path: Array = []      # [point, reach m] still ahead of the player, the guide waiting at the first
 var _guide_speed := 4.0
@@ -44,17 +46,15 @@ func start() -> void:
 
 # --- objectives ---------------------------------------------------------------------------------
 ## The objective sign (top right). There is no marker: the way is found by eye, or by ear (guide).
+## The story's current goal. It is never shown (user: no quest objectives — the player finds the way and works things
+## out alone): the HUD's order panel and the pause menu's 현재 목표 stay empty. It is kept as the beat the story and the
+## debug bots follow.
 func objective(text: String) -> void:
 	objective_text = text
-	ui.hud.set_objective(text)
-	ui.hud.set_marker(null)
-	if text != "":
-		Snd.play("ui_notify", -14.0, 1.1)
 
 
 func clear_objective() -> void:
 	objective_text = ""
-	ui.hud.set_objective("")
 	ui.hud.set_marker(null)
 
 
@@ -130,20 +130,32 @@ func pa_at(pos: Vector3, clips: Array, subs: Array, gap := 1.2) -> void:
 		Snd.setup_3d(_pa, false)
 		world.add_child(_pa)
 	_pa.global_position = pos
+	_pa_cut = false
 	Snd.pa_busy = true
 	await _pa_clip("pa_chime")
 	await wait(0.3)
 	for i in clips.size():
 		var s := Snd.voice(str(clips[i]))
-		if s == null:
+		if s == null or _pa_cut:
 			continue
 		if i < subs.size():
 			Events.subtitle.emit("pa", str(subs[i]), s.get_length() + 0.5)
 		await _pa_clip(str(clips[i]))
 		if i < clips.size() - 1:
 			await wait(gap)
+	if _pa_cut:
+		return
 	await wait(0.2)
 	await _pa_clip("pa_chime_end")
+	Snd.pa_busy = false
+
+
+## Cuts the announcement on air off where it is; the rest of it is dropped (pa_at returns).
+func pa_stop() -> void:
+	if _pa == null or not Snd.pa_busy:
+		return
+	_pa_cut = true
+	_pa.stop()
 	Snd.pa_busy = false
 
 
@@ -153,8 +165,10 @@ func _pa_clip(clip: String) -> void:
 		return
 	_pa.stream = s
 	_pa.play()
+	pa_clip = clip
 	while _pa.playing:
 		await get_tree().process_frame
+	pa_clip = ""
 
 
 # --- time and holds -----------------------------------------------------------------------------

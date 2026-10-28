@@ -1,15 +1,19 @@
 extends Node
-## Session state, settings, scene flow and save data for GATE 0.
+## Settings, scene flow, story progress and save data for GATE 0.
+##
+## Story order: the title screen (SCENE 05, scripts/ui/menu.gd) → 새 게임 = the prologue (SCENE 01–04,
+## scripts/story/prologue.gd) → back to the title, where 계속하기 starts the main story
+## (scripts/story/chapter1.gd).
 
-const SAVE_PATH := "user://save.json"
+const SAVE_PATH := "user://save_v2.json"   # the anomaly-shift prototype's save.json is not read any more
 const SETTINGS_PATH := "user://settings.cfg"
-const PHOTO_DIR := "user://photos"
-const MAX_CYCLE := 5
-const PHOTOS_PER_DAY := 6
 
 const SCENE_MENU := "res://scenes/menu.tscn"
 const SCENE_GAME := "res://scenes/game.tscn"
-const SCENE_ENDING := "res://scenes/ending.tscn"
+
+## Parts of the story in play order. Only the main story ("ch1" on) is saved; the prologue always plays from its start.
+const CHAPTERS := ["prologue", "ch1"]
+const START_CLOCK := 2 * 60 + 17   # SCENE 01: AM 02:17
 
 # --- settings -----------------------------------------------------------------
 var settings := {
@@ -46,36 +50,29 @@ const BINDINGS := {
 	"interact": [[KEY_E], [MOUSE_BUTTON_LEFT]],
 	"flashlight": [[KEY_F], []],
 	"tablet": [[KEY_TAB], []],
-	"binder": [[KEY_B], []],
 	"close_eyes": [[KEY_C], []],
 	"pause": [[KEY_ESCAPE], []],
 	"ui_page_next": [[KEY_D, KEY_RIGHT, KEY_PAGEDOWN], []],
 	"ui_page_prev": [[KEY_A, KEY_LEFT, KEY_PAGEUP], []],
-	"camera_shoot": [[], [MOUSE_BUTTON_LEFT]],
-	"camera_cancel": [[], [MOUSE_BUTTON_RIGHT]],
 }
 const REBINDABLE := [["move_forward", "앞으로 이동"], ["move_back", "뒤로 이동"], ["move_left", "왼쪽 이동"],
 	["move_right", "오른쪽 이동"], ["sprint", "달리기"], ["interact", "상호작용"], ["flashlight", "손전등"],
-	["close_eyes", "눈 감기"], ["tablet", "태블릿"], ["binder", "근무 수칙"]]
+	["tablet", "태블릿"]]
 
 # --- session state ---------------------------------------------------------------
-var player_name := "점검원"
-var cycle := 1             # 1..5 : DAY N = one dawn shift 00:00–06:00 (10/19 … 10/23, opening day)
-var phase := "night"       # always "night" now (every shift is a dawn shift)
-var erosion := 0.0         # 0..100
-var clock_minutes := 0          # minutes after 00:00
-var clues := {}            # clue_id -> true
-var binder_pages: Array = []   # page ids currently in the binder
-var stats := {}
-var flags := {}            # story flags
-var photos: Array = []     # [{image: Image, tex: ImageTexture, label: String, cycle: int, altered: bool}]
-var photos_left := PHOTOS_PER_DAY
-var night_lights := {"hall": true, "baggage": true, "security": false, "corridor": true, "gates": false}
-var ending_id := ""
-var name_voice_path := ""   # runtime TTS of the player's name (optional)
+var chapter := "prologue"
+var checkpoint := ""          # where the chapter picks up again after you are caught ("" = its start)
+var inventory: Array = []     # item ids you carry ("key_gate" …), Events.inventory_changed
+var flags := {}               # story flags
+var clock_minutes := START_CLOCK
+var player_name := "점검원"   # facility props print it (B-03 bag tags, the X-ray tag)
+var phase := "night"          # look-dev tools name their captures by it
+## How the title screen opens next time: "short" = the menu at once (launch, back from the game) | "full" = SCENE 05
+## (black, cart wheels, the PA, then the title) | "after_prologue" = SCENE 05 in full, then only the title and 계속하기.
+var title_intro := "short"
 
-var _snapshot := {}
-var paused_by_ui := false   # true while tablet/binder/panels own the mouse
+var _snapshot := {}           # inventory and flags as they were at the last checkpoint
+var paused_by_ui := false   # true while the tablet / documents own the mouse
 var _default_settings := {}
 
 
@@ -88,65 +85,27 @@ func _ready() -> void:
 	_debug_args()
 
 
-## Debug / test hooks: `-- --day 2` (or `--night 2`) jumps straight into that dawn shift.
+## Debug / test hooks: `-- --prologue` or `-- --chapter ch1` starts that part when the game scene is run directly,
+## `--checkpoint <name>` jumps inside it.
 func _debug_args() -> void:
 	var args := OS.get_cmdline_user_args()
-	for key in ["--night", "--day"]:
-		var i := args.find(key)
-		if i >= 0:
-			phase = "night"
-			cycle = clampi(int(args[i + 1]) if i + 1 < args.size() and args[i + 1].is_valid_int() else 1, 1, MAX_CYCLE)
-			clock_minutes = 0
-			prepare_chapter(cycle, phase)
-
-
-## Pages slipped into the binder at the start of each shift (the day's handover).
-const DAY_PAGES := {1: ["p0", "p1", "p2", "p3", "p4", "p9"], 2: ["p5"], 3: ["p7", "f7"], 4: ["p6", "p8", "f4", "f8"], 5: []}
-## From this shift on, p.3 is the water-damaged copy.
-const P3_DAMAGED_FROM := 3
-
-
-## Binder contents a player would have when starting directly at shift `c` (before its own new pages).
-func prepare_chapter(c: int, _ph := "night") -> void:
-	binder_pages = []
-	for day in range(1, c):
-		binder_pages.append_array(DAY_PAGES[day])
-	if c > P3_DAMAGED_FROM:
-		binder_pages.erase("p3")
-		binder_pages.append("p3_dmg")
-	set_flag("prologue_seen")
-
-
-## The day's pages arrive with the handover (DAY 3 also water-damages p.3).
-## `part`: "all" | "official" (what the colleague hands over) | "fake" (the pages nobody handed over —
-## found in the binder afterwards, together with the water damage).
-func add_day_pages(c: int, part := "all") -> void:
-	for id in DAY_PAGES.get(c, []):
-		var fake := str(id).begins_with("f")
-		if part == "all" or (part == "fake") == fake:
-			add_binder_page(id)
-	if part != "official" and c >= P3_DAMAGED_FROM and binder_pages.has("p3"):
-		remove_binder_page("p3")
-		add_binder_page("p3_dmg")
+	if args.has("--prologue"):
+		chapter = "prologue"
+	var i := args.find("--chapter")
+	if i >= 0 and i + 1 < args.size() and CHAPTERS.has(args[i + 1]):
+		chapter = args[i + 1]
+	i = args.find("--checkpoint")
+	if i >= 0 and i + 1 < args.size():
+		checkpoint = args[i + 1]
 
 
 func reset_session() -> void:
-	cycle = 1
-	phase = "night"
-	erosion = 0.0
-	clock_minutes = 0
-	clues = {}
-	binder_pages = []
+	chapter = "prologue"
+	checkpoint = ""
+	inventory = []
 	flags = {}
-	photos = []
-	photos_left = PHOTOS_PER_DAY
-	night_lights = {"hall": true, "baggage": true, "security": false, "corridor": true, "gates": false}
-	ending_id = ""
-	stats = {
-		"correct": 0, "missed": 0, "false_alarm": 0, "cleared": 0,
-		"failed": 0, "deaths": 0, "fake_followed": 0, "photos": 0,
-		"mistakes": 0, "inspections": 0, "judged_right": 0, "violations": 0,
-	}
+	clock_minutes = START_CLOCK
+	_snapshot = {}
 
 
 # --- input -----------------------------------------------------------------------
@@ -219,6 +178,7 @@ func reset_settings() -> void:
 
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS_PATH)   # keep the [progress] section
 	for k in settings.keys():
 		cfg.set_value("settings", k, settings[k])
 	cfg.save(SETTINGS_PATH)
@@ -264,16 +224,7 @@ func _set_bus_volume(bus_name: String, linear: float) -> void:
 		AudioServer.set_bus_volume_db(idx, linear_to_db(maxf(linear, 0.0001)))
 
 
-# --- erosion / stats -----------------------------------------------------------------
-func add_erosion(amount: float) -> void:
-	erosion = clampf(erosion + amount, 0.0, 100.0)
-	Events.erosion_changed.emit(erosion)
-
-
-func stat(key: String, amount: int = 1) -> void:
-	stats[key] = int(stats.get(key, 0)) + amount
-
-
+# --- story state -----------------------------------------------------------------------
 func set_flag(key: String, value: Variant = true) -> void:
 	flags[key] = value
 
@@ -282,26 +233,20 @@ func flag(key: String) -> bool:
 	return bool(flags.get(key, false))
 
 
-func has_clue(id: String) -> bool:
-	return clues.has(id)
+func has_item(id: String) -> bool:
+	return inventory.has(id)
 
 
-func add_clue(id: String) -> void:
-	if clues.has(id):
-		return
-	clues[id] = true
-	Events.clue_found.emit(id)
+func add_item(id: String) -> void:
+	if not inventory.has(id):
+		inventory.append(id)
+		Events.inventory_changed.emit()
 
 
-func add_binder_page(page_id: String) -> void:
-	if not binder_pages.has(page_id):
-		binder_pages.append(page_id)
-		Events.binder_changed.emit()
-
-
-func remove_binder_page(page_id: String) -> void:
-	binder_pages.erase(page_id)
-	Events.binder_changed.emit()
+func remove_item(id: String) -> void:
+	if inventory.has(id):
+		inventory.erase(id)
+		Events.inventory_changed.emit()
 
 
 func clock_text(minutes: int = -1) -> String:
@@ -310,38 +255,55 @@ func clock_text(minutes: int = -1) -> String:
 	return "%02d:%02d" % [m / 60, m % 60]
 
 
+## A point the chapter restarts from when you are caught: what you carry and the flags are kept as they are now.
+func set_checkpoint(name_text: String) -> void:
+	checkpoint = name_text
+	_snapshot = {"inventory": inventory.duplicate(), "flags": flags.duplicate(true), "clock": clock_minutes}
+
+
 # --- scene flow ------------------------------------------------------------------------
-func start_new_game(name_text: String) -> void:
+## 새 게임: the story from the very beginning — the prologue (the old save is dropped; the prologue's end saves the
+## main story's start).
+func start_new_game() -> void:
+	if has_save() and not OS.get_cmdline_user_args().has("--storytest"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	start_prologue()
+
+
+func start_prologue() -> void:
 	reset_session()
-	player_name = name_text.strip_edges() if name_text.strip_edges() != "" else "점검원"
-	_prepare_name_voice()
-	start_phase(1, "night")
+	chapter = "prologue"
+	change_scene(SCENE_GAME)
 
 
-func start_phase(new_cycle: int, _new_phase := "night") -> void:
-	cycle = clampi(new_cycle, 1, MAX_CYCLE)
-	phase = "night"   # every shift is a dawn shift now; the argument stays for callers and old saves
-	photos_left = PHOTOS_PER_DAY
-	clock_minutes = 0
-	_take_snapshot()
+func start_chapter(id: String) -> void:
+	reset_session()
+	chapter = id
 	save_game()
 	change_scene(SCENE_GAME)
 
 
-func restart_phase() -> void:
-	_restore_snapshot()
-	stat("deaths", 0)
+## SCENE 04 ends in a blackout: the main story's start is saved and the title screen
+## follows (SCENE 05), where 계속하기 now picks it up.
+func finish_prologue() -> void:
+	reset_session()
+	chapter = "ch1"
+	save_game()
+	title_intro = "after_prologue"   # SCENE 05 in full, then only the title and 계속하기
+	change_scene(SCENE_MENU)
+
+
+## Caught: back to the last checkpoint with what you carried then.
+func restart_checkpoint() -> void:
+	if not _snapshot.is_empty():
+		inventory = _snapshot.inventory.duplicate()
+		flags = _snapshot.flags.duplicate(true)
+		clock_minutes = _snapshot.clock
 	change_scene(SCENE_GAME)
 
 
-func go_ending(id: String) -> void:
-	ending_id = id
-	set_flag("ending_" + id)
-	_record_ending(id)
-	change_scene(SCENE_ENDING)
-
-
 func go_menu() -> void:
+	title_intro = "short"
 	change_scene(SCENE_MENU)
 
 
@@ -352,169 +314,57 @@ func change_scene(path: String) -> void:
 	get_tree().call_deferred("change_scene_to_file", path)
 
 
-func _take_snapshot() -> void:
-	_snapshot = {
-		"erosion": erosion,
-		"clues": clues.duplicate(true),
-		"binder_pages": binder_pages.duplicate(true),
-		"stats": stats.duplicate(true),
-		"flags": flags.duplicate(true),
-		"photos_count": photos.size(),
-		"photos_left": photos_left,
-		"night_lights": night_lights.duplicate(true),
-		"clock": clock_minutes,
-	}
-
-
-func _restore_snapshot() -> void:
-	if _snapshot.is_empty():
-		return
-	# deaths and fake pages followed stay on the record across a restart (they decide the ending)
-	var deaths := int(stats.get("deaths", 0))
-	var fakes := int(stats.get("fake_followed", 0))
-	erosion = _snapshot.erosion
-	clues = _snapshot.clues.duplicate(true)
-	binder_pages = _snapshot.binder_pages.duplicate(true)
-	stats = _snapshot.stats.duplicate(true)
-	stats["deaths"] = deaths
-	stats["fake_followed"] = fakes
-	flags = _snapshot.flags.duplicate(true)
-	photos.resize(mini(photos.size(), int(_snapshot.photos_count)))
-	photos_left = _snapshot.photos_left
-	night_lights = _snapshot.night_lights.duplicate(true)
-	clock_minutes = _snapshot.clock
-
-
 # --- save / load ------------------------------------------------------------------------
 func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
 
 
 func save_game() -> void:
-	var labels := []
-	DirAccess.make_dir_recursive_absolute(PHOTO_DIR)
-	for i in photos.size():
-		var p: Dictionary = photos[i]
-		labels.append({"label": p.label, "cycle": p.cycle, "altered": p.get("altered", false)})
-		var img: Image = p.image
-		if img:
-			img.save_png("%s/photo_%02d.png" % [PHOTO_DIR, i])
+	if chapter == "prologue" or OS.get_cmdline_user_args().has("--storytest"):
+		return   # the prologue is not saved, and a test run never touches the player's save
 	var data := {
-		"version": 1,
-		"player_name": player_name,
-		"cycle": cycle,
-		"phase": phase,
-		"erosion": erosion,
-		"clues": clues,
-		"binder_pages": binder_pages,
-		"stats": stats,
+		"version": 2,
+		"chapter": chapter,
+		"checkpoint": checkpoint,
+		"inventory": inventory,
 		"flags": flags,
-		"photos": labels,
-		"night_lights": night_lights,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data, "\t"))
 
 
-func load_game() -> bool:
+## The saved chapter's id ("" when there is no usable save).
+func saved_chapter() -> String:
+	var data := _read_save()
+	return str(data.get("chapter", "")) if not data.is_empty() else ""
+
+
+func _read_save() -> Dictionary:
 	if not has_save():
-		return false
+		return {}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if f == null:
-		return false
+		return {}
 	var data = JSON.parse_string(f.get_as_text())
-	if typeof(data) != TYPE_DICTIONARY:
+	if typeof(data) != TYPE_DICTIONARY or int(data.get("version", 0)) != 2 or not CHAPTERS.has(str(data.get("chapter", ""))):
+		return {}
+	return data
+
+
+func load_game() -> bool:
+	var data := _read_save()
+	if data.is_empty():
 		return false
 	reset_session()
-	player_name = str(data.get("player_name", "점검원"))
-	cycle = clampi(int(data.get("cycle", 1)), 1, MAX_CYCLE)
-	phase = "night"
-	erosion = float(data.get("erosion", 0.0))
-	clues = data.get("clues", {})
-	binder_pages = data.get("binder_pages", [])
-	for k in data.get("stats", {}).keys():
-		stats[k] = int(data.stats[k])
-	flags = data.get("flags", {})
-	night_lights = data.get("night_lights", night_lights)
-	photos = []
-	var labels: Array = data.get("photos", [])
-	for i in labels.size():
-		var path := "%s/photo_%02d.png" % [PHOTO_DIR, i]
-		var img := Image.load_from_file(path) if FileAccess.file_exists(path) else null
-		if img == null:
-			continue
-		photos.append({
-			"image": img, "tex": ImageTexture.create_from_image(img),
-			"label": str(labels[i].get("label", "")), "cycle": int(labels[i].get("cycle", 1)),
-			"altered": bool(labels[i].get("altered", false)),
-		})
-	_prepare_name_voice()
+	chapter = str(data.chapter)
+	checkpoint = str(data.get("checkpoint", ""))
+	inventory = (data.get("inventory", []) as Array).duplicate()
+	flags = (data.get("flags", {}) as Dictionary).duplicate(true)
+	set_checkpoint(checkpoint)
 	return true
 
 
 func continue_game() -> void:
 	if load_game():
-		start_phase(cycle, phase)
-
-
-func _record_ending(id: String) -> void:
-	var cfg := ConfigFile.new()
-	cfg.load(SETTINGS_PATH)
-	var seen: Array = cfg.get_value("progress", "endings", [])
-	if not seen.has(id):
-		seen.append(id)
-	cfg.set_value("progress", "endings", seen)
-	cfg.save(SETTINGS_PATH)
-
-
-func endings_seen() -> Array:
-	var cfg := ConfigFile.new()
-	cfg.load(SETTINGS_PATH)
-	return cfg.get_value("progress", "endings", [])
-
-
-# --- runtime name voice (Windows SAPI) -----------------------------------------------------
-## Synthesises "{name} 승객님..." so the PA can call the player by name, and "{name} 씨, 들립니까?" for the voice past
-## the end of the 1987 tape (Snd.voice "name_tape", voice_name_tape.wav beside it). Falls back silently.
-func _prepare_name_voice() -> void:
-	name_voice_path = ""
-	if OS.get_name() != "Windows" or DisplayServer.get_name() == "headless":
-		return
-	var out_path := ProjectSettings.globalize_path("user://voice_name.wav")
-	var safe_name := player_name.replace("'", "").replace("\"", "").replace("`", "").replace("$", "")
-	var text := "%s 승객님. %s 승객님. 영번 게이트로 오시기 바랍니다. 기다리고 있습니다." % [safe_name, safe_name]
-	var tape_path := out_path.replace("voice_name.wav", "voice_name_tape.wav")
-	var tape_text := "%s 씨. %s 씨, 들립니까. 여기는, 에이영편입니다." % [safe_name, safe_name]
-	var ps := "Add-Type -AssemblyName System.Speech; " \
-		+ "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " \
-		+ "try { $s.SelectVoice('Microsoft Heami Desktop') } catch {}; " \
-		+ "$s.Rate = -3; " \
-		+ "$f = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(22050, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono); " \
-		+ "$s.SetOutputToWaveFile('%s', $f); $s.Speak('%s'); " % [out_path, text] \
-		+ "$s.Rate = -3; $s.SetOutputToWaveFile('%s', $f); $s.Speak('%s'); $s.Dispose()" % [tape_path, tape_text]
-	var t := Thread.new()
-	t.start(func():
-		var output := []
-		var code := OS.execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], output, true, false)
-		return code
-	)
-	_name_voice_thread = t
-	_name_voice_out = out_path
-
-
-var _name_voice_thread: Thread
-var _name_voice_out := ""
-
-
-func _process(_delta: float) -> void:
-	if _name_voice_thread and not _name_voice_thread.is_alive():
-		var code = _name_voice_thread.wait_to_finish()
-		_name_voice_thread = null
-		if code == 0 and FileAccess.file_exists(_name_voice_out):
-			name_voice_path = _name_voice_out
-
-
-func _exit_tree() -> void:
-	if _name_voice_thread:
-		_name_voice_thread.wait_to_finish()
+		change_scene(SCENE_GAME)

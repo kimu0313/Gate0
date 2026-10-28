@@ -6,7 +6,10 @@ extends Control
 
 var terminal: Terminal
 var player: Player
-var director: ShiftDirector
+var show_player := true          # false: the map has no idea where you are (no marker)
+var target_zone := ""            # the current order's zone, place and title (highlighted)
+var target_pos := Vector3.INF
+var target_title := ""
 var _t := 0.0
 var _bounds := Rect2()     # world (x, z) extent of the drawn zones
 var _scale := 1.0
@@ -70,13 +73,6 @@ func _draw() -> void:
 	_layout(map_area)
 	var f := UiKit.font("sans", 700)
 	var disp := UiKit.font("display", 700)
-	var target_zone := ""
-	var target_pos := Vector3.INF
-	if director and director.current:
-		target_zone = director.current.location
-		var fac := terminal.facility(director.current.facility_id)
-		if fac:
-			target_pos = fac.focus_position()
 	# zones
 	var rects := {}
 	for zn in _zones():
@@ -135,7 +131,7 @@ func _draw() -> void:
 		draw_rect(lr, UiKit.SIGNAL)
 		draw_string(f, lr.position + Vector2(9, 20), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL_INK)
 	# player
-	if player:
+	if player and show_player:
 		var pp := _to_map(Vector2(player.global_position.x, player.global_position.z))
 		var fw := player.forward()
 		var dir := Vector2(-fw.z, fw.x).normalized()
@@ -211,7 +207,7 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 	var y := r.position.y + 34.0
 	draw_string(disp, Vector2(x, y), UiKit.t("ZONE STATUS · 구역 상태"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_MUTE)
 	y += 16.0
-	var here: String = player.zone if player else ""
+	var here: String = player.zone if player and show_player else ""
 	for zn in _zones():
 		var row := Rect2(r.position.x + 10.0, y, r.size.x - 20.0, 38.0)
 		if zn == target_zone:
@@ -237,11 +233,19 @@ func _draw_side(r: Rect2, target_zone: String, f: Font, disp: Font) -> void:
 	# active order
 	y += 40.0
 	draw_string(disp, Vector2(x, y), UiKit.t("CURRENT ORDER · 현재 지시"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.SIGNAL_TEXT)
-	var title := UiKit.t(director.current.title) if director and director.current else "—"
+	var title := UiKit.t(target_title) if target_title != "" else "—"
 	draw_multiline_string(f, Vector2(x, y + 30.0), title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2, UiKit.TEXT)
 	var th := f.get_multiline_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, w, 20, 2).y
 	if target_zone != "":
 		draw_string(f, Vector2(x, y + 30.0 + th + 6.0), UiKit.t("위치 · %s") % UiKit.t(Terminal.ZONE_NAMES.get(target_zone, target_zone)), HORIZONTAL_ALIGNMENT_LEFT, w, UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	# where you are
+	var yy := r.end.y - 34.0
+	draw_string(disp, Vector2(x, yy - 26.0), UiKit.t("CURRENT LOCATION · 현재 위치"), HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.MIN_TEXT, UiKit.TEXT_MUTE)
+	if show_player and player:
+		draw_string(f, Vector2(x, yy), UiKit.t(Terminal.ZONE_NAMES.get(player.zone, "—")), HORIZONTAL_ALIGNMENT_LEFT, w, 20, UiKit.CLEAR)
+	else:
+		var blink := 0.55 + 0.45 * float(fmod(_t, 1.0) < 0.6)
+		draw_string(f, Vector2(x, yy), UiKit.t("신호 없음 · NO SIGNAL"), HORIZONTAL_ALIGNMENT_LEFT, w, 20, Color(UiKit.ALERT, blink))
 
 
 func _locked(zn: String) -> bool:

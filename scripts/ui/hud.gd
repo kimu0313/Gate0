@@ -1,8 +1,7 @@
 class_name Hud
 extends CanvasLayer
-## SIGN-language HUD: current-order sign, toasts, subtitles, reticle with observation ring, interaction
-## prompt, warning banner and key hints. As erosion rises the same signage starts to slip:
-## colors bleed, words swap ("점검" → "탑승") and finally the order sign becomes a boarding notice.
+## SIGN-language HUD: objective sign (top right) with its marker, toasts, subtitles, reticle, interaction prompt,
+## warning banner, key hints, the clock / place row and what you are carrying (bottom right).
 
 var has_target := false
 var player: Player
@@ -20,7 +19,8 @@ var _phase_chip: Label
 var _phase_box: PanelContainer
 var _zone: FlapLabel
 var _obj_text := ""
-var _boarding := false
+var _boarding := false           # BOARDING-style signage (navy); off for now
+var chip_text := ""              # chip beside the clock
 var _quest_box: HBoxContainer    # top right: the current order (퀘스트)
 var _obj_fade: Tween             # the panel's fade-out when an order is done; the next order cancels it
 var _obj_dist: Label             # DAY 1: distance to the green diamond, beside the caption
@@ -59,10 +59,11 @@ var _keys_t := 0.0
 var _keys_tile: PanelContainer
 var _keys_icon: UiIcon
 var _keys_caption: Label
-# erosion glitches
-var _glitch_cd := 3.0
-var _glitch_t := 0.0
-var _clock_override := ""
+var _clock_override := ""        # "--:--" where time has stopped
+var _items: HBoxContainer        # what you carry (bottom right)
+
+## Names and icons of the things you can carry (Game.inventory).
+const ITEMS := {"key_gate": ["열쇠", "key"]}
 
 
 func _ready() -> void:
@@ -77,10 +78,52 @@ func _ready() -> void:
 	_build_reticle(root)
 	_build_warning(root)
 	_build_controls(root)
+	_build_items(root)
 	_build_marker(root)   # last: the diamond pinned to a screen edge stays above the notes
 	_keys_t = 40.0
 	Events.subtitle.connect(show_subtitle)
 	Events.notify.connect(add_note)
+	Events.inventory_changed.connect(refresh_items)
+
+
+func _build_items(root: Control) -> void:
+	_items = HBoxContainer.new()
+	_items.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_items.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_items.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_items.offset_right = -44
+	_items.offset_bottom = -40
+	_items.alignment = BoxContainer.ALIGNMENT_END
+	_items.add_theme_constant_override("separation", 10)
+	_items.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_items)
+	refresh_items()
+
+
+## One sign tile per carried item; a new one flashes in.
+func refresh_items() -> void:
+	var had := _items.get_child_count()
+	for c in _items.get_children():
+		c.queue_free()
+	var i := 0
+	for id in Game.inventory:
+		var it: Array = ITEMS.get(id, [id, "dot"])
+		var tile := PanelContainer.new()
+		tile.add_theme_stylebox_override("panel", UiKit.boxm(UiKit.SHADE, Vector4(12, 8, 16, 8)))
+		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override("separation", 10)
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tile.add_child(h)
+		var ic := UiIcon.make(it[1], 26, UiKit.SIGNAL_TEXT)
+		ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(ic)
+		h.add_child(UiKit.label(it[0], 20, UiKit.TEXT, "sans", 700))
+		_items.add_child(tile)
+		if i >= had:
+			tile.modulate = Color(2.0, 2.0, 2.0, 0.0)
+			tile.create_tween().tween_property(tile, "modulate", Color.WHITE, 0.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+		i += 1
 
 
 # =========================================================================================
@@ -125,7 +168,7 @@ func _build_objective(root: Control) -> void:
 	cap_row.add_theme_constant_override("separation", 10)
 	cap_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bv.add_child(cap_row)
-	_obj_caption = FlapLabel.make("CURRENT ORDER · 현재 지시", UiKit.MIN_TEXT, UiKit.SIGNAL_TEXT, "display", 700)
+	_obj_caption = FlapLabel.make("OBJECTIVE · 현재 목표", UiKit.MIN_TEXT, UiKit.SIGNAL_TEXT, "display", 700)
 	_obj_caption.tick_sound = false
 	_obj_caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cap_row.add_child(_obj_caption)
@@ -233,7 +276,8 @@ func _draw_marker() -> void:
 
 
 func _refresh_phase_chip() -> void:
-	_phase_chip.text = "DAY %d" % Game.cycle
+	_phase_chip.text = chip_text
+	_phase_box.visible = chip_text != ""
 	var bg := UiKit.NAVY_TEXT if _boarding else UiKit.TEXT
 	_phase_chip.add_theme_color_override("font_color", UiKit.NAVY if _boarding else UiKit.INK_0)
 	_phase_box.add_theme_stylebox_override("panel", UiKit.boxm(bg, Vector4(8, 1, 8, 2)))
@@ -412,8 +456,8 @@ func _build_controls(root: Control) -> void:
 		_key_caps.append([kc, k[1]])
 		bottom.add_child(kc)
 	mv.add_child(_guide_label("이동", "MOVE"))
-	for group in [[["sprint", "달리기", "SPRINT"]], [["interact", "상호작용", "USE"], ["flashlight", "손전등", "LIGHT"], ["close_eyes", "눈 감기", "HOLD"]],
-			[["tablet", "태블릿", "TABLET"], ["binder", "근무 수칙", "RULES"], ["pause", "메뉴", "MENU"]]]:
+	for group in [[["sprint", "달리기", "SPRINT"]], [["interact", "상호작용", "USE"], ["flashlight", "손전등", "LIGHT"]],
+			[["tablet", "태블릿", "TABLET"], ["pause", "메뉴", "MENU"]]]:
 		var sep := ColorRect.new()
 		sep.color = Color(1, 1, 1, 0.12)
 		sep.custom_minimum_size = Vector2(1, 46)
@@ -489,7 +533,6 @@ func _process(delta: float) -> void:
 	_burst = move_toward(_burst, 0.0, delta * 1.8)
 	_reticle.queue_redraw()
 	_update_notes(delta)
-	_update_erosion(delta)
 	# DAY 1 diamond and its distance in the order panel; the notes stack starts under the order panel
 	_marker_t += delta
 	_marker.queue_redraw()
@@ -547,72 +590,26 @@ func set_objective(text: String) -> void:
 
 
 func _shown(text: String) -> String:
-	return UiKit.corrupt(text, 1.0) if Game.erosion >= 75.0 and randf() < 0.3 else text
+	return text
 
 
-# =========================================================================================
-# erosion: the signage slips
-# =========================================================================================
-func _update_erosion(delta: float) -> void:
-	var e := Game.erosion
-	_sync_boarding()
-	if _glitch_t > 0.0:
-		_glitch_t -= delta
-		if _glitch_t <= 0.0:
-			_end_glitch()
-	if e < 25.0:
-		return
-	_glitch_cd -= delta
-	if _glitch_cd <= 0.0:
-		_glitch_cd = randf_range(2.5, 7.0) * (1.6 - e / 100.0)
-		_start_glitch(e)
+## The clock as the meta row shows it ("--:--" once the story has taken the time away).
+func clock_shown() -> String:
+	return _clock_override if _clock_override != "" else Game.clock_text()
 
 
-func _start_glitch(e: float) -> void:
-	_glitch_t = randf_range(0.08, 0.16) + (0.15 if e >= 50.0 else 0.0)
-	if not Game.settings.reduce_motion:
-		_obj_root.position.x = 44.0 + randf_range(-6.0, 6.0) * (e / 100.0 + 0.3)
-		_obj_root.modulate = Color(1.25, 0.75, 0.75) if randf() < 0.5 else Color(0.8, 1.1, 1.3)
-	if randf() < 0.6:
-		_clock_override = "--:--" if e < 60.0 or randf() < 0.5 else "00:00"
-	if e >= 50.0 and _obj_text != "":
-		_objective.flap_to(UiKit.corrupt(_obj_text, 1.0), false)
-		if not _boarding:
-			_obj_caption.flap_to("CURRENT B0ARD1NG · 현재 탑승", false)
-	if e >= 40.0:
-		Snd.play("glitch", -26.0, randf_range(1.2, 1.6))
+func set_clock_override(text: String) -> void:
+	_clock_override = text
 
 
-func _end_glitch() -> void:
-	_obj_root.position.x = 44.0
-	_obj_root.modulate = Color.WHITE
-	_clock_override = ""
-	if _obj_text != "":
-		_objective.flap_to(_obj_text, false)
-	_obj_caption.flap_to("BOARDING · 탑승 안내" if _boarding else "CURRENT ORDER · 현재 지시", false)
-
-
-## Also called when a subtitle or toast arrives, so it is styled for the erosion of that same frame.
-func _sync_boarding() -> void:
-	if (Game.erosion >= 75.0) != _boarding:
-		_set_boarding(not _boarding)
-
-
-func _set_boarding(on: bool) -> void:
-	_boarding = on
-	_obj_tile.add_theme_stylebox_override("panel", UiKit.box(UiKit.NAVY_TEXT if on else UiKit.SIGNAL, Color(0, 0, 0, 0), 0, 0, 0))
-	_obj_icon.set_icon("plane" if on else "order", UiKit.NAVY if on else UiKit.SIGNAL_INK)
-	_obj_body.add_theme_stylebox_override("panel", UiKit.boxm(Color(UiKit.NAVY, 0.92) if on else UiKit.SHADE, Vector4(18, 11, 22, 13)))
-	_obj_caption.add_theme_color_override("font_color", UiKit.NAVY_TEXT if on else UiKit.SIGNAL_TEXT)
-	_obj_caption.flap_to("BOARDING · 탑승 안내" if on else "CURRENT ORDER · 현재 지시")
-	# the rest of the signage goes over with it: control guide, phase chip, observation accents
-	_keys_tile.add_theme_stylebox_override("panel", UiKit.box(_accent(), Color(0, 0, 0, 0), 0, 0, 0))
-	_keys_icon.set_icon("keyboard", UiKit.NAVY if on else UiKit.SIGNAL_INK)
-	_keys_caption.text = UiKit.keep_all(UiKit.t("PASSENGER GUIDE · 승객 안내" if on else "CONTROLS · 조작 안내"))
-	_keys_caption.add_theme_color_override("font_color", Color("9fb3e0") if on else UiKit.SIGNAL_TEXT)
-	_keys.add_theme_stylebox_override("panel", UiKit.boxm(Color(UiKit.NAVY, 0.88) if on else Color(0.035, 0.043, 0.055, 0.8), Vector4.ZERO))
-	_observe_label.add_theme_color_override("font_color", _accent_text())
+## The small chip beside the clock ("" hides it).
+func set_chip(text: String) -> void:
+	chip_text = text
 	_refresh_phase_chip()
+
+
+func _sync_boarding() -> void:
+	pass
 
 
 # =========================================================================================
@@ -790,7 +787,6 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 		return
 	for c in _sub_chip_slot.get_children():
 		c.queue_free()
-	_sync_boarding()
 	_sub_text.add_theme_font_size_override("font_size", [22, 27, 34][clampi(int(Game.settings.subtitle_size), 0, 2)])
 	_set_sub_bg(float(Game.settings.subtitle_bg))
 	var chip: Control
@@ -803,14 +799,17 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 		"self":
 			chip = UiKit.chip(who if who != "" else "나", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "")
 		"npc":
-			# someone standing right there (the evening-shift colleague), not a radio voice
+			# someone standing right there, not a radio voice
 			chip = UiKit.chip(who, UiKit.TEXT, Color(0.16, 0.2, 0.26, 0.92), "person")
+		"sound":
+			# a caption for a sound ("[멀리서 바퀴 굴러가는 소리]"), not someone talking
+			chip = UiKit.chip("소리", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "speaker")
 		_:
 			chip = UiKit.chip(who if who != "" else "SYSTEM", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "info")
 	for ic in chip.find_children("*", "UiIcon", true, false):
 		(ic as UiIcon).animated = speaker in ["radio", "pa"]
 	_sub_chip_slot.add_child(chip)
-	_sub_text.add_theme_color_override("font_color", Color(0.86, 0.87, 0.9) if speaker == "self" else Color(0.97, 0.97, 0.97))
+	_sub_text.add_theme_color_override("font_color", Color(0.86, 0.87, 0.9) if speaker == "self" else (UiKit.TEXT_DIM if speaker == "sound" else Color(0.97, 0.97, 0.97)))
 	_sub_text.text = UiKit.keep_all(body)
 	# a line that follows straight on (the colleague talks without radio clicks in between) must not be
 	# hidden by the previous line's fade-out finishing after it appeared
@@ -845,7 +844,6 @@ func add_note(text: String, kind: String) -> void:
 		await get_tree().process_frame
 		if _obj_text != "" and text.contains(_obj_text):
 			return
-	_sync_boarding()
 	var accent := UiKit.TEXT_DIM
 	match kind:
 		"task":

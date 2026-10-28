@@ -213,24 +213,6 @@ func stream(sound_name: String) -> AudioStream:
 
 
 func voice(clip: String) -> AudioStream:
-	if clip == "name_tape":
-		# DAY 4: past the end of the 1987 tape, a voice says your name
-		var path := Game.name_voice_path.replace("voice_name.wav", "voice_name_tape.wav")
-		if Game.name_voice_path != "" and FileAccess.file_exists(path):
-			if not _cache.has("__tape__" + path):
-				_cache["__tape__" + path] = AudioStreamWAV.load_from_file(path)
-			if _cache["__tape__" + path]:
-				return _cache["__tape__" + path]
-		return stream("tape_name_generic")
-	if clip == "name_call":
-		if Game.name_voice_path != "":
-			if _cache.has("__name__" + Game.name_voice_path):
-				return _cache["__name__" + Game.name_voice_path]
-			var w := AudioStreamWAV.load_from_file(Game.name_voice_path)
-			if w:
-				_cache["__name__" + Game.name_voice_path] = w
-				return w
-		return stream("pa_call_generic_ko")
 	return stream(clip)
 
 

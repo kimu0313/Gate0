@@ -303,6 +303,40 @@ static func _bag_mat(color: Color, soft: bool) -> StandardMaterial3D:
 	return _bag_mats[key]
 
 
+## Airport baggage trolley (local -Z = the push handle's side): wire basket deck, a back frame with the handle bar
+## and a brake grip, four small castors. Bags go on its deck (y 0.36). Solid to walk into.
+static func luggage_cart(parent: Node3D, pos: Vector3, rot_y := 0.0) -> Node3D:
+	var root := Node3D.new()
+	parent.add_child(root)
+	root.position = pos
+	root.rotation.y = rot_y
+	var steel := Mats.std(Color(0.62, 0.64, 0.66), 0.35, 0.8)
+	var dark := Mats.get_mat("plastic_dark")
+	# deck: two side rails and cross slats
+	for sx in [-0.27, 0.27]:
+		Geo.box(root, Vector3(sx, 0.32, 0.0), Vector3(0.03, 0.03, 0.95), steel, false)
+	for z in [-0.42, -0.21, 0.0, 0.21, 0.42]:
+		Geo.box(root, Vector3(0, 0.33, z), Vector3(0.55, 0.012, 0.025), steel, false)
+	Geo.box(root, Vector3(0, 0.36, 0.5), Vector3(0.6, 0.07, 0.02), steel, false)          # front lip
+	# back frame up to the handle
+	for sx in [-0.27, 0.27]:
+		var post := Geo.box(root, Vector3(sx, 0.72, -0.5), Vector3(0.03, 0.82, 0.03), steel, false)
+		post.rotation.x = -0.12
+	Geo.box(root, Vector3(0, 1.1, -0.55), Vector3(0.6, 0.035, 0.035), steel, false)
+	Geo.box(root, Vector3(0, 1.06, -0.6), Vector3(0.56, 0.03, 0.05), dark, false)       # brake grip
+	for y in [0.55, 0.78]:
+		Geo.box(root, Vector3(0, y, -0.51), Vector3(0.55, 0.02, 0.02), steel, false)
+	var plate := Geo.box(root, Vector3(0, 0.88, -0.5), Vector3(0.4, 0.14, 0.006), Mats.std(Color(0.12, 0.25, 0.68), 0.5), false)
+	plate.rotation.x = -0.12
+	# castors
+	for c in [Vector3(-0.24, 0.07, 0.4), Vector3(0.24, 0.07, 0.4), Vector3(-0.24, 0.07, -0.42), Vector3(0.24, 0.07, -0.42)]:
+		var w := Geo.cyl(root, c, 0.07, 0.04, dark)
+		w.rotation.z = PI / 2
+		Geo.box(root, c + Vector3(0, 0.12, 0), Vector3(0.03, 0.16, 0.03), steel, false)
+	Geo.blocker(root, Vector3(0, 0.55, 0), Vector3(0.65, 1.1, 1.1))
+	return root
+
+
 ## Featureless dark passenger silhouette.
 static func figure(parent: Node3D, pos: Vector3, rot_y := 0.0, seated := true) -> Node3D:
 	var root := Node3D.new()

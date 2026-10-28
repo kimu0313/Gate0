@@ -4931,3 +4931,266 @@ msgstr "DAY 4 — Boarding Wing · Wet Things"
 
 msgid "정기 방송 중에는 움직이지 마십시오. 방송이 끝날 때까지 그 자리에 서 있으십시오. (수칙 p.9 ③)"
 msgstr "Do not move during the regular broadcast. Stay where you are until it ends. (Rule p.9 ③)"
+
+# --- Gate 0 v2: prologue, title, chapter 1 (temporary key + padlock) ---
+
+msgid "앞으로 나아가기"
+msgstr "Move forward"
+
+msgid "다음 이야기는 준비 중입니다."
+msgstr "The next part is still being prepared."
+
+msgid "열쇠 줍기"
+msgstr "Pick up the key"
+
+msgid "열쇠를 주웠다."
+msgstr "Picked up the key."
+
+msgid "열쇠로 자물쇠 열기"
+msgstr "Open the padlock with the key"
+
+msgid "자물쇠 열기"
+msgstr "Open the padlock"
+
+msgid "……자물쇠로 잠겨 있다."
+msgstr "……It's padlocked."
+
+msgid "열쇠 찾기"
+msgstr "Find the key"
+
+msgid "문 너머로 나아가기"
+msgstr "Go through the door"
+
+msgid "조명 설비"
+msgstr "Lighting"
+
+msgid "안내방송 설비"
+msgstr "PA system"
+
+msgid "수하물 운송 설비"
+msgstr "Baggage handling"
+
+msgid "직원 통로"
+msgstr "Staff passage"
+
+msgid "수하물 운송 설비 확인"
+msgstr "Check the baggage handling"
+
+msgid "A국제공항 터미널"
+msgstr "A International Airport Terminal"
+
+msgid "정상 근무"
+msgstr "Normal shift"
+
+msgid "……이제 마지막 구역이네."
+msgstr "……Last area for tonight."
+
+msgid "태블릿으로 점검 목록 확인하기  [Tab]"
+msgstr "Check the inspection list on the tablet  [Tab]"
+
+msgid "수하물 운송 설비 확인하기"
+msgstr "Check the baggage handling"
+
+msgid "달그락…… 덜컹…… 달그락……"
+msgstr "Rattle…… clunk…… rattle……"
+
+msgid "……덜컹…… 달그락……"
+msgstr "……clunk…… rattle……"
+
+msgid "……이 시간에 저쪽을 쓸 직원은 없는데."
+msgstr "……Nobody should be working over there at this hour."
+
+msgid "[F] 손전등을 켜고 끌 수 있습니다."
+msgstr "[F] turns the flashlight on and off."
+
+msgid "소리가 난 곳 확인하기"
+msgstr "Find where the sound came from"
+
+msgid "종잇조각 살펴보기"
+msgstr "Look at the scrap of paper"
+
+msgid "수하물 태그 조각이다. ‘…IGHT 000’, ‘GATE 0’…… 나머지는 찢겨 나갔다."
+msgstr "A piece of a baggage tag. ‘…IGHT 000’, ‘GATE 0’…… the rest is torn away."
+
+msgid "저 사람에게 말 걸기"
+msgstr "Speak to the person"
+
+msgid "……저기요?"
+msgstr "……Excuse me?"
+
+msgid "다시 말 걸기"
+msgstr "Speak again"
+
+msgid "저기요…… 여기는 출입 통제 구역입니다."
+msgstr "Excuse me…… this area is closed."
+
+msgid "찌익……"
+msgstr "Rrrip……"
+
+msgid "손전등으로 얼굴 확인하기"
+msgstr "Get a look at the face with the flashlight"
+
+msgid "뚝……"
+msgstr "Crack……"
+
+msgid "도망쳐라"
+msgstr "Run"
+
+msgid "[SHIFT] 달리기"
+msgstr "[SHIFT] Sprint"
+
+msgid "달그락. 덜컹. 달그락."
+msgstr "Rattle. Clunk. Rattle."
+
+msgid "보안실  SECURITY OFFICE"
+msgstr "보안실  SECURITY OFFICE"
+
+msgid "문 밀고 들어가기"
+msgstr "Push through the door"
+
+msgid "그것에게 붙잡혔다."
+msgstr "It caught you."
+
+msgid "쿵!"
+msgstr "Bang!"
+
+msgid "……여기, 보안실이 아니야."
+msgstr "……This isn't the security office."
+
+msgid "문이…… 없어?"
+msgstr "The door…… is gone?"
+
+msgid "벽 더듬기"
+msgstr "Feel along the wall"
+
+msgid "들어온 문 찾기"
+msgstr "Find the door you came through"
+
+msgid "손잡이도, 문틈도…… 아무것도 없어."
+msgstr "No handle, no gap…… nothing."
+
+msgid "벽 살펴보기"
+msgstr "Examine the wall"
+
+msgid "태블릿으로 현재 위치 확인하기  [Tab]"
+msgstr "Check where you are on the tablet  [Tab]"
+
+msgid "여기 보안실이 아닙니다. 지금 제가 어디에 있는 거죠?"
+msgstr "This isn't the security office. Where am I?"
+
+msgid "담당자"
+msgstr "Supervisor"
+
+msgid "……현재 위치를 다시 확인해 주세요."
+msgstr "……Please check your location again."
+
+msgid "출입문이 사라졌습니다. 제가 들어온 문이 없습니다."
+msgstr "The door is gone. The door I came in through isn't there."
+
+msgid "그쪽으로 들어가시면 안 됩니다."
+msgstr "You must not go in there."
+
+msgid "[무전이 끊긴다]"
+msgstr "[the radio cuts out]"
+
+msgid "……돌아갈 길이 없어."
+msgstr "……There's no way back."
+
+msgid "승객 여러분께 안내 말씀드립니다."
+msgstr "Ladies and gentlemen, may I have your attention, please."
+
+msgid "Flight 000편의 탑승을 시작하겠습니다."
+msgstr "We will now begin boarding Flight 000."
+
+msgid "마지막 지점부터 다시"
+msgstr "Retry from the last checkpoint"
+
+msgid "언어 변경은 다음 장면부터 모든 화면에 적용됩니다."
+msgstr "The new language applies to every screen from the next scene."
+
+msgid "NOW · 현재"
+msgstr "NOW"
+
+msgid "OBJECTIVE · 현재 목표"
+msgstr "OBJECTIVE"
+
+msgid "다시 시도"
+msgstr "Try again"
+
+msgid "열쇠"
+msgstr "Key"
+
+msgid "소리"
+msgstr "Sound"
+
+msgid "CURRENT LOCATION · 현재 위치"
+msgstr "CURRENT LOCATION"
+
+msgid "신호 없음 · NO SIGNAL"
+msgstr "NO SIGNAL"
+
+msgid "새 게임"
+msgstr "New Game"
+
+msgid "새 게임을 시작할까요?"
+msgstr "Start a new game?"
+
+msgid "저장된 진행이 지워집니다."
+msgstr "Your saved progress will be erased."
+
+msgid "시작"
+msgstr "Start"
+
+msgid "Flight 000편의 탑승이 시작되었습니다."
+msgstr "Flight 000 is now boarding."
+
+msgid "확인 필요"
+msgstr "Check needed"
+
+msgid "미점검"
+msgstr "Not checked"
+
+msgid "점검 목록"
+msgstr "Checklist"
+
+msgid "터미널 도면"
+msgstr "Terminal plan"
+
+msgid "화면 전환"
+msgstr "Switch page"
+
+msgid "NIGHT INSPECTION · 야간 시설 점검"
+msgstr "NIGHT INSPECTION"
+
+msgid "최종 점검 구역"
+msgstr "Final inspection area"
+
+msgid "현재 위치를 확인할 수 없습니다."
+msgstr "Your location cannot be determined."
+
+msgid "말 걸기"
+msgstr "Speak"
+
+msgid "탑승교"
+msgstr "Boarding bridge"
+
+msgid "위치 불명"
+msgstr "Unknown location"
+
+msgid "보안실 문으로 피하기"
+msgstr "Get through the security office door"
+
+msgid "문 열고 들어가기"
+msgstr "Open the door and get in"
+
+msgid "……문이, 없어?"
+msgstr "……The door's…… gone?"
+
+msgid "벽 다시 살펴보기"
+msgstr "Look at the wall again"
+
+msgid "건너뛰기"
+msgstr "Skip"
+
+msgid "계속하려면 아무 키나 누르세요"
+msgstr "Press any key to continue"

@@ -284,7 +284,7 @@ static func caption(text: String, color := TEXT_MUTE, size := MIN_TEXT) -> Label
 
 
 ## Default keys named in game text, mapped to their action so a rebound key is shown instead.
-const _KEY_ACTIONS := {"TAB": "tablet", "B": "binder", "E": "interact", "F": "flashlight", "C": "close_eyes", "SHIFT": "sprint"}
+const _KEY_ACTIONS := {"TAB": "tablet", "E": "interact", "F": "flashlight", "C": "close_eyes", "SHIFT": "sprint"}
 
 
 ## BBCode for rich text that mentions keys: "[Tab] 태블릿" draws Tab as a pale key cap, matching

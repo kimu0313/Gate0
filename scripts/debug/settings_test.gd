@@ -6,10 +6,12 @@ extends Node
 
 const LANGS := ["en", "ja", "ko"]
 
+var _backup := ""                 # the player's settings.cfg as it was: put back whatever happens
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	var start := str(Game.settings.language)
+	_backup = FileAccess.get_file_as_string(Game.SETTINGS_PATH)
 	await _frames(30)
 	var menu := _menu()
 	# --- ESC closes the settings ---
@@ -57,11 +59,19 @@ func _ready() -> void:
 		if menu._settings.visible:
 			_fail("ESC did not close the settings in %s" % want)
 			return
-	Game.settings.language = start
-	Game.apply_settings()
-	Game.save_settings()
+	_restore()
 	print("[settingstest] PASS")
 	get_tree().quit(0)
+
+
+## Every language switch is saved by the panel; the player's own file goes back as it was (pass or fail).
+func _restore() -> void:
+	if _backup == "":
+		return
+	var f := FileAccess.open(Game.SETTINGS_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(_backup)
+		f.close()
 
 
 func _menu() -> Node:
@@ -95,5 +105,6 @@ func _frames(n: int) -> void:
 
 
 func _fail(why: String) -> void:
+	_restore()
 	print("[settingstest] FAIL — " + why)
 	get_tree().quit(1)

@@ -80,6 +80,11 @@ func _draw() -> void:
 			draw_arc(Vector2(15, 11), 5.0, PI, TAU, 16, c, w, true)
 			draw_line(Vector2(10, 11), Vector2(10, 13), c, w)
 			draw_line(Vector2(20, 11), Vector2(20, 13), c, w)
+		"key":
+			draw_arc(Vector2(9, 15), 5.5, 0, TAU, 24, c, w, true)
+			draw_line(Vector2(14.5, 15), Vector2(27, 15), c, w)
+			draw_line(Vector2(22, 15), Vector2(22, 20), c, w)
+			draw_line(Vector2(26, 15), Vector2(26, 19), c, w)
 		"lamp":
 			draw_arc(Vector2(15, 12), 8.0, PI * 0.75, PI * 2.25, 24, c, w, true)
 			draw_polyline(PackedVector2Array([Vector2(9.5, 17.5), Vector2(10, 23), Vector2(20, 23), Vector2(20.5, 17.5)]), c, w)

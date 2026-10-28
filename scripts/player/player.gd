@@ -33,6 +33,7 @@ var current_prompt := ""
 var move_vel := Vector3.ZERO
 var conveyor_vel := Vector3.ZERO
 var zone := ""
+var zone_override := ""         # set by the story where the terminal's zone map does not apply (the jet bridge)
 var still_time := 0.0           # continuous seconds standing still
 
 var _pitch := 0.0
@@ -58,6 +59,9 @@ var _glance_rate := 3.0
 var _glance_vel := Vector2.ZERO
 var _shove := Vector3.ZERO      # someone pushing past (shove()), this physics tick
 var _shove_vel := Vector3.ZERO  # ... eased
+## Scripted body poses (falling over, getting up): how far the eyes are below standing height, and the head's tilt.
+var view_drop := 0.0
+var view_roll := 0.0
 var _pos_prev := Vector3.ZERO   # body position before the last physics step (the view is drawn between the two)
 var _bob_prev := 0.0
 var _bob_amp := 0.0
@@ -312,8 +316,8 @@ func _physics_process(delta: float) -> void:
 		_fl_target = camera.global_basis
 	# --- interaction ray ---
 	_update_interact()
-	if terminal:
-		var z := terminal.zone_at(global_position)
+	if terminal or zone_override != "":
+		var z := zone_override if zone_override != "" else terminal.zone_at(global_position)
 		if z != zone:
 			zone = z
 			Events.zone_entered.emit(z)
@@ -330,8 +334,8 @@ func _process(_delta: float) -> void:
 	var sh := _shake * _shake
 	var shake_off := Vector3(sin(_shake_t * 1.3) * sh * 0.05, cos(_shake_t * 1.7) * sh * 0.05, 0)
 	var lag := global_basis.inverse() * ((_pos_prev - global_position) * (1.0 - f))
-	head.position = Vector3(0, EYE_HEIGHT, 0) + bob + shake_off + lag
-	head.rotation.z = sin(t * 0.5) * _bob_amp * 0.22 + sin(_shake_t) * sh * 0.03
+	head.position = Vector3(0, EYE_HEIGHT - view_drop, 0) + bob + shake_off + lag
+	head.rotation.z = sin(t * 0.5) * _bob_amp * 0.22 + sin(_shake_t) * sh * 0.03 + view_roll
 
 
 func _update_interact() -> void:
@@ -359,7 +363,7 @@ func _footstep(sprinting: bool) -> void:
 		match zone:
 			"gates":
 				surface = "tile" if absf(p.x) < 3.0 else "carpet"
-			"bridge0":
+			"bridge0", "jetbridge":
 				surface = "carpet"
 			"office", "storage", "maint":
 				surface = "tileroom"

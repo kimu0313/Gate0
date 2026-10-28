@@ -39,7 +39,7 @@ const ZONE_RECTS := {
 const ZONE_NAMES := {
 	"office": "시설관리실", "hall": "체크인 홀", "baggage": "수하물 수취", "storage": "자재창고",
 	"maint": "정비 통로", "security": "보안검색", "corridor": "탑승동 통로", "gates": "탑승 게이트",
-	"bridge0": "0번 탑승교", "outside": "외부",
+	"bridge0": "0번 탑승교", "outside": "외부", "jetbridge": "위치 불명",
 }
 
 ## Named floor points the story scripts, the NPC and the debug bots use instead of their own coordinates.
@@ -131,6 +131,7 @@ var pickups := {}          # id -> Pickup
 var spawns := {}           # name -> Transform3D
 var triggers := {}         # name -> Area3D
 var lights_panel: LightPanel
+var passage_plug: MeshInstance3D   # fills the staff passage's doorway (see _build_baggage)
 var lights_panel_gates: LightPanel
 var breaker: BreakerPanel
 var punch_clock: Interactable
@@ -138,14 +139,6 @@ var keypad: Interactable
 var main_power: Interactable
 var exit_door_use: Interactable
 var syslog_terminal: Interactable
-## story props (Day1~5 초안), each switched on by the day scripts / ShiftDirector
-var office_pc: Interactable        # office desk PC: the job posting (DAY 1), the A0 search (DAY 2)
-var locker_tag: Interactable       # locker 04: your name stuck over everyone else's
-var drawer: Node3D                 # top drawer of the office pedestal (DAY 4: left open, 1987 scraps inside)
-var drawer_use: Interactable
-var lost_found: Interactable       # storage room lost-and-found cabinet (the 1987 boarding pass)
-var crate: Node3D                  # storage room crate of equipment transferred from the old airfield
-var crate_use: Interactable
 var gate0_wall: Node3D
 var gate0_parts: Node3D
 var final_plane: Node3D
@@ -169,7 +162,6 @@ func build() -> void:
 	_build_corridor()
 	_build_gates()
 	_build_service_rooms()
-	_build_story_props()
 	_build_outside()
 	_build_facility_systems()
 	_ceiling_details()
@@ -726,7 +718,9 @@ func _build_baggage() -> void:
 	var pr := Rect2(-12.4, -39.6, 2.4, 31.1)
 	_floor(pr, "floor_service")
 	_ceiling(pr, 3.0, "ceiling_dark")
-	Geo.wall(self, Vector2(-12.4, -39.6), Vector2(-12.4, -8.5), 3.0, Mats.get_mat("wall_service"), 0.3)
+	# a doorway at z -16.5..-15.5, plain wall (passage_plug) until the prologue's SECURITY OFFICE door takes it (Prologue._build_escape)
+	Geo.wall(self, Vector2(-12.4, -39.6), Vector2(-12.4, -8.5), 3.0, Mats.get_mat("wall_service"), 0.3, [[23.1, 24.1, 2.15]])
+	passage_plug = Geo.box(self, Vector3(-12.4, 1.075, -16.0), Vector3(0.3, 2.15, 1.0), Mats.get_mat("wall_service"))
 	# beams across the hall every 6 m, pilasters on the west wall under them
 	for zz in [-45.6, -51.6, -57.6]:
 		Geo.box(self, Vector3(-23, BAG_H - 0.175, zz), Vector3(26, 0.35, 0.5), wm, false)
@@ -997,87 +991,6 @@ func _build_service_rooms() -> void:
 
 
 # --------------------------------------------------------------------------------------------
-## Things the story points at (Day1~5 초안): the office PC, the name tags on locker 04, a drawer pedestal by the
-## desk, the storage room's lost-and-found cabinet and the crate the old airfield's equipment came in. Their
-## Interactables start disabled; ShiftDirector and the day scripts decide what they do.
-func _build_story_props() -> void:
-	office_pc = Interactable.create(self, Vector3(-19.25, 1.0, 1.8), Vector3(0.25, 0.4, 0.6), "PC 화면 보기", Callable())
-	# locker 04 (north wall, door face z -1.80): a fresh tag with your name over older tags, edges lifting
-	var lx := -19.45 + 3 * 0.62
-	var old := [[Vector3(-0.012, 1.468, 0), 0.21, 0.072, 0.05, Color(0.76, 0.68, 0.48)],
-		[Vector3(0.014, 1.474, 0), 0.2, 0.066, -0.06, Color(0.86, 0.9, 0.95)],
-		[Vector3(-0.006, 1.462, 0), 0.19, 0.064, 0.09, Color(0.88, 0.93, 0.86)],
-		[Vector3(0.008, 1.471, 0), 0.19, 0.062, -0.03, Color(0.95, 0.94, 0.9)]]
-	for i in old.size():
-		var o: Array = old[i]
-		var tag := Geo.box(self, Vector3(lx, 0, -1.7992 + i * 0.0009) + o[0], Vector3(o[1], o[2], 0.0008), Mats.std(o[4], 0.9), false)
-		tag.rotation.z = o[3]
-		if i == 1 or i == 3:   # crossed out in pen
-			Geo.box(tag, Vector3(0, 0.002, 0.0005), Vector3(o[1] * 0.8, 0.004, 0.0002), Mats.std(Color(0.12, 0.15, 0.4), 0.8), false)
-	var top := Geo.box(self, Vector3(lx, 1.468, -1.7952), Vector3(0.17, 0.05, 0.0008), Mats.get_mat("plastic_white"), false)
-	top.rotation.z = 0.012
-	Geo.label(top, Game.player_name, Vector3(0, 0, 0.0006), 0.0, 26, Color(0.08, 0.08, 0.1), 0.0018, false, "print")
-	locker_tag = Interactable.create(self, Vector3(lx, 1.45, -1.68), Vector3(0.5, 0.42, 0.2), "사물함 04 이름표 보기", Callable())
-	# drawer pedestal beside the desk (drawers open toward the room, +X)
-	var ped := Vector3(-19.45, 0, 4.1)
-	Geo.box(self, ped + Vector3(0, 0.31, 0), Vector3(0.6, 0.62, 0.45), Mats.get_mat("plastic_grey"))
-	Geo.box(self, ped + Vector3(0.301, 0.16, 0), Vector3(0.012, 0.26, 0.42), Mats.get_mat("plastic_grey"), false)
-	Geo.box(self, ped + Vector3(0.31, 0.24, 0), Vector3(0.012, 0.014, 0.12), Mats.get_mat("metal"), false)
-	drawer = Node3D.new()
-	add_child(drawer)
-	drawer.position = ped + Vector3(0.0, 0.45, 0)
-	Geo.box(drawer, Vector3(0.301, 0, 0), Vector3(0.012, 0.25, 0.42), Mats.get_mat("plastic_grey"), false)
-	Geo.box(drawer, Vector3(0.31, 0.06, 0), Vector3(0.012, 0.014, 0.12), Mats.get_mat("metal"), false)
-	Geo.box(drawer, Vector3(0.02, -0.06, 0), Vector3(0.54, 0.012, 0.38), Mats.get_mat("plastic_dark"), false)   # drawer bottom
-	var bundle := Geo.box(drawer, Vector3(0.12, -0.035, 0.0), Vector3(0.22, 0.04, 0.3), Mats.std(Color(0.78, 0.7, 0.5), 0.95), false)
-	bundle.rotation.y = 0.12
-	Geo.box(bundle, Vector3(0, 0.021, -0.12), Vector3(0.05, 0.004, 0.03), Mats.get_mat("metal_dark"), false)    # binder clip
-	drawer_use = Interactable.create(drawer, Vector3(0.3, 0.0, 0), Vector3(0.3, 0.3, 0.46), "서랍 열어 보기", Callable())
-	drawer_use.enabled = false
-	# storage room: lost-and-found cabinet against the south wall, facing the room (-Z)
-	var lf := Node3D.new()
-	add_child(lf)
-	lf.position = Vector3(14.1, 0, -2.96)
-	lf.rotation.y = PI
-	var steel := Mats.std(Color(0.55, 0.57, 0.58), 0.45, 0.5)
-	Geo.box(lf, Vector3(0, 0.5, 0), Vector3(0.95, 1.0, 0.45), steel)
-	for sx in [-1.0, 1.0]:
-		Geo.box(lf, Vector3(sx * 0.235, 0.46, 0.2265), Vector3(0.45, 0.86, 0.003), Mats.std(Color(0.5, 0.52, 0.53), 0.4, 0.5), false)
-		Geo.box(lf, Vector3(sx * 0.04, 0.6, 0.234), Vector3(0.016, 0.12, 0.012), Mats.get_mat("metal_dark"), false)
-	var plate := Geo.box(lf, Vector3(0, 0.84, 0.2275), Vector3(0.7, 0.09, 0.003), Mats.get_mat("plastic_white"), false)
-	Geo.label(plate, "분실물 보관함  LOST & FOUND", Vector3(0, 0, 0.002), 0.0, 20, Color(0.1, 0.14, 0.35), 0.0018, false, "print")
-	lost_found = Interactable.create(lf, Vector3(0, 0.6, 0.35), Vector3(0.95, 0.9, 0.25), "분실물 보관함 열어 보기", Callable())
-	lost_found.enabled = false
-	# the crate the old airfield's broadcast equipment came over in (DAY 3: the spare amp, a tape, the list)
-	crate = Node3D.new()
-	add_child(crate)
-	crate.position = Vector3(18.6, 0, -6.9)
-	var wood := Mats.std(Color(0.5, 0.38, 0.22), 0.9)
-	var slat := Mats.std(Color(0.42, 0.31, 0.17), 0.9)
-	Geo.box(crate, Vector3(0, 0.27, 0), Vector3(1.0, 0.54, 0.6), wood)
-	for x in [-0.47, 0.47]:
-		Geo.box(crate, Vector3(x, 0.27, 0.302), Vector3(0.06, 0.54, 0.004), slat, false)
-	var lid := Geo.box(crate, Vector3(0, 0.555, 0), Vector3(1.02, 0.03, 0.62), slat, false)
-	lid.name = "Lid"
-	var stencil := Geo.box(crate, Vector3(0.02, 0.27, 0.301), Vector3(0.8, 0.26, 0.002), wood, false)
-	Geo.label(stencil, "구 서해비행장 이관 설비\n재사용 · 2025. 03.", Vector3(0, 0, 0.0015), 0.0, 30, Color(0.1, 0.08, 0.06), 0.0026, false, "print")
-	crate_use = Interactable.create(crate, Vector3(0, 0.45, 0.32), Vector3(1.0, 0.6, 0.3), "이관 장비 상자 열어 보기", Callable())
-	crate_use.enabled = false
-
-
-## DAY 4: the top drawer has been left open.
-func open_drawer(open := true) -> void:
-	drawer.position.x = -19.45 + (0.26 if open else 0.0)
-
-
-## The crate's lid pushed aside once it has been opened.
-func open_crate() -> void:
-	var lid := crate.get_node_or_null("Lid") as Node3D
-	if lid:
-		lid.position = Vector3(0.18, 0.6, 0.08)
-		lid.rotation = Vector3(0.0, 0.25, 0.12)
-
-
 # --------------------------------------------------------------------------------------------
 func _build_outside() -> void:
 	Geo.box(self, Vector3(0, -0.2, -60), Vector3(500, 0.2, 480), Mats.get_mat("asphalt"), false)

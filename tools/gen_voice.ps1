@@ -57,6 +57,10 @@ $lines = [ordered]@{
 	"pa_grand_opening_ko"      = @($KO, -1, "서해국제공항이 오늘 정식 개장합니다. 승객 여러분을 진심으로 환영합니다.")
 	"pa_flight0_boarding_en"   = @($EN, -2, "Flight zero is now boarding.")
 	"pa_next_worker_ko"        = @($KO, -3, "안내 말씀 드립니다. 다음 근무자께서는, 근무 수칙을 꼭 지켜 주시기 바랍니다.")
+	# Gate 0 v2 — 프롤로그 SCENE 04 (탑승교 끝 스피커) 와 타이틀 SCENE 05. "Flight 000" 은 공공공편으로 읽는다.
+	"pa_v2_attention"          = @($KO, -2, "승객 여러분께 안내 말씀드립니다.")
+	"pa_v2_boarding_start"     = @($KO, -3, "플라이트 공공공편의 탑승을 시작하겠습니다.")
+	"pa_v2_boarding_started"   = @($KO, -3, "플라이트 공공공편의 탑승이 시작되었습니다.")
 }
 
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer

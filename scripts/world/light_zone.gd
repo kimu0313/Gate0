@@ -72,6 +72,26 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 	return mi
 
 
+## A small square recessed downlight (the lounge ceiling grid): the zone's emissive panel in a dark trim, with an
+## optional spot straight down. It counts as a panel, so ceiling furniture keeps clear of it.
+func add_downlight(pos: Vector3, size := 0.4, with_light := false, light_energy := 6.0, light_range := 14.0,
+		angle := 40.0, color := Color(0.9, 0.94, 1.0), tilt := 0.0) -> MeshInstance3D:
+	var mi := Geo.box(self, pos, Vector3(size, 0.04, size), panel_mat, false)
+	mi.rotation.x = -tilt              # set into a sloped ceiling (rising toward +Z)
+	panels.append(mi)
+	var trim := Geo.box(self, pos + Vector3(0, 0.015, 0), Vector3(size + 0.1, 0.04, size + 0.1), Mats.get_mat("metal_dark"), false)
+	trim.rotation.x = -tilt
+	if with_light:
+		var s := Geo.spot(self, pos + Vector3(0, -0.05, 0), pos + Vector3(0, -0.05, 0), color, light_energy, light_range, angle)
+		s.rotation.x = -PI / 2
+		s.spot_attenuation = 0.9
+		s.spot_angle_attenuation = 1.6
+		s.light_volumetric_fog_energy = 0.35
+		add_light(s)
+		_panel_light[mi] = [s]
+	return mi
+
+
 ## Tripo fixture frames (troffers, or slot lights for thin strips) tiled along a panel, turned face-down with
 ## the glowing panel box standing just proud of their face.
 func _tripo_housing(pos: Vector3, size: Vector2) -> void:

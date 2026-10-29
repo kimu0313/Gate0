@@ -3054,6 +3054,12 @@ msgstr "話しかける"
 msgid "탑승교"
 msgstr "搭乗橋"
 
+msgid "메인 라운지"
+msgstr "メインラウンジ"
+
+msgid "관리동 복도"
+msgstr "管理棟の廊下"
+
 msgid "위치 불명"
 msgstr "位置不明"
 

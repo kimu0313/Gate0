@@ -10,6 +10,8 @@ uniform float grout = 0.006;
 uniform float roughness_base = 0.10;
 uniform float roughness_var = 0.18;
 uniform float accent_band = 0.0; // 1 = draw accent stripes every 7 tiles
+uniform float dark_share = 0.0;  // share of tiles laid in the dark stone (lounge floor), scattered
+uniform vec3 dark_color : source_color = vec3(0.13, 0.135, 0.14);
 
 varying vec3 wpos;
 
@@ -44,6 +46,9 @@ void fragment() {
 	if (accent_band > 0.5 && mod(cell.x, 7.0) < 1.0) {
 		col = mix(col, accent_color, 0.85);
 	}
+	// dark stone: single tiles and the odd pair along x, picked per tile so the pattern never repeats
+	float dk = max(step(1.0 - dark_share, hash(cell + 17.3)), step(1.0 - dark_share * 0.5, hash(floor(vec2(cell.x * 0.5, cell.y)) + 41.9)));
+	col = mix(col, dark_color * (0.9 + 0.2 * h), dk * step(0.001, dark_share));
 	col *= 0.93 + 0.14 * n;
 	float sp = step(0.988, hash(floor(wpos.xz * 45.0)));
 	col = mix(col, col * 1.35 + vec3(0.02), sp * 0.5);

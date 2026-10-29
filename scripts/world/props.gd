@@ -146,6 +146,52 @@ static func hanging_sign(parent: Node3D, pos: Vector3, rot_y: float, size: Vecto
 	return labels
 
 
+## Airport wayfinding lightbox hung from the ceiling (the lounge's Departures / Arrivals signs): pictogram tiles,
+## arrows and two-line captions laid out left to right, the same on both faces. `pos` = the box centre.
+## items: ["text", text, font size, Vector2 offset] | ["tile", icon, side m, Vector2 offset]
+##        | ["arrow", angle deg (0 = right, 90 = up), height m, Vector2 offset] | ["rule", Vector2 offset]
+static func wayfinding_sign(parent: Node3D, pos: Vector3, rot_y: float, size: Vector2, items: Array,
+		ceiling_y := -1.0) -> Node3D:
+	var holder := Node3D.new()
+	parent.add_child(holder)
+	holder.position = pos
+	holder.rotation.y = rot_y
+	var depth := 0.18
+	Geo.box(holder, Vector3.ZERO, Vector3(size.x, size.y, depth), Mats.get_mat("sign_back"), false)
+	var rim := Mats.std(Color(0.2, 0.21, 0.23), 0.35, 0.7)
+	for sy in [-1.0, 1.0]:
+		Geo.box(holder, Vector3(0, sy * (size.y * 0.5 + 0.012), 0), Vector3(size.x + 0.05, 0.024, depth + 0.02), rim, false)
+	for sx in [-1.0, 1.0]:
+		Geo.box(holder, Vector3(sx * (size.x * 0.5 + 0.012), 0, 0), Vector3(0.024, size.y + 0.048, depth + 0.02), rim, false)
+	var tile := Mats.emissive(Geo.SIGN_BLUE * 0.75, 0.9, Geo.SIGN_BLUE * 0.55)
+	var rule := Mats.emissive(Color(0.55, 0.6, 0.7), 0.6, Color(0.3, 0.32, 0.36))
+	var ink := Color(0.03, 0.05, 0.12)
+	for side in [0.0, PI]:
+		var f := Node3D.new()
+		holder.add_child(f)
+		f.rotation.y = side
+		var z := depth * 0.5 + 0.004
+		for it: Array in items:
+			var at: Vector2 = it[it.size() - 1]
+			match it[0]:
+				"text":
+					Geo.label(f, it[1], Vector3(at.x, at.y, z), 0.0, it[2], Color(0.97, 0.98, 1.0), 0.006)
+				"tile":
+					Geo.box(f, Vector3(at.x, at.y, z - 0.002), Vector3(it[2], it[2], 0.008), tile, false)
+					LevelKit.icon_sprite(f, it[1], Vector3(at.x, at.y, z + 0.004), it[2] * 0.76, ink)
+				"arrow":
+					var a := LevelKit.icon_sprite(f, "icon_arrow", Vector3(at.x, at.y, z), it[2], Color(0.97, 0.98, 1.0))
+					a.rotation.z = deg_to_rad(it[1])
+				"rule":
+					Geo.box(f, Vector3(at.x, at.y, z - 0.002), Vector3(0.025, size.y * 0.66, 0.006), rule, false)
+	if ceiling_y > pos.y:
+		var rod_h := ceiling_y - pos.y - size.y * 0.5
+		for sx in [-size.x * 0.36, size.x * 0.36]:
+			Geo.cyl(holder, Vector3(sx, size.y * 0.5 + rod_h * 0.5, 0), 0.02, rod_h, Mats.get_mat("steel_frame"))
+			Geo.cyl(holder, Vector3(sx, ceiling_y - pos.y - 0.03, 0), 0.07, 0.06, Mats.get_mat("steel_frame"))
+	return holder
+
+
 ## Tripo lightbox body (CMN_WallSign) stretched to w x h x depth, centred on `centre` in `parent` space.
 static func sign_body(parent: Node3D, centre: Vector3, size: Vector2, depth: float) -> Node3D:
 	var n := TripoProps.spawn(parent, "common", "CMN_WallSign")

@@ -4,7 +4,7 @@ extends Node
 ## place behind `src` (a frame in the doorway, +Z = through it) carried on as `dst` (the same frame somewhere else), and
 ## any surface given surface_material() shows that render at its own screen pixels — so what you see through the door
 ## is the other place, from exactly your point of view, with whatever stands in the doorway (the leaves) in front of it.
-## Renders only while active (set_active).
+## Renders only while active (set_active). Geometry on render layer Geo.VIS_PORTAL_HIDDEN never shows in it.
 
 const SHADER := """
 shader_type spatial;
@@ -44,6 +44,7 @@ func _build(env: Environment) -> void:
 	_cam = Camera3D.new()
 	_vp.add_child(_cam)
 	_cam.current = true
+	_cam.cull_mask &= ~Geo.VIS_PORTAL_HIDDEN      # the dark boxes behind the far doorway stay out of the view
 	if env:
 		# the eye looking at the doorway grades the frame once more: no exposure, tonemapping, glow or grading here
 		var e := env.duplicate() as Environment

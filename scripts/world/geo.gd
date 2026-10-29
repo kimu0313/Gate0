@@ -8,6 +8,7 @@ const LAYER_WORLD := 1
 const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4
 const LAYER_AUDIO := 512        # reverb zones (Terminal) found by every AudioStreamPlayer3D's area_mask
+const VIS_PORTAL_HIDDEN := 1 << 19   # render layer 20: seen by your eye, not by a PortalView (what stands behind its doorway)
 
 static var sign_font: Font      # wayfinding signs: DIN-style Bahnschrift, Hangul from Malgun Gothic Bold
 static var led_font: Font       # LED / LCD displays: Bahnschrift with wider tracking

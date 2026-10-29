@@ -476,17 +476,77 @@ func _ch1() -> void:
 	await _obj("밖으로 나가기", 6.0)
 	await _wait(1.2)
 	await _shot("26_door_open", 0.0)
+	# through the door: not the passage but the long service corridor; its door slams and locks behind you
 	await _walk([Vector3(-12.9, 0.05, -16.0), Vector3(-11.2, 0.05, -16.0)], 1.4)
+	await _wait(0.3)
+	var hall: ServiceHall = part.hall
+	if not part._in_hall or not hall.contains(_p.global_position):
+		_end(1, "through the office door but not in the service corridor (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+		return
+	_log("through the office door: in the service corridor at %s" % str(hall.to_local(_p.global_position).snapped(Vector3.ONE * 0.1)))
+	await _obj("복도 끝", 6.0)
+	await _wait(1.6)
+	if (hall.entry.leaf as Node3D).rotation.y > 0.05:
+		_end(1, "the corridor's entrance door did not shut behind the player")
+		return
+	_log("corridor door shut behind")
+	_p.look_at_point(hall.to_global(Vector3(0, 1.4, ServiceHall.LENGTH)), 0.3)
+	await _shot("27_corridor", 0.6)
+	# down the corridor: the figure before the far doors is gone before you get there
+	await _walk([hall.to_global(Vector3(0, 0.05, ServiceHall.LENGTH - 1.3))], 2.2)
+	if hall.figure.visible:
+		_end(1, "the figure at the end of the corridor is still there")
+		return
+	_p.look_at_point(hall.to_global(Vector3(0, 1.1, ServiceHall.LENGTH)), 0.05)
+	await _wait(0.25)
+	if _p.current_interactable != hall.far_doors.use:
+		_end(1, "the [E] ray does not reach the corridor's far doors")
+		return
+	await _shot("28_far_doors", 0.0)
+	_p.current_interactable.interact()
+	_log("[E] 문 열기 (the corridor's far doors)")
+	await _obj("라운지로", 6.0)
+	await _wait(1.4)
+	await _shot("29_far_open", 0.0)
+	# through them: out onto the lounge's 2F deck by its staff doors, which slam behind you
+	await _walk([hall.to_global(Vector3(0, 0.05, ServiceHall.LENGTH + 2.0))], 1.4)
+	await _wait(0.3)
+	var arrive := _p.global_position
+	var door := Terminal.DECK_DOOR
+	if not part._in_lounge or absf(arrive.x - door.x) > 1.0 or absf(arrive.z - (door.z + 1.4)) > 1.0 or absf(arrive.y - door.y) > 0.5:
+		_end(1, "through the corridor's far doors but not on the lounge's 2F deck (at %s)" % str(arrive.snapped(Vector3.ONE * 0.1)))
+		return
+	_log("through the far doors: on the lounge's deck at %s" % str(arrive.snapped(Vector3.ONE * 0.1)))
+	await _obj("라운지로 내려가기", 6.0)
+	var ld: Array[Node3D] = (world.terminal as Terminal).lounge_door.leaves
+	if absf(ld[0].rotation.y) > 0.05 or absf(ld[1].rotation.y) > 0.05:
+		_end(1, "the deck's staff doors did not shut behind the player")
+		return
+	_p.look_at_point(Vector3(10.0, 1.0, 42.0), 0.3)
+	await _shot("30_deck", 0.6)
+	# along the deck to the stopped escalator and down it to the lounge floor
+	var z := Terminal.ESC_FOOT.z
+	await _walk([Vector3(25.2, 0.0, door.z + 1.4), Vector3(24.6, 0.0, z)], 1.6)
+	await _walk([Vector3(Terminal.ESC_FOOT.x - 1.5, 0.0, z), Vector3(12.4, 0.0, z)], 1.4)
+	if _p.global_position.y > 0.3:
+		_end(1, "could not walk down the escalator (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+		return
+	_log("down the escalator at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+	_p.look_at_point(Vector3(3.0, 1.5, 40.0), 0.3)
+	await _shot("31_lounge_floor", 0.6)
+	# past the knocked-down belt and west along the north aisle: the chapter ends
+	await _walk([Vector3(12.5, 0.0, z + 1.3), Vector3(14.0, 0.0, z + 1.6), Vector3(14.0, 0.0, Terminal.AISLES[0]),
+			Vector3(-6.0, 0.0, Terminal.AISLES[0])], 2.4)
 	if _mode == "loop":
-		_log("ch1: key, padlock, back into the security office, the drawers, the key card, out; the game goes on")
+		_log("ch1: key, padlock, the office, the key card, the service corridor, the lounge; the game goes on")
 		return
 	var t1 := Time.get_ticks_msec()
 	while world.ui.fade_alpha() < 0.99 and Time.get_ticks_msec() - t1 < 8000:
 		await _tree.process_frame
 	if world.ui.fade_alpha() < 0.99:
-		_end(1, "walked out of the office but the chapter did not end")
+		_end(1, "walked into the lounge but the chapter did not end")
 		return
-	_end(0, "ch1: key, padlock, through the gate door into the security office, a drawer, the key card, the reader, out")
+	_end(0, "ch1: key, padlock, the security office, a drawer, the key card, the reader, the service corridor, its far doors, the lounge")
 
 
 func _look_shot(target: Vector3, name_text: String) -> void:

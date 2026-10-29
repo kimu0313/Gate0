@@ -3,7 +3,8 @@ class_name Escalator
 ## fillet → 30° incline → fillet → top landing) along which the truss body, glass balustrades and black handrails are
 ## swept, grooved aluminium steps (MultiMesh) that flatten out at the landings, floor and comb plates at both ends.
 ## It rises toward +X; `foot` is the lower working point (where the incline line meets the floor), so the top
-## landing begins where the incline line, rounded, reaches `top_y`. Belted off at the foot with an out-of-service sign.
+## landing begins where the incline line, rounded, reaches `top_y`. Stopped, but walkable (a ramp under the steps,
+## the balustrades closing its sides); the out-of-service belt at its foot is down and the sign stand pushed aside.
 
 const ANGLE := 30.0
 const FILLET := 2.0          # transition radius at both ends (m), so the offset handrail and truss stay smooth
@@ -90,15 +91,45 @@ func _make(parent: Node3D, foot: Vector3, top_y: float) -> void:
 		Geo.box(root, Vector3((x0 + x1) * 0.5, y - 0.009, 0), Vector3(x1 - x0, 0.03, OUTER * 2.0 + 0.02), deck, false)
 		var comb_x: float = x1 + 0.03 if end[0] == 0.0 else x0 - 0.03
 		Geo.box(root, Vector3(comb_x, y - 0.004, 0), Vector3(0.06, 0.02, HALF_STEP * 2.0), Mats.get_mat("yellow_paint"), false)
-	# the player must not walk up it
+	# stopped, but you can walk it: a ramp under the steps between the landings, the balustrades closing its sides,
+	# the top landing out to the mezzanine's edge
+	var a := deg_to_rad(ANGLE)
+	var low := Vector2(foot_x, LIFT)
+	var top := Vector2(foot_x + top_y / tan(a), top_y + LIFT)
+	var mid := (low + top) * 0.5
+	var run := low.distance_to(top)
+	var ramp := Geo.blocker(parent, Vector3(mid.x + sin(a) * 0.15, mid.y - cos(a) * 0.15, zc), Vector3(run, 0.3, SKIRT * 2.0))
+	ramp.rotation.z = a
+	for side in [-1.0, 1.0]:
+		var wall := Geo.blocker(parent, Vector3(mid.x - sin(a) * 0.9, mid.y + cos(a) * 0.9, zc + side * (GLASS_Z + 0.05)), Vector3(run + 2.4, 1.8, 0.1))
+		wall.rotation.z = a
 	var x_top: float = (_at(s_end)[1] as Vector2).x
-	var x0w: float = (_at(0.0)[1] as Vector2).x
-	Geo.blocker(parent, Vector3((x0w + minf(x_top, 12.0)) * 0.5, 1.5, zc), Vector3(minf(x_top, 12.0) - x0w, 3.0, OUTER * 2.0 + 0.1))
-	# out of service: belt across the foot, sign stand
-	LevelKit.stanchions(parent, [Vector3(foot_x - 3.0, 0, zc - 1.0), Vector3(foot_x - 3.0, 0, zc + 1.0)])
-	var plate := LevelKit.sign_body(parent, Vector3(foot_x - 3.3, 1.25, zc), -90.0, Vector2(0.9, 0.6))
+	Geo.blocker(parent, Vector3((top.x + x_top) * 0.5, top.y - 0.15, zc), Vector3(x_top - top.x + 0.2, 0.3, SKIRT * 2.0))
+	# out of service — but the belt across the foot is down: one post still standing, the other knocked over with the
+	# belt slack on the floor, the sign stand pushed aside
+	var post_a := Vector3(foot_x - 3.0, 0, zc - 1.0)
+	LevelKit.stanchions(parent, [post_a])
+	var fallen := Node3D.new()
+	parent.add_child(fallen)
+	fallen.position = Vector3(foot_x - 3.4, 0.05, zc + 0.9)
+	fallen.rotation = Vector3(0, 0.6, PI / 2)
+	if TripoProps.exists("security", "SEC_Stanchion"):
+		TripoProps.spawn(fallen, "security", "SEC_Stanchion", Vector3(0, -0.05, 0))
+	else:
+		Geo.cyl(fallen, Vector3(0, 0.5, 0), 0.035, 1.0, Mats.get_mat("metal"))
+	var belt := Mats.std(Color(0.08, 0.14, 0.38), 0.6)
+	var hook := post_a + Vector3(0, 0.9, 0)
+	var slack := Vector3(foot_x - 3.15, 0.012, zc + 0.1)
+	var droop := Geo.box(parent, (hook + slack) * 0.5, Vector3(0.012, 0.05, hook.distance_to(slack)), belt, false)
+	droop.look_at_from_position(droop.position, slack, Vector3.UP)
+	Geo.box(parent, Vector3(foot_x - 3.3, 0.012, zc + 0.5), Vector3(0.05, 0.006, 0.8), belt, false, 0.5)
+	var stand := Node3D.new()
+	parent.add_child(stand)
+	stand.position = Vector3(foot_x - 3.7, 0, zc - 1.9)
+	stand.rotation.y = 0.5
+	var plate := LevelKit.sign_body(stand, Vector3(0, 1.25, 0), -90.0, Vector2(0.9, 0.6))
 	LevelKit.decal(plate, "sign_escalator_oos", Vector3(0, 0, plate.get_meta("face_z") + 0.003), 0.0, Vector2(0.87, 0.58))
-	Geo.box(parent, Vector3(foot_x - 3.3, 0.5, zc), Vector3(0.05, 1.0, 0.05), Mats.get_mat("steel_frame"), false)
+	Geo.box(stand, Vector3(0, 0.5, 0), Vector3(0.05, 1.0, 0.05), Mats.get_mat("steel_frame"), false)
 
 
 ## The step line in the side plane (x, y): flat, fillet, incline, fillet, flat, sampled densely with arc length.

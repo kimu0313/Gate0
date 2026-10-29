@@ -5120,6 +5120,12 @@ msgstr "Speak"
 msgid "탑승교"
 msgstr "Boarding bridge"
 
+msgid "메인 라운지"
+msgstr "Main Lounge"
+
+msgid "관리동 복도"
+msgstr "Service Corridor"
+
 msgid "위치 불명"
 msgstr "Unknown location"
 

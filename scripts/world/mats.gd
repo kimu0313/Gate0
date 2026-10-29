@@ -45,6 +45,19 @@ static func _make(mat_name: String) -> Material:
 			return shader_mat("res://shaders/floor_tile.gdshader")
 		"floor_accent":
 			return shader_mat("res://shaders/floor_tile.gdshader", {"accent_band": 1.0})
+		"floor_lounge":
+			# main lounge: big polished tiles, mirror-like, with dark stone tiles scattered through (lounge reference)
+			return shader_mat("res://shaders/floor_tile.gdshader", {
+				"color_a": Color(0.6, 0.59, 0.56), "color_b": Color(0.53, 0.52, 0.5), "tile_size": 1.5,
+				"roughness_base": 0.05, "roughness_var": 0.12, "dark_share": 0.07})
+		"column":
+			# lounge columns: graphite cladding in 1.5 m courses, a steel skirting
+			return shader_mat("res://shaders/wall_panel.gdshader", {
+				"color": Color(0.3, 0.31, 0.32), "seam_color": Color(0.14, 0.14, 0.15), "panel_w": 100.0,
+				"panel_h": 1.5, "seam": 0.01, "roughness": 0.42, "skirting": 0.14, "skirting_color": Color(0.36, 0.37, 0.39)})
+		"ad_screen":
+			return shader_mat("res://shaders/ad_screen.gdshader", {
+				"plane_tex": load("res://assets/textures/level/icon_plane.png")})
 		"floor_office":
 			return shader_mat("res://shaders/floor_tile.gdshader", {
 				"color_a": Color(0.5, 0.49, 0.46), "color_b": Color(0.46, 0.45, 0.42),

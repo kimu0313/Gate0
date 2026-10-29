@@ -797,7 +797,7 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 			# solid sign chip (white on the signal blue); the PA becomes a boarding call at 75%+
 			chip = UiKit.chip("PA · 안내방송", UiKit.NAVY if _boarding else UiKit.SIGNAL_INK, _accent(), "speaker")
 		"self":
-			chip = UiKit.chip(who if who != "" else "나", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "")
+			chip = null                                  # your own thought: no name over it
 		"npc":
 			# someone standing right there, not a radio voice
 			chip = UiKit.chip(who, UiKit.TEXT, Color(0.16, 0.2, 0.26, 0.92), "person")
@@ -806,9 +806,11 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 			chip = UiKit.chip("소리", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "speaker")
 		_:
 			chip = UiKit.chip(who if who != "" else "SYSTEM", UiKit.TEXT_DIM, Color(0.12, 0.14, 0.17, 0.85), "info")
-	for ic in chip.find_children("*", "UiIcon", true, false):
-		(ic as UiIcon).animated = speaker in ["radio", "pa"]
-	_sub_chip_slot.add_child(chip)
+	_sub_chip_slot.visible = chip != null                # (an empty slot would still leave its gap over the line)
+	if chip:
+		for ic in chip.find_children("*", "UiIcon", true, false):
+			(ic as UiIcon).animated = speaker in ["radio", "pa"]
+		_sub_chip_slot.add_child(chip)
 	_sub_text.add_theme_color_override("font_color", Color(0.86, 0.87, 0.9) if speaker == "self" else (UiKit.TEXT_DIM if speaker == "sound" else Color(0.97, 0.97, 0.97)))
 	_sub_text.text = UiKit.keep_all(body)
 	# a line that follows straight on (the colleague talks without radio clicks in between) must not be
@@ -820,7 +822,7 @@ func show_subtitle(speaker: String, text: String, duration: float) -> void:
 	_sub_root.modulate.a = 1.0
 	_sub_time = duration
 	UiFx.typewrite(_sub_text, clampf(body.length() * 0.022, 0.2, 0.9))
-	if not was:
+	if not was and chip:
 		chip.modulate.a = 0.0
 		UiFx.fade(chip, 1.0, 0.18)
 

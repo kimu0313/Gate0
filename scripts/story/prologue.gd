@@ -138,9 +138,7 @@ func _scene_01() -> void:
 	d.objective("수하물 운송 설비 확인하기")
 	d.guide("cart_rattle_loop", CART_PATH, 2.0, 6.0, 3.6)
 	await d.wait(2.4)
-	if not d.player.flashlight_on:
-		d.player.toggle_flashlight(1)
-	Events.notify.emit("[F] 손전등을 켜고 끌 수 있습니다.", "info")
+	Events.notify.emit("[F] 손전등을 켜고 끌 수 있습니다.", "info")      # off until you switch it on
 	d.objective("소리가 난 곳 확인하기")
 	await d.until(func(): return d.player.global_position.z < -24.0)
 	d.set_clock(2 * 60 + 18)

@@ -105,6 +105,9 @@ func _prologue() -> void:
 		_p.walk_path([Vector3(-14.4, 0.05, -16.2)], 2.2)
 		await _obj("소리가 난 곳")
 		await _shot("03_office", 0.2)
+		if _p.flashlight_on:
+			_end(1, "the flashlight came on by itself (it should stay off until [F])")
+			return
 		# out through the office door ([E] from inside), up the passage
 		await _walk([Vector3(-13.7, 0.05, -16.2)], 1.6)
 		_p.look_at_point(Prologue.SEC_DOOR + Vector3(0, 1.1, 0), 0.05)
@@ -116,6 +119,8 @@ func _prologue() -> void:
 		_log("[E] 문 열기 (office door)")
 		await _wait(1.2)
 		await _shot("03b_door_open", 0.0)
+		_p.toggle_flashlight(1)                          # out into the dark passage: [F], as the toast said
+		_log("[F] flashlight on")
 		# to the right, the fire doors at the passage's south end: locked, they only rattle and do not let you by
 		await _walk([Vector3(-11.2, 0.05, -16.0), Vector3(-11.2, 0.05, -14.5), Vector3(-11.2, 0.05, -9.1)])
 		_p.look_at_point(Prologue.FIRE_DOOR + Vector3(0, 1.1, 0), 0.05)
@@ -383,6 +388,9 @@ func _ch1() -> void:
 	if not Game.has_item("key_gate"):
 		_end(1, "ch1 opens without the key the prologue ended on")
 		return
+	if _p.flashlight_on:
+		_end(1, "ch1 opens with the flashlight on (it should start off)")
+		return
 	_p.look_at_point(b.gate_door.global_position + Vector3(0, 1.1, 0), 0.05)
 	await _wait(0.2)
 	if _p.current_interactable != b.door_use:
@@ -430,6 +438,21 @@ func _ch1() -> void:
 	if t.sec_leaf.rotation.y > 0.05:
 		_end(1, "the locked passage door opened")
 		return
+	# tried again, a thought says it wants a key card — once, not on every try
+	var thoughts: Array[String] = []
+	var on_sub := func(kind: String, text: String, _dur: float):
+		if kind == "self":
+			thoughts.append(text)
+	Events.subtitle.connect(on_sub)
+	for k in 2:
+		_p.current_interactable.interact()
+		await _wait(0.4)
+	Events.subtitle.disconnect(on_sub)
+	_log("thoughts at the locked door: %s" % [thoughts])
+	if thoughts.size() != 1 or thoughts[0] != "……키 카드가 필요한 것 같다.":
+		_end(1, "trying the locked passage door again should think it needs a key card, once")
+		return
+	await _shot("23b_needs_card", 0.2)
 	# a wrong drawer first, then the right one (the guard's desk, bottom): look, [E], the card
 	await _walk([Vector3(-13.2, 0.05, -19.3), Vector3(-14.83, 0.05, -19.3)], 1.4)
 	for name_text: String in ["c1", Chapter1.CARD_DRAWER]:

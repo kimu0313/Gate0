@@ -154,6 +154,11 @@ static func _make(mat_name: String) -> Material:
 			return std(Color(0.01, 0.01, 0.012), 0.12, 0.2)
 		"black":
 			return std(Color(0.0, 0.0, 0.0), 1.0)
+		"void":                                          # nothing there: no light, no sheen, no fog — black through any gap
+			var v := std(Color.BLACK, 1.0)
+			v.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			v.disable_fog = true
+			return v
 		"figure":
 			var f := std(Color(0.008, 0.008, 0.01), 0.95)
 			return f

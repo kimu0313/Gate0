@@ -168,13 +168,15 @@ func _build_end(wall_m: Material, frame: Material) -> void:
 	_door_block = Geo.blocker(gate_door, Vector3(0, DOOR_H * 0.5, 0), Vector3(DOOR_W, DOOR_H, 0.2))
 	door_use = Interactable.create(gate_door, Vector3(0, 1.05, 0.3), Vector3(DOOR_W - 0.2, 1.4, 0.3), "문 열기", Callable())
 	door_use.press_sound = ""
-	# a dark vestibule behind it, then a wall (what lies past it is the next part of the story)
+	# a dark vestibule behind it, then a wall (what lies past it is the next part of the story): unlit black, so the
+	# gaps round the shut leaves show nothing (the board's glow reaches through the wall and turned a carpet purple)
 	var vz := ez - 1.8
-	vestibule.append(Geo.box(self, Vector3(0, -0.05, vz), Vector3(DOOR_W + 1.2, 0.1, 3.6), Mats.get_mat("carpet")))
-	vestibule.append(Geo.box(self, Vector3(0, DOOR_H + 0.4, vz), Vector3(DOOR_W + 1.2, 0.2, 3.6), Mats.get_mat("ceiling_dark"), false))
+	var void_m := Mats.get_mat("void")
+	vestibule.append(Geo.box(self, Vector3(0, -0.05, vz), Vector3(DOOR_W + 1.2, 0.1, 3.6), void_m))
+	vestibule.append(Geo.box(self, Vector3(0, DOOR_H + 0.4, vz), Vector3(DOOR_W + 1.2, 0.2, 3.6), void_m, false))
 	for sx in [-1.0, 1.0]:
-		vestibule.append(Geo.box(self, Vector3(sx * (DOOR_W * 0.5 + 0.45), DOOR_H * 0.5 + 0.2, vz), Vector3(0.3, DOOR_H + 0.4, 3.6), Mats.get_mat("black")))
-	vestibule.append(Geo.box(self, Vector3(0, DOOR_H * 0.5 + 0.2, vz - 1.95), Vector3(DOOR_W + 1.2, DOOR_H + 0.4, 0.3), Mats.get_mat("black")))
+		vestibule.append(Geo.box(self, Vector3(sx * (DOOR_W * 0.5 + 0.45), DOOR_H * 0.5 + 0.2, vz), Vector3(0.3, DOOR_H + 0.4, 3.6), void_m))
+	vestibule.append(Geo.box(self, Vector3(0, DOOR_H * 0.5 + 0.2, vz - 1.95), Vector3(DOOR_W + 1.2, DOOR_H + 0.4, 0.3), void_m))
 	for v in vestibule:
 		_detach.append(v)
 	beyond = Geo.area(self, Vector3(0, 1.0, ez - 1.3), Vector3(DOOR_W, 2.0, 1.4))

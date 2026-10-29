@@ -5193,3 +5193,9 @@ msgstr "Open the drawer"
 
 msgid "서랍 닫기"
 msgstr "Close the drawer"
+
+msgid "……키 카드가 필요한 것 같다."
+msgstr "Looks like it needs a key card."
+
+msgid "……카드 리더기에 대 봐야겠다."
+msgstr "I should try the card reader."

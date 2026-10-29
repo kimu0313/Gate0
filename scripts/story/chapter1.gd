@@ -18,12 +18,15 @@ extends StoryScript
 
 const CARD_DRAWER := "c3"                # the guard's desk, bottom drawer
 const LOUNGE_WALK := 18.0                # how far from the escalator's foot, down on the lounge floor, it ends at the latest
+const HINT_GAP_MS := 6000                # the locked passage door's thought comes again at most this often
 
 var _portal: PortalView
 var _through := false
 var _card_node: Node3D
 var _card_use: Interactable
 var _refused := false             # the passage door or its reader has turned you away
+var _tries := 0                   # how many times it has
+var _hint_at := -HINT_GAP_MS      # when the "it wants a card" thought last showed (ms)
 var _granted := false
 var hall: ServiceHall
 var _hall_portal: PortalView      # the office's passage door -> the corridor's entrance
@@ -46,7 +49,6 @@ func setup() -> void:
 	d.player.teleport(Transform3D(b.global_basis.orthonormalized(), b.door_front()))
 	d.player.set_look(d.player.rotation.y, deg_to_rad(-10.0))
 	d.player.zone_override = "jetbridge"
-	d.player.toggle_flashlight(1)
 	d.ui.hud.set_clock_override("--:--")
 	d.ui.tablet.lost = true
 	d.ui.tablet.lose_signal_now()
@@ -263,6 +265,7 @@ func _set_office() -> void:
 			return
 		t.rattle(t.sec_passage)
 		_refuse()
+		_locked_hint()
 	t.sec_reader.interactable.enabled = true
 	t.sec_reader.swiped.connect(_swipe)
 	_place_card(t.sec_drawers[CARD_DRAWER])
@@ -285,12 +288,25 @@ func _refuse() -> void:
 		_office_objective()
 
 
+## Turned away by the passage door or its reader again: from the second time on a thought says what it wants (a key
+## card, or once you have one, the reader beside it) — not more often than every HINT_GAP_MS.
+func _locked_hint() -> void:
+	_tries += 1
+	var now := Time.get_ticks_msec()
+	if _tries < 2 or now - _hint_at < HINT_GAP_MS:
+		return
+	_hint_at = now
+	var line := "……카드 리더기에 대 봐야겠다." if Game.has_item("keycard") else "……키 카드가 필요한 것 같다."
+	Events.subtitle.emit("self", line, 3.2)
+
+
 func _swipe(reader: CardReader) -> void:
 	if _granted:
 		return
 	if not Game.has_item("keycard"):
 		reader.show_result(false, "DENIED")
 		_refuse()
+		_locked_hint()
 		return
 	_granted = true
 	reader.show_result(true, "OK")

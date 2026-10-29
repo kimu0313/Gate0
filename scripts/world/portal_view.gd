@@ -4,14 +4,17 @@ extends Node
 ## place behind `src` (a frame in the doorway, +Z = through it) carried on as `dst` (the same frame somewhere else), and
 ## any surface given surface_material() shows that render at its own screen pixels — so what you see through the door
 ## is the other place, from exactly your point of view, with whatever stands in the doorway (the leaves) in front of it.
-## Renders only while active (set_active). Geometry on render layer Geo.VIS_PORTAL_HIDDEN never shows in it.
+## Renders only while active (set_active); while not, its surfaces are plain black (an unrendered view holds whatever
+## was in memory — purple through the gaps round a shut door). Geometry on render layer Geo.VIS_PORTAL_HIDDEN never
+## shows in it.
 
 const SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, fog_disabled;
 uniform sampler2D view : source_color, filter_linear;
+uniform bool live = false;
 void fragment() {
-	ALBEDO = texture(view, SCREEN_UV).rgb;
+	ALBEDO = live ? texture(view, SCREEN_UV).rgb : vec3(0.0);
 }
 """
 
@@ -66,6 +69,7 @@ func surface_material() -> ShaderMaterial:
 
 func set_active(on: bool) -> void:
 	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS if on else SubViewport.UPDATE_DISABLED
+	_mat.set_shader_parameter("live", on)
 	set_process(on)
 	if on:
 		_place()

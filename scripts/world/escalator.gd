@@ -2,9 +2,11 @@ class_name Escalator
 ## Stopped escalator up to a mezzanine, built in code like a real unit: one continuous side profile (bottom landing →
 ## fillet → 30° incline → fillet → top landing) along which the truss body, glass balustrades and black handrails are
 ## swept, grooved aluminium steps (MultiMesh) that flatten out at the landings, floor and comb plates at both ends.
-## It rises toward +X; `foot` is the lower working point (where the incline line meets the floor), so the top
-## landing begins where the incline line, rounded, reaches `top_y`. Stopped, but walkable (a ramp under the steps,
-## the balustrades closing its sides); the out-of-service belt at its foot is down and the sign stand pushed aside.
+## It rises toward its local +X (turned by `yaw` about its foot); `foot` is the lower working point (where the incline
+## line meets the floor), so the top landing begins where the incline line, rounded, reaches `top_y`. Stopped, but
+## walkable (a ramp under the steps, the balustrades closing its sides). Direction lamps on the deck ends: a green
+## arrow where you get on, a red cross where you must not. An up unit can have the out-of-service belt at its foot
+## (down, the sign stand pushed aside).
 
 const ANGLE := 30.0
 const FILLET := 2.0          # transition radius at both ends (m), so the offset handrail and truss stay smooth
@@ -25,14 +27,23 @@ const NEWEL := 0.3           # handrail turnaround radius
 
 var _st: Array = []          # [s, Vector2 point, Vector2 tangent]
 static var _groove: ImageTexture
+static var _lamp_mats: Array = []
 
 
-static func build(parent: Node3D, foot: Vector3, top_y: float) -> void:
+## `up`: which way it runs (its lamps). `belt`: 0 = none, else the out-of-service belt at its foot, its clutter on
+## the local -Z side (1) or +Z side (-1).
+static func build(parent: Node3D, foot: Vector3, top_y: float, yaw := 0.0, up := true, belt := 0.0) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.name = "EscalatorUnit"
+	parent.add_child(pivot)
+	pivot.position = foot
+	pivot.rotation.y = yaw
 	var e := Escalator.new()
-	e._make(parent, foot, top_y)
+	e._make(pivot, Vector3.ZERO, top_y, up, belt)
+	return pivot
 
 
-func _make(parent: Node3D, foot: Vector3, top_y: float) -> void:
+func _make(parent: Node3D, foot: Vector3, top_y: float, up: bool, belt_side: float) -> void:
 	var zc := foot.z
 	var foot_x := foot.x
 	var root := Node3D.new()
@@ -53,6 +64,12 @@ func _make(parent: Node3D, foot: Vector3, top_y: float) -> void:
 	var body := [Vector2(TRUSS, -OUTER), Vector2(DECK, -OUTER), Vector2(DECK, -SKIRT), Vector2(CHANNEL, -SKIRT),
 		Vector2(CHANNEL, SKIRT), Vector2(DECK, SKIRT), Vector2(DECK, OUTER), Vector2(TRUSS, OUTER)]
 	_add(root, _sweep(body, [steel, deck, steel, dark, steel, deck, steel, steel], b0, b1, true))
+	# direction lamps on the deck ends (both sides): get on where it carries you away
+	for k in 2:
+		var A: Array = _at(b0 if k == 0 else b1)
+		var face := -1.0 if k == 0 else 1.0                  # the bottom end faces back (-X), the top one on (+X)
+		for side in [-1.0, 1.0]:
+			_lamp(root, Vector3((A[1] as Vector2).x + face * 0.003, (A[1] as Vector2).y + 0.16, side * (SKIRT + OUTER) * 0.5), face, (k == 0) == up)
 	var seam := CarouselMesh.mat("seam")
 	var sj := b0 + 1.2
 	while sj < b1 - 0.6:
@@ -103,30 +120,39 @@ func _make(parent: Node3D, foot: Vector3, top_y: float) -> void:
 	for side in [-1.0, 1.0]:
 		var wall := Geo.blocker(parent, Vector3(mid.x - sin(a) * 0.9, mid.y + cos(a) * 0.9, zc + side * (GLASS_Z + 0.05)), Vector3(run + 2.4, 1.8, 0.1))
 		wall.rotation.z = a
+	# the top landing starts right where the ramp ends: started any earlier, its edge stood a few centimetres proud of
+	# the ramp and stopped anyone walking up (walking down you only stepped off it)
 	var x_top: float = (_at(s_end)[1] as Vector2).x
-	Geo.blocker(parent, Vector3((top.x + x_top) * 0.5, top.y - 0.15, zc), Vector3(x_top - top.x + 0.2, 0.3, SKIRT * 2.0))
+	Geo.blocker(parent, Vector3((top.x + x_top + 0.1) * 0.5, top.y - 0.15, zc), Vector3(x_top + 0.1 - top.x, 0.3, SKIRT * 2.0))
+	# the balustrades along the top landing too, out to the newels (you step off forward, never sideways)
+	var x_newel: float = (_at(s_h1)[1] as Vector2).x
+	for side in [-1.0, 1.0]:
+		Geo.blocker(parent, Vector3((top.x - 1.0 + x_newel) * 0.5, top.y + 0.6, zc + side * (GLASS_Z + 0.05)), Vector3(x_newel - top.x + 1.0, 1.2, 0.1))
+	if belt_side == 0.0:
+		return
 	# out of service — but the belt across the foot is down: one post still standing, the other knocked over with the
 	# belt slack on the floor, the sign stand pushed aside
-	var post_a := Vector3(foot_x - 3.0, 0, zc - 1.0)
+	var bs := belt_side
+	var post_a := Vector3(foot_x - 3.0, 0, zc - 1.0 * bs)
 	LevelKit.stanchions(parent, [post_a])
 	var fallen := Node3D.new()
 	parent.add_child(fallen)
-	fallen.position = Vector3(foot_x - 3.4, 0.05, zc + 0.9)
-	fallen.rotation = Vector3(0, 0.6, PI / 2)
+	fallen.position = Vector3(foot_x - 3.4, 0.05, zc + 0.9 * bs)
+	fallen.rotation = Vector3(0, 0.6 * bs, PI / 2)
 	if TripoProps.exists("security", "SEC_Stanchion"):
 		TripoProps.spawn(fallen, "security", "SEC_Stanchion", Vector3(0, -0.05, 0))
 	else:
 		Geo.cyl(fallen, Vector3(0, 0.5, 0), 0.035, 1.0, Mats.get_mat("metal"))
 	var belt := Mats.std(Color(0.08, 0.14, 0.38), 0.6)
 	var hook := post_a + Vector3(0, 0.9, 0)
-	var slack := Vector3(foot_x - 3.15, 0.012, zc + 0.1)
+	var slack := Vector3(foot_x - 3.15, 0.012, zc + 0.1 * bs)
 	var droop := Geo.box(parent, (hook + slack) * 0.5, Vector3(0.012, 0.05, hook.distance_to(slack)), belt, false)
 	droop.look_at_from_position(droop.position, slack, Vector3.UP)
-	Geo.box(parent, Vector3(foot_x - 3.3, 0.012, zc + 0.5), Vector3(0.05, 0.006, 0.8), belt, false, 0.5)
+	Geo.box(parent, Vector3(foot_x - 3.3, 0.012, zc + 0.5 * bs), Vector3(0.05, 0.006, 0.8), belt, false, 0.5 * bs)
 	var stand := Node3D.new()
 	parent.add_child(stand)
-	stand.position = Vector3(foot_x - 3.7, 0, zc - 1.9)
-	stand.rotation.y = 0.5
+	stand.position = Vector3(foot_x - 3.7, 0, zc - 1.9 * bs)
+	stand.rotation.y = 0.5 * bs
 	var plate := LevelKit.sign_body(stand, Vector3(0, 1.25, 0), -90.0, Vector2(0.9, 0.6))
 	LevelKit.decal(plate, "sign_escalator_oos", Vector3(0, 0, plate.get_meta("face_z") + 0.003), 0.0, Vector2(0.87, 0.58))
 	Geo.box(stand, Vector3(0, 0.5, 0), Vector3(0.05, 1.0, 0.05), Mats.get_mat("steel_frame"), false)
@@ -354,6 +380,24 @@ func _newel_glass(gz: float, s: float, dir: float, glass: Material) -> Array:
 		var zn := Vector3(0, 0, 1)
 		_tri(st, q, [zn, zn, zn], [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO], [0, 1, 2])
 	return [[st.commit(), glass]]
+
+
+## A direction lamp set into a deck end (its face looking along `face` on X): a dark square with a green arrow
+## (`ok`: get on here) or a red cross.
+func _lamp(root: Node3D, at: Vector3, face: float, ok: bool) -> void:
+	if _lamp_mats.is_empty():
+		_lamp_mats = [Mats.std(Color(0.03, 0.03, 0.035), 0.3), Mats.emissive(Color(0.25, 1.0, 0.45), 2.6),
+			Mats.emissive(Color(1.0, 0.18, 0.12), 2.6)]
+	Geo.box(root, at, Vector3(0.008, 0.15, 0.15), _lamp_mats[0], false)
+	var lit: Material = _lamp_mats[1] if ok else _lamp_mats[2]
+	var p := at + Vector3(face * 0.005, 0, 0)
+	# [offset (y, z), length, angle about X]
+	var bars := [[Vector2(-0.015, 0), 0.075, 0.0], [Vector2(0.026, -0.016), 0.05, 0.8], [Vector2(0.026, 0.016), 0.05, -0.8]] if ok \
+			else [[Vector2.ZERO, 0.1, 0.785], [Vector2.ZERO, 0.1, -0.785]]
+	for b: Array in bars:
+		var off: Vector2 = b[0]
+		var mi := Geo.box(root, p + Vector3(0, off.x, off.y), Vector3(0.004, b[1], 0.016), lit, false)
+		mi.rotation.x = b[2]
 
 
 ## Steps from s0 to s1: a grooved aluminium tread at every chain pitch with yellow side and nose lines, and a riser

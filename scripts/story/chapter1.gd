@@ -8,17 +8,21 @@ extends StoryScript
 ## shut behind you and will not open again. The passage door is locked now and wants a key card: open the drawers
 ## ([E], Drawer) until one has it, tag the reader by the door and it opens — not onto the passage but onto a long
 ## service corridor (ServiceHall, far below; a PortalView on a dark box in the passage beyond the door). Through it,
-## the door slams and locks behind you; lockers, boarded windows leaking light, fluorescent tubes in a green haze, and
-## at the far end, before a pair of steel doors under a clock, someone standing — gone in a dip of the lights as you
-## come near. The office and the corridor are a floor up: the doors open onto the main lounge's closed 2F deck
-## (another PortalView: the deck from its staff doors), the hall below with the airliner that came through its glass;
-## you come out of those doors, they slam and lock, and you go down the stopped escalator — on the lounge floor,
-## walking on toward the wreck is "TO BE CONTINUED" for now, back to the title. The inspector says nothing on screen
+## the door slams and locks behind you; lockers, boarded windows, fluorescent tubes in a green haze, and no running.
+## A locker creaks open and a red ball bounces out; come near and it rolls off into a side room whose door bursts open
+## and slams; then someone stands at the far end, before a pair of steel doors under a clock — gone in a dip of the
+## lights as you come near (_corridor_loop). The office and the corridor are a floor up: the doors open onto the main
+## lounge's 2F at the atrium's edge
+## (another PortalView: the 2F from the admin wing's staff doors), the hall below with the airliner that came through
+## its glass; you come out of those doors, they slam and lock, and you go down a stopped escalator — on the lounge
+## floor, walking on toward the wreck is "TO BE CONTINUED" for now, back to the title. The inspector says nothing on screen
 ## and keeps the controls the whole way (only the end takes them); no markers.
 
 const CARD_DRAWER := "c3"                # the guard's desk, bottom drawer
-const LOUNGE_WALK := 18.0                # how far from the escalator's foot, down on the lounge floor, it ends at the latest
+const LOUNGE_WALK := 18.0                # how far from the escalators' feet, down on the lounge floor, it ends at the latest
 const HINT_GAP_MS := 6000                # the locked passage door's thought comes again at most this often
+const BALL_NEAR := 4.5                   # in the corridor: how close you come before the red ball is off
+const FIGURE_GONE := 12.0                # ...and to the figure at its far end before it is gone
 
 var _portal: PortalView
 var _through := false
@@ -34,6 +38,8 @@ var _lounge_portal: PortalView    # the corridor's far doors -> the lounge deck'
 var _in_hall := false
 var _far_open := false
 var _in_lounge := false
+var _ball_gone := false           # the red ball has run off into the side room and its door slammed
+var _figure_shown := false        # the figure has stood at the corridor's far end
 
 
 func setup() -> void:
@@ -100,7 +106,7 @@ func run() -> void:
 	await d.wait(0.25)
 	Snd.play_at("lock_click", (e.root as Node3D).global_position + Vector3(0, 1.0, 0), -6.0, 0.9, 4.0)
 	(e.use as Interactable).enabled = true
-	_watch_figure()
+	_corridor_loop()
 	await d.until(func(): return _in_lounge)
 	# out onto the lounge's 2F deck by its staff doors, which swing to and lock behind you
 	var ld := t.lounge_door
@@ -199,29 +205,49 @@ func _into_hall() -> void:
 	p.teleport(Transform3D(Basis(), m * p.global_position))
 	p.set_look(atan2(-fwd.x, -fwd.z), asin(clampf(fwd.y, -1.0, 1.0)))
 	p.zone_override = "servicehall"
+	p.no_sprint = true                                   # no running in the corridor
 	_hall_portal.set_active(false)
 	(hall.entry.leaf as Node3D).visible = true
 	var t := d.terminal
-	t.set_zone_light("hall", true, true)
-	(t.zones.hall as LightZone).night_dim = 0.62
+	for zn: String in ["hall", "shops", "airhall"]:
+		t.set_zone_light(zn, true, true)
+		(t.zones[zn] as LightZone).night_dim = 0.62
+	t.set_zone_light("secoffice", false, true)          # behind you for good
 	_lounge_portal = PortalView.create(hall, hall.far_frame(), (t.lounge_door.root as Node3D).global_transform, p.camera, _env())
 	for m2 in hall.far_vestibule:
 		m2.material_override = _lounge_portal.surface_material()
 	d.objective("복도 끝 문 열기")
 
 
-## Down the escalator on the lounge floor and either up to the airliner or well away from the escalator's foot.
+## Down an escalator on the lounge floor and either up to the airliner or well away from the escalators' feet (the
+## aircraft hall past the lounge's west wall does not count: it is there to walk round).
 func _down_in_lounge() -> bool:
 	var p := d.player.global_position
-	if p.y > 0.6:
+	if p.y > 0.6 or not Rect2(-20, -2.5, Terminal.HALL_E + 20.0, Terminal.HALL_S + 2.5).has_point(Vector2(p.x, p.z)):
 		return false
-	var foot := Vector2(Terminal.ESC_FOOT.x, Terminal.ESC_FOOT.z)
-	return d.terminal.near_wreck(p, 4) or Vector2(p.x, p.z).distance_to(foot) > LOUNGE_WALK
+	if d.terminal.near_wreck(p, 4):
+		return true
+	for foot: Vector3 in Terminal.escalator_feet():
+		if Vector2(p.x, p.z).distance_to(Vector2(foot.x, foot.z)) <= LOUNGE_WALK:
+			return false
+	return true
 
 
-## The figure at the end of the corridor is gone in a dip of the lights once you come near.
-func _watch_figure() -> void:
-	await d.until(func(): return d.player.global_position.distance_to(hall.figure.global_position) < 17.0)
+## The corridor's own little loop (no running in here): a locker creaks open and a red ball bounces out and comes to
+## rest; come near and it rolls off fast, a side door bursts open, takes it in and slams; walk on and the figure stands
+## at the far end — gone in a dip of the lights once you are within FIGURE_GONE of it.
+func _corridor_loop() -> void:
+	await d.wait(1.2)
+	await hall.open_locker()
+	await hall.ball_out()
+	await d.until(func(): return d.player.global_position.distance_to(hall.ball.global_position) < BALL_NEAR)
+	await hall.ball_away()
+	d.player.add_shake(0.2)
+	_ball_gone = true
+	await d.wait(0.8)
+	await hall.appear()
+	_figure_shown = true
+	await d.until(func(): return d.player.global_position.distance_to(hall.figure.global_position) < FIGURE_GONE)
 	hall.vanish()
 
 
@@ -244,6 +270,7 @@ func _into_lounge() -> void:
 	p.teleport(Transform3D(Basis(), m * p.global_position))
 	p.set_look(atan2(-fwd.x, -fwd.z), asin(clampf(fwd.y, -1.0, 1.0)))
 	p.zone_override = ""
+	p.no_sprint = false
 	_lounge_portal.set_active(false)
 	var ld := d.terminal.lounge_door
 	var leaves: Array[Node3D] = ld.leaves

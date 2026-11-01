@@ -35,12 +35,14 @@ func _ready() -> void:
 	ui.bind(player, director)
 	for tool in [["--tour", "tour"], ["--level-shots", "level_shots"], ["--audio-walk", "audio_walk"],
 			["--shutter-clip", "shutter_clip"], ["--level-plan", "level_plan"], ["--warped-shots", "warped_shots"],
-			["--lounge", "lounge_walk"]]:
+			["--lounge", "lounge_walk"], ["--airhall", "lounge_walk"], ["--cabinway", "lounge_walk"],
+			["--corridor-shots", "corridor_shots"]]:
 		if OS.get_cmdline_user_args().has(tool[0]):
 			_debug_tool(tool[1], true)
 			return
 	for tool in [["--xray-sheet", "xray_sheet"], ["--fids-sheet", "fids_sheet"], ["--zfight-audit", "zfight_audit"],
-			["--label-audit", "label_audit"], ["--reach-audit", "reach_audit"], ["--storytest", "story_test"]]:
+			["--label-audit", "label_audit"], ["--reach-audit", "reach_audit"], ["--storytest", "story_test"],
+			["--escalator-test", "escalator_test"]]:
 		if OS.get_cmdline_user_args().has(tool[0]):
 			_debug_tool(tool[1], false)
 			return

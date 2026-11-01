@@ -64,26 +64,28 @@ func setup(p: String) -> void:
 
 
 func _night(high: bool) -> void:
-	sky_mat.sky_top_color = Color(0.004, 0.006, 0.016)
-	sky_mat.sky_horizon_color = Color(0.03, 0.035, 0.055)
-	sky_mat.ground_horizon_color = Color(0.02, 0.022, 0.03)
+	sky_mat.sky_top_color = Color(0.006, 0.016, 0.022)
+	sky_mat.sky_horizon_color = Color(0.04, 0.075, 0.085)
+	sky_mat.ground_horizon_color = Color(0.025, 0.04, 0.045)
 	sky_mat.ground_bottom_color = Color(0.0, 0.0, 0.0)
 	sky_mat.sun_angle_max = 1.0
 	sky_mat.sky_energy_multiplier = 1.0
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.055, 0.065, 0.09)
-	env.ambient_light_energy = 0.45
+	env.ambient_light_color = Color(0.05, 0.078, 0.082)
+	env.ambient_light_energy = 0.8
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env.tonemap_exposure = 0.9       # lit whites (kiosks, signs, the FIDS frame) stay below clipping
-	env.glow_intensity = 0.5
-	env.glow_bloom = 0.02
-	env.adjustment_contrast = 1.08
-	env.adjustment_saturation = 0.8
-	env.volumetric_fog_density = 0.016
-	env.volumetric_fog_albedo = Color(0.8, 0.85, 0.92)
+	env.tonemap_exposure = 1.0
+	env.glow_intensity = 0.6
+	env.glow_bloom = 0.04
+	env.adjustment_contrast = 1.16
+	env.adjustment_saturation = 0.7
+	# a haze everywhere (the lounge adds its own drifts)
+	env.volumetric_fog_density = 0.04
+	env.volumetric_fog_albedo = Color(0.7, 0.84, 0.88)
 	env.sdfgi_enabled = false   # too costly for what it adds at night (see LightZone.NO_GI_DIRECT)
-	# film-photo night: teal shadows, faintly green fluorescent highlights (GDD lounge reference)
-	env.adjustment_color_correction = grade_lut(Vector3(-0.03, 0.012, 0.024), Vector3(-0.006, 0.014, -0.006))
+	# the abandoned-hall reference: teal shadows and mid-tones, cold cyan-white highlights; screens stay blue
+	env.adjustment_color_correction = grade_lut(Vector3(-0.022, 0.006, 0.012), Vector3(-0.016, 0.006, 0.014))
+	# a faint moon from the north: no light comes in through the lounge's glass
 	sun.light_color = Color(0.55, 0.65, 1.0)
 	sun.light_energy = 0.12
 	sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(155), 0)

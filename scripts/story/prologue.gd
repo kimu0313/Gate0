@@ -71,9 +71,10 @@ var _lamp_t := 0.0
 
 func setup() -> void:
 	var t := d.terminal
-	# 02:17, the night lighting: the halls on, the closed baggage area (and the staff passage through it) dark
+	# 02:17, the night lighting: the halls on, the closed baggage area (and the staff passage through it) dark; the
+	# 2F's shops and the aircraft hall are never seen in the prologue
 	for zn in t.zones.keys():
-		t.set_zone_light(zn, zn != "baggage" and zn != "service", true)
+		t.set_zone_light(zn, zn not in ["baggage", "service", "shops", "airhall"], true)
 		(t.zones[zn] as LightZone).night_dim = 0.62
 	t.shutters.baggage.open(true)
 	d.ui.tablet.set_checklist(CHECKLIST)

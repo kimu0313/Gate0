@@ -36,6 +36,11 @@ func _ready() -> void:
 		var up := b.y
 		var back := -b.z.normalized() * DEPTH
 		var c := l.global_position
+		# the text box's centre: a left-aligned label's text starts at its origin, a right-aligned one ends there
+		if l.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT:
+			c += right * px.x * 0.5
+		elif l.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT:
+			c -= right * px.x * 0.5
 		var corners := [c + right * px.x * 0.5 + up * px.y * 0.5, c - right * px.x * 0.5 + up * px.y * 0.5,
 				c + right * px.x * 0.5 - up * px.y * 0.5, c - right * px.x * 0.5 - up * px.y * 0.5]
 		var backing: AABB

@@ -46,18 +46,27 @@ static func _make(mat_name: String) -> Material:
 		"floor_accent":
 			return shader_mat("res://shaders/floor_tile.gdshader", {"accent_band": 1.0})
 		"floor_lounge":
-			# main lounge: big polished tiles, mirror-like, with dark stone tiles scattered through (lounge reference)
+			# main lounge: big polished grey-beige granite tiles, mirror-like, with dark stone tiles scattered through
+			# (the lounge and night-airport references)
 			return shader_mat("res://shaders/floor_tile.gdshader", {
-				"color_a": Color(0.6, 0.59, 0.56), "color_b": Color(0.53, 0.52, 0.5), "tile_size": 1.5,
-				"roughness_base": 0.05, "roughness_var": 0.12, "dark_share": 0.07})
+				"color_a": Color(0.5, 0.48, 0.45), "color_b": Color(0.44, 0.42, 0.39), "grout_color": Color(0.33, 0.31, 0.29),
+				"tile_size": 1.5, "roughness_base": 0.05, "roughness_var": 0.12, "dark_share": 0.07,
+				"dark_color": Color(0.12, 0.115, 0.11)})
 		"column":
-			# lounge columns: graphite cladding in 1.5 m courses, a steel skirting
+			# lounge columns: warm limestone cladding in 1.5 m courses, a dark bronze skirting (night-airport reference)
 			return shader_mat("res://shaders/wall_panel.gdshader", {
-				"color": Color(0.3, 0.31, 0.32), "seam_color": Color(0.14, 0.14, 0.15), "panel_w": 100.0,
-				"panel_h": 1.5, "seam": 0.01, "roughness": 0.42, "skirting": 0.14, "skirting_color": Color(0.36, 0.37, 0.39)})
+				"color": Color(0.56, 0.52, 0.46), "seam_color": Color(0.36, 0.33, 0.29), "panel_w": 100.0,
+				"panel_h": 1.5, "seam": 0.01, "roughness": 0.5, "skirting": 0.14, "skirting_color": Color(0.22, 0.2, 0.18)})
+		"ceiling_lounge":
+			# the lounge's ceilings, soffit and the 2F's underside: warm grey panels
+			return shader_mat("res://shaders/ceiling.gdshader", {"color": Color(0.5, 0.48, 0.45), "grid_color": Color(0.36, 0.34, 0.31), "tile": 1.2})
 		"ad_screen":
 			return shader_mat("res://shaders/ad_screen.gdshader", {
 				"plane_tex": load("res://assets/textures/level/icon_plane.png")})
+		"cctv_feed":
+			return shader_mat("res://shaders/cctv_feed.gdshader")
+		"led_blink":
+			return shader_mat("res://shaders/led_blink.gdshader")
 		"floor_office":
 			return shader_mat("res://shaders/floor_tile.gdshader", {
 				"color_a": Color(0.5, 0.49, 0.46), "color_b": Color(0.46, 0.45, 0.42),

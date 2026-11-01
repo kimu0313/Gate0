@@ -47,9 +47,12 @@ func setup(zname: String, dname: String, color := Color(0.9, 0.95, 1.0), energy 
 	panel_mat.roughness = 0.5
 
 
-## A rectangular ceiling light panel (emissive) with an optional omni light under it.
+## A rectangular ceiling light panel (emissive) with an optional omni light under it. A `color` with alpha 0 (the
+## default) lights in the zone's own colour (setup).
 func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 1.1, light_range := 11.0,
-		color := Color(0.88, 0.93, 1.0), shadow := false) -> MeshInstance3D:
+		color := Color.TRANSPARENT, shadow := false) -> MeshInstance3D:
+	if color.a == 0.0:
+		color = panel_mat.emission
 	var mi := Geo.box(self, pos, Vector3(size.x, 0.06, size.y), panel_mat, false)
 	panels.append(mi)
 	# fixture housing: a pale rim around the diffuser so it reads as a troffer, not a cut-out
@@ -75,7 +78,9 @@ func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 
 ## A small square recessed downlight (the lounge ceiling grid): the zone's emissive panel in a dark trim, with an
 ## optional spot straight down. It counts as a panel, so ceiling furniture keeps clear of it.
 func add_downlight(pos: Vector3, size := 0.4, with_light := false, light_energy := 6.0, light_range := 14.0,
-		angle := 40.0, color := Color(0.9, 0.94, 1.0), tilt := 0.0) -> MeshInstance3D:
+		angle := 40.0, color := Color.TRANSPARENT, tilt := 0.0) -> MeshInstance3D:
+	if color.a == 0.0:
+		color = panel_mat.emission
 	var mi := Geo.box(self, pos, Vector3(size, 0.04, size), panel_mat, false)
 	mi.rotation.x = -tilt              # set into a sloped ceiling (rising toward +Z)
 	panels.append(mi)
@@ -86,7 +91,7 @@ func add_downlight(pos: Vector3, size := 0.4, with_light := false, light_energy 
 		s.rotation.x = -PI / 2
 		s.spot_attenuation = 0.9
 		s.spot_angle_attenuation = 1.6
-		s.light_volumetric_fog_energy = 0.35
+		s.light_volumetric_fog_energy = 0.9          # the haze shows each cone
 		add_light(s)
 		_panel_light[mi] = [s]
 	return mi

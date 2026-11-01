@@ -5126,6 +5126,12 @@ msgstr "Main Lounge"
 msgid "관리동 복도"
 msgstr "Service Corridor"
 
+msgid "항공기 전시홀"
+msgstr "Aircraft Hall"
+
+msgid "기내"
+msgstr "Cabin"
+
 msgid "위치 불명"
 msgstr "Unknown location"
 

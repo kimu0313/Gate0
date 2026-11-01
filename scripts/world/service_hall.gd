@@ -1,8 +1,8 @@
 class_name ServiceHall
 extends Node3D
 ## The long service corridor between the security office and the main lounge (the corridor reference): grey-green
-## lockers down both walls, the windows above them on the outside wall boarded over with steel sheets (light leaking
-## round their edges), fluorescent fittings across the ceiling all the way along in a green haze, a door now and then,
+## lockers down both walls, the windows above them on the outside wall boarded over with steel sheets, fluorescent
+## fittings across the ceiling all the way along in a green haze, a door now and then,
 ## and at the far end a pair of steel doors under a clock, a dark figure standing before them. Built far below the
 ## terminal (ORIGIN) like the jet bridge: the main story joins it to the office's passage door and to the lounge's
 ## east doors with PortalViews. Local frame: the entrance doorway at the origin, the corridor running along +Z to the
@@ -17,14 +17,19 @@ const FAR_H := 2.3
 const LOCKER := Vector3(0.455, 1.85, 0.48)
 const LOCKER_STEP := 0.46
 const SIDE_DOORS := [8.0, 20.0, 33.0]     # the rooms' doors (z), between locker banks
+const BALL_LOCKER := [1.0, 15.67]         # [side, z]: the locker the red ball comes out of, in the bank before door 2
+const BALL_DOOR := 1                      # the side door the ball runs off into
+const BALL_R := 0.17
 
 var zone: LightZone
 var entry: Dictionary         # the door you come in by (Terminal.steel_door: {root, leaf, block, use}), open out of it
 var far_doors: Dictionary     # double_door: {root, leaf, leaves, block, use}
 var far_vestibule: Array[MeshInstance3D] = []   # past the far doors: the story lines them with the lounge's portal
 var beyond: Area3D            # just past the far doors
-var figure: Node3D
+var figure: Node3D            # hidden until the story shows it (appear)
 var side_doors: Array[Dictionary] = []
+var locker_door: Node3D       # the ball locker's door, a hinge node (open_locker)
+var ball: Node3D              # the red ball, on that locker's floor until the story lets it out
 
 
 func build() -> void:
@@ -55,6 +60,7 @@ func build() -> void:
 	_build_entry()
 	_build_far_end()
 	_build_lockers()
+	_build_ball_locker()
 	_build_windows()
 	_build_side_doors()
 	_build_lights()
@@ -88,7 +94,7 @@ func _build_entry() -> void:
 	(entry.leaf as Node3D).visible = false
 	(entry.block as StaticBody3D).collision_layer = 0
 	(entry.use as Interactable).enabled = false
-	var black := Mats.get_mat("black")
+	var black := Mats.get_mat("void")
 	for b: Array in [[Vector3(0, -0.05, -0.95), Vector3(1.6, 0.1, 1.6)], [Vector3(0, 2.3, -0.95), Vector3(1.6, 0.1, 1.6)],
 			[Vector3(-0.85, 1.15, -0.95), Vector3(0.1, 2.4, 1.6)], [Vector3(0.85, 1.15, -0.95), Vector3(0.1, 2.4, 1.6)],
 			[Vector3(0, 1.15, -1.8), Vector3(1.6, 2.4, 0.1)]]:
@@ -106,7 +112,7 @@ func _build_far_end() -> void:
 	Geo.cyl(clock, Vector3.ZERO, 0.19, 0.05, Mats.get_mat("plastic_white")).rotation.x = PI / 2
 	Geo.cyl(clock, Vector3(0, 0, -0.005), 0.205, 0.04, Mats.get_mat("plastic_dark")).rotation.x = PI / 2
 	Geo.label(clock, "2:17", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true, "lcd")
-	var black := Mats.get_mat("black")
+	var black := Mats.get_mat("void")
 	var vz := LENGTH + 1.75
 	far_vestibule.append(Geo.box(self, Vector3(0, -0.04, vz), Vector3(FAR_W + 1.4, 0.1, 3.2), black, false))
 	far_vestibule.append(Geo.box(self, Vector3(0, FAR_H + 0.5, vz), Vector3(FAR_W + 1.4, 0.2, 3.2), black, false))
@@ -139,6 +145,16 @@ func _build_far_end() -> void:
 	head.scale = Vector3(1.0, 1.15, 1.0)
 	for c in figure.find_children("*", "GeometryInstance3D", true, false):
 		(c as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	figure.visible = false
+
+
+## The figure is there, before the far doors: it comes in a dip of the lights, so it is never seen coming.
+func appear() -> void:
+	if figure.visible:
+		return
+	zone.trigger_dip(0.3)
+	await get_tree().create_timer(0.1, false).timeout
+	figure.visible = true
 
 
 ## The figure goes in a dip of the lights.
@@ -149,6 +165,86 @@ func vanish() -> void:
 	Snd.play_at("flicker_zap", to_global(Vector3(0, H - 0.2, LENGTH - 6.0)), -8.0, 0.8, 10.0)
 	await get_tree().create_timer(0.12).timeout
 	figure.visible = false
+
+
+# --------------------------------------------------------------------------------------------
+## The ball locker's door creaks open: the latch, then a long creak as it swings out into the corridor.
+func open_locker() -> void:
+	var s: float = BALL_LOCKER[0]
+	var at := to_global(Vector3(s * (W * 0.5 - LOCKER.z), 1.2, BALL_LOCKER[1]))
+	Snd.play_at("lock_click", at, -9.0, 1.35, 3.0)
+	await get_tree().create_timer(0.3, false).timeout
+	Snd.play_at("amb_creak_1", at, -1.0, 1.15, 5.0)
+	var tw := locker_door.create_tween()
+	tw.tween_property(locker_door, "rotation:y", -s * deg_to_rad(105.0), 1.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await tw.finished
+
+
+## The ball bounces out of the open locker, each hop lower, and rolls to a stop in the middle of the corridor.
+func ball_out() -> void:
+	var s: float = BALL_LOCKER[0]
+	var z: float = BALL_LOCKER[1]
+	# [where it lands, how high it hops, how long]
+	var hops := [[Vector3(s * 0.95, BALL_R, z - 0.12), 0.4, 0.46], [Vector3(s * 0.56, BALL_R, z - 0.26), 0.25, 0.36],
+		[Vector3(s * 0.3, BALL_R, z - 0.36), 0.11, 0.24], [Vector3(s * 0.17, BALL_R, z - 0.43), 0.04, 0.15]]
+	var tw := ball.create_tween()
+	var from := ball.position
+	var vol := -2.0
+	for h: Array in hops:
+		tw.tween_method(_ball_at.bind(from, h[0], h[1]), 0.0, 1.0, h[2])
+		tw.tween_callback(_bounce.bind(h[0], vol))
+		from = h[0]
+		vol -= 5.0
+	tw.tween_method(_ball_at.bind(from, Vector3(s * 0.1, BALL_R, z - 0.62), 0.0), 0.0, 1.0, 0.7) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await tw.finished
+
+
+## Come near and the ball is off: it rolls away fast to the side door ahead of it (BALL_DOOR), which bursts open as it
+## comes, takes it into the dark and slams.
+func ball_away() -> void:
+	var s: float = BALL_LOCKER[0]
+	var door: Dictionary = side_doors[BALL_DOOR]
+	var dz: float = SIDE_DOORS[BALL_DOOR]
+	var roll := Snd.make_loop("ball_roll_loop", ball, -4.0, 3.0, 25.0)
+	roll.pitch_scale = 1.2
+	roll.play()
+	var from := ball.position
+	var p1 := Vector3(s * 0.55, BALL_R, dz - 1.1)
+	var p2 := Vector3(s * 1.25, BALL_R, dz - 0.1)
+	var tw := ball.create_tween()
+	tw.tween_method(_ball_at.bind(from, p1, 0.0), 0.0, 1.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_callback(_burst.bind(door))
+	tw.tween_method(_ball_at.bind(p1, p2, 0.0), 0.0, 1.0, 0.25)
+	tw.tween_method(_ball_at.bind(p2, Vector3(s * 2.6, BALL_R, dz + 0.05), 0.0), 0.0, 1.0, 0.3)
+	tw.tween_callback(func():
+		ball.visible = false
+		roll.stop())
+	tw.tween_interval(0.35)
+	await tw.finished
+	var leaf: Node3D = door.leaf
+	var shut := leaf.create_tween()
+	shut.tween_property(leaf, "rotation:y", 0.0, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await shut.finished
+	Snd.play_at("door_slam", (door.root as Node3D).global_position + Vector3(0, 1.0, 0), -1.0, 1.0, 8.0)
+
+
+## The ball between `a` and `b` at `k` (0..1), hopping `hop` high on the way.
+func _ball_at(k: float, a: Vector3, b: Vector3, hop: float) -> void:
+	ball.position = a.lerp(b, k) + Vector3(0, hop * 4.0 * k * (1.0 - k), 0)
+
+
+func _bounce(at: Vector3, volume_db: float) -> void:
+	Snd.play_at(Snd.variant("ball_bounce"), to_global(at), volume_db, randf_range(0.96, 1.06), 4.0)
+
+
+## A side door bursts open into the corridor (something on the other side), swinging past and settling.
+func _burst(door: Dictionary) -> void:
+	var leaf: Node3D = door.leaf
+	Snd.play_at("door_heavy", (door.root as Node3D).global_position + Vector3(0, 1.0, 0), -1.0, 1.05, 7.0)
+	var tw := leaf.create_tween()
+	tw.tween_property(leaf, "rotation:y", deg_to_rad(98.0), 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(leaf, "rotation:y", deg_to_rad(90.0), 0.25).set_trans(Tween.TRANS_SINE)
 
 
 ## A pair of steel doors with wired-glass lights and push bars in a frame on the wall plane at `xf` (in `parent`'s
@@ -221,6 +317,8 @@ func _build_lockers() -> void:
 		Geo.blocker(self, Vector3(cx, 0.95, b[1] + n * LOCKER_STEP * 0.5), Vector3(LOCKER.z, 1.9, n * LOCKER_STEP))
 		for i in n:
 			var z := z0 + i * LOCKER_STEP
+			if s == BALL_LOCKER[0] and absf(z - BALL_LOCKER[1]) < 0.05:
+				continue                                  # built on its own (_build_ball_locker)
 			var lean := rng.randf_range(-0.004, 0.004)
 			bodies.append(Transform3D(Basis(Vector3.UP, lean).scaled(LOCKER), Vector3(cx, 0.09 + LOCKER.y * 0.5, z)))
 			var g := rng.randf_range(0.9, 1.08)
@@ -237,16 +335,58 @@ func _build_lockers() -> void:
 	_multi(cube, Mats.std(Color(0.1, 0.11, 0.1), 0.7), plinths)
 
 
-## The outside wall's windows above the lockers, boarded over with steel sheets bolted to the frame: light leaks in
-## round the edges they do not meet, one sheet hangs askew. Nothing of outside shows.
+## The locker the red ball comes out of (left out of the banks): an open box behind the front — its neighbours'
+## sides lined dark, a back, floor, roof and hat shelf — the door on a hinge at its near edge (vent slots, handle),
+## and the ball on its floor.
+func _build_ball_locker() -> void:
+	var s: float = BALL_LOCKER[0]
+	var z: float = BALL_LOCKER[1]
+	var hw := W * 0.5
+	var face := s * (hw - LOCKER.z)
+	var back := s * (hw - 0.012)
+	var cx := (face + back) * 0.5
+	var depth := absf(back - face)
+	var inside := Mats.std(Color(0.035, 0.04, 0.038), 0.7)
+	Geo.box(self, Vector3(back - s * 0.01, 1.015, z), Vector3(0.02, 1.85, 0.43), inside, false)
+	for y: float in [0.1, 1.93, 1.56]:                                       # floor, roof, hat shelf
+		Geo.box(self, Vector3(cx, y, z), Vector3(depth, 0.016, 0.43), inside, false)
+	for sz: float in [-1.0, 1.0]:                                            # lining the neighbours' sides
+		Geo.box(self, Vector3(cx, 1.015, z + sz * 0.213), Vector3(depth, 1.84, 0.004), inside, false)
+	locker_door = Node3D.new()
+	add_child(locker_door)
+	locker_door.position = Vector3(face - s * 0.008, 0.1, z - 0.22)
+	var tint := Mats.std(Color(0.22, 0.27, 0.24), 0.42, 0.4)
+	Geo.box(locker_door, Vector3(0, 0.92, 0.22), Vector3(0.016, 1.82, 0.436), tint, false)
+	var dark := Mats.std(Color(0.05, 0.055, 0.05), 0.6)
+	for y: float in [1.68, 1.6, 0.36, 0.28]:
+		Geo.box(locker_door, Vector3(-s * 0.009, y - 0.1, 0.22), Vector3(0.006, 0.022, 0.26), dark, false)
+	Geo.box(locker_door, Vector3(-s * 0.02, 0.95, 0.38), Vector3(0.03, 0.12, 0.03), Mats.get_mat("metal"), false)
+	ball = Node3D.new()
+	ball.name = "RedBall"
+	add_child(ball)
+	ball.position = Vector3(s * (hw - LOCKER.z * 0.5), 0.108 + BALL_R, z)
+	var sm := SphereMesh.new()
+	sm.radius = BALL_R
+	sm.height = BALL_R * 2.0
+	sm.radial_segments = 32
+	sm.rings = 16
+	var mi := MeshInstance3D.new()
+	mi.mesh = sm
+	var red := Mats.std(Color(0.7, 0.05, 0.04), 0.38)
+	red.emission_enabled = true                           # a little of its own, so it reads red under the green tubes
+	red.emission = Color(0.55, 0.03, 0.02)
+	red.emission_energy_multiplier = 0.35
+	mi.material_override = red
+	ball.add_child(mi)
+
+
+## The outside wall's windows above the lockers, boarded over with steel sheets bolted to the frame, one hanging
+## askew. Nothing of outside shows, and no light comes through.
 func _build_windows() -> void:
 	var hw := W * 0.5
 	var sheet := Mats.std(Color(0.2, 0.21, 0.22), 0.55, 0.65)
 	var rust := Mats.std(Color(0.28, 0.2, 0.14), 0.8, 0.3)
 	var frame := Mats.std(Color(0.16, 0.17, 0.17), 0.5, 0.4)
-	var leak := Mats.emissive(Color(0.72, 0.84, 1.0), 5.0)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 911
 	var x := -hw
 	for i in 7:
 		var z := 4.0 + i * 6.0
@@ -254,17 +394,12 @@ func _build_windows() -> void:
 		Geo.box(self, c + Vector3(-0.012, 0, 0), Vector3(0.03, 0.98, 1.62), frame, false)             # the old frame
 		var plate := Geo.box(self, c + Vector3(0.02, 0, 0), Vector3(0.012, 0.9, 1.54), rust if i == 4 else sheet, false)
 		if i == 2:
-			plate.rotation.x = 0.035                  # askew: a wider wedge of light down one side
+			plate.rotation.x = 0.035                  # askew
 		for k in 2:
 			Geo.box(self, c + Vector3(0.03, -0.18 + k * 0.36, 0), Vector3(0.02, 0.05, 1.5), sheet, false)   # stiffeners
 		for cz in [-0.68, 0.68]:
 			for cy in [-0.36, 0.36]:
 				Geo.box(self, c + Vector3(0.03, cy, cz), Vector3(0.02, 0.03, 0.03), Mats.get_mat("metal"), false)
-		# light where the sheet does not meet the frame: along the top, down one side
-		var top := Geo.box(self, c + Vector3(0.006, 0.462, rng.randf_range(-0.2, 0.2)), Vector3(0.004, 0.012, rng.randf_range(0.6, 1.4)), leak, false)
-		top.name = "Leak"
-		var side_z := 0.785 if rng.randf() < 0.5 else -0.785
-		Geo.box(self, c + Vector3(0.006, rng.randf_range(-0.15, 0.15), side_z), Vector3(0.004, rng.randf_range(0.3, 0.8), 0.014 if i != 2 else 0.04), leak, false)
 
 
 ## The doors on the rooms' side, all locked (they rattle): a store, the plant room, the staff room.
@@ -274,10 +409,11 @@ func _build_side_doors() -> void:
 		var door := OfficeKit.door(self, Vector3(W * 0.5 + 0.15, 0, SIDE_DOORS[i]), PI, names[i])
 		(door.use as Interactable).callback = func(): Terminal.current.rattle(door)
 		side_doors.append(door)
-		Geo.box(self, Vector3(W * 0.5 + 0.9, 1.1, SIDE_DOORS[i]), Vector3(1.0, 2.2, 1.4), Mats.get_mat("black"), false)   # dark beyond
+		Geo.box(self, Vector3(W * 0.5 + 0.9, 1.1, SIDE_DOORS[i]), Vector3(1.0, 2.2, 1.4), Mats.get_mat("void"), false)   # dark beyond
 
 
-## Fluorescent fittings across the ceiling every 3.6 m, cold green; two dead, the zone flickers now and then.
+## Fluorescent fittings across the ceiling every 3.6 m, cold green; two dead (not over the ball's door), the zone
+## flickers now and then.
 func _build_lights() -> void:
 	zone = LightZone.new()
 	zone.name = "Zone_servicehall"
@@ -286,7 +422,7 @@ func _build_lights() -> void:
 	var i := 0
 	var z := 2.0
 	while z < LENGTH:
-		var dead := i == 5 or i == 9
+		var dead := i == 6 or i == 9            # not the one over the ball's door (z 20): that has to be seen
 		if dead:
 			Geo.box(zone, Vector3(0, H - 0.03, z), Vector3(1.6, 0.06, 0.16), Mats.std(Color(0.3, 0.32, 0.3), 0.5), false)
 		else:

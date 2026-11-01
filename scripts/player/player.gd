@@ -19,6 +19,7 @@ var look_enabled := true
 var cutscene := false           # a scripted scene: no looking, walking or using things (walk_to still moves you);
                                 # menus closing in between do not hand control back
 var camera_mode := false
+var no_sprint := false          # a place where you cannot run (the story sets it): the sprint key does nothing
 var terminal: Terminal
 
 var head: Node3D
@@ -97,12 +98,12 @@ func _ready() -> void:
 	flashlight.position = Vector3(0.18, -0.2, 0.0)
 	flashlight.light_color = Color(1.0, 0.94, 0.82)
 	flashlight.light_energy = 0.0
-	flashlight.spot_range = 24.0
-	flashlight.spot_angle = 27.0
-	flashlight.spot_attenuation = 1.2
+	flashlight.spot_range = 30.0
+	flashlight.spot_angle = 28.0
+	flashlight.spot_attenuation = 1.0
 	flashlight.spot_angle_attenuation = 0.7
 	flashlight.shadow_enabled = true
-	flashlight.light_volumetric_fog_energy = 0.5
+	flashlight.light_volumetric_fog_energy = 0.9      # the beam shows in the haze, the dust shines in it
 	flashlight.visible = false
 	# footsteps carry their own room (recorded in the space), so they skip the engine reverb zones; three players
 	# take turns so each step's echo rings out under the next one
@@ -224,7 +225,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func toggle_flashlight(force := -1) -> void:
 	flashlight_on = not flashlight_on if force < 0 else force == 1
 	flashlight.visible = flashlight_on
-	flashlight.light_energy = 1.7 if flashlight_on else 0.0      # bright enough in the dark, does not burn out signs up close
+	flashlight.light_energy = 2.8 if flashlight_on else 0.0      # a strong torch (user request; was 1.7)
 	Snd.play("button_press", -10.0, 1.6, "SFX")
 
 
@@ -244,7 +245,8 @@ func _physics_process(delta: float) -> void:
 	var input := Vector2.ZERO
 	if controls_enabled and not cutscene:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var sprinting := Input.is_action_pressed("sprint") and input.y < -0.1 and stamina > 0.2 and controls_enabled and not camera_mode
+	var sprinting := Input.is_action_pressed("sprint") and input.y < -0.1 and stamina > 0.2 and controls_enabled and not camera_mode \
+			and not no_sprint
 	var speed := SPRINT_SPEED if sprinting else WALK_SPEED
 	if camera_mode:
 		speed *= 0.45
@@ -371,7 +373,7 @@ func _footstep(sprinting: bool) -> void:
 		match z:
 			"gates":
 				surface = "tile" if absf(p.x) < 3.0 else "carpet"
-			"bridge0", "jetbridge":
+			"bridge0", "jetbridge", "cabin":
 				surface = "carpet"
 			"office", "secoffice", "storage", "maint":
 				surface = "tileroom"

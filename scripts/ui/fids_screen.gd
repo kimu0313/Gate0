@@ -4,14 +4,14 @@ extends Control
 ## Laid out from its own size (the viewport follows the board's proportions, so nothing is stretched), every cell
 ## shrinks to fit its column, and overflows() lists any text that still would not fit (debug/fids_sheet.gd).
 
-const AMBER := Color(0.48, 0.66, 1.0)   # LED lettering in the signal blue (the name stays for the board code)
+const AMBER := Color(0.96, 0.95, 0.88)  # the lettering: warm white on the blue board (the name stays for the board code)
 const WHITE := Color(0.92, 0.94, 0.98)
-const GREY := Color(0.45, 0.48, 0.55)
+const GREY := Color(0.66, 0.72, 0.84)
 const GREEN := Color(0.3, 1.0, 0.45)
 const RED := Color(1.0, 0.25, 0.2)
-const BG := Color(0.01, 0.015, 0.03)
-const STRIPE := Color(0.03, 0.045, 0.08)
-const HEAD_BG := Color(0.04, 0.07, 0.16)
+const BG := Color(0.02, 0.07, 0.3)       # a deep royal-blue board (night-airport reference)
+const STRIPE := Color(0.035, 0.1, 0.37)
+const HEAD_BG := Color(0.012, 0.035, 0.15)
 const ICON_DEPARTURES := "res://assets/textures/level/icon_departures.png"
 const MIN_SHRINK := 0.62               # a cell may shrink to this share of its font size before it counts as overflow
 ## Columns as [left, width] in shares of the screen width, and how each is aligned.

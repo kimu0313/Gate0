@@ -58,9 +58,9 @@ $lines = [ordered]@{
 	"pa_flight0_boarding_en"   = @($EN, -2, "Flight zero is now boarding.")
 	"pa_next_worker_ko"        = @($KO, -3, "안내 말씀 드립니다. 다음 근무자께서는, 근무 수칙을 꼭 지켜 주시기 바랍니다.")
 	# Gate 0 v2 — 프롤로그 SCENE 04 (탑승교 끝 스피커) 와 타이틀 SCENE 05. "Flight 000" 은 공공공편으로 읽는다.
-	"pa_v2_attention"          = @($KO, -2, "승객 여러분께 안내 말씀드립니다.")
-	"pa_v2_boarding_start"     = @($KO, -3, "플라이트 공공공편의 탑승을 시작하겠습니다.")
-	"pa_v2_boarding_started"   = @($KO, -3, "플라이트 공공공편의 탑승이 시작되었습니다.")
+	"pa_v2_attention"          = @($KO, -4, "승객 여러분께 안내 말씀드립니다.")
+	"pa_v2_boarding_start"     = @($KO, -5, "플라이트 공공공편의 탑승을 시작하겠습니다.")
+	"pa_v2_boarding_started"   = @($KO, -5, "플라이트 공공공편의 탑승이 시작되었습니다.")
 	# Gate 0 v2 — 1장, 뒤틀린 터미널: 출발 안내 (한국어 다음 영어). 마지막 둘은 0편이 플레이어를 부른다.
 	"pa_v3_000_ready_ko"       = @($KO, -2, "서해항공 플라이트 공공공편이 출발 준비를 마쳤습니다. 아직 탑승하지 않으신 승객께서는, 영번 탑승구로 오시기 바랍니다.")
 	"pa_v3_000_ready_en"       = @($EN, -2, "Seohae Air flight zero zero zero is ready for departure. Passengers not yet on board, please come to gate zero.")

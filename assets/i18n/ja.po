@@ -3060,6 +3060,12 @@ msgstr "メインラウンジ"
 msgid "관리동 복도"
 msgstr "管理棟の廊下"
 
+msgid "항공기 전시홀"
+msgstr "航空機展示ホール"
+
+msgid "기내"
+msgstr "機内"
+
 msgid "위치 불명"
 msgstr "位置不明"
 

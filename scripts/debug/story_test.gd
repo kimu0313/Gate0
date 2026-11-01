@@ -102,7 +102,7 @@ func _prologue() -> void:
 		_log("tablet checklist rows: %d" % world.ui.tablet.checklist.size())
 		world.ui.close_modal()
 		await _obj("수하물 운송 설비")
-		_p.walk_path([Vector3(-14.4, 0.05, -16.2)], 2.2)
+		_p.walk_path([Vector3(-14.2, 0.05, -15.3)], 2.2)
 		await _obj("소리가 난 곳")
 		await _shot("03_office", 0.2)
 		if _p.flashlight_on:
@@ -454,7 +454,7 @@ func _ch1() -> void:
 		return
 	await _shot("23b_needs_card", 0.2)
 	# a wrong drawer first, then the right one (the guard's desk, bottom): look, [E], the card
-	await _walk([Vector3(-13.2, 0.05, -19.3), Vector3(-14.83, 0.05, -19.3)], 1.4)
+	await _walk([Vector3(-13.6, 0.05, -16.4), Vector3(-13.6, 0.05, -19.3), Vector3(-14.4, 0.05, -19.3)], 1.4)
 	for name_text: String in ["c1", Chapter1.CARD_DRAWER]:
 		var dr: Drawer = t.sec_drawers[name_text]
 		var stand := dr.global_position + dr.global_basis.z * 1.0
@@ -487,7 +487,7 @@ func _ch1() -> void:
 		return
 	await _obj("키 카드로", 6.0)
 	# the reader by the door: OK, the lock lets go, the door swings open; out into the passage
-	await _walk([Vector3(-13.2, 0.05, -19.3), Vector3(-13.3, 0.05, -16.85)], 1.4)
+	await _walk([Vector3(-13.6, 0.05, -19.3), Vector3(-13.6, 0.05, -17.2), Vector3(-13.3, 0.05, -16.85)], 1.4)
 	_p.look_at_point(t.sec_reader.global_position, 0.1)
 	await _wait(0.25)
 	if _p.current_interactable != t.sec_reader.interactable:
@@ -515,11 +515,33 @@ func _ch1() -> void:
 	_log("corridor door shut behind")
 	_p.look_at_point(hall.to_global(Vector3(0, 1.4, ServiceHall.LENGTH)), 0.3)
 	await _shot("27_corridor", 0.6)
-	# down the corridor: the figure before the far doors is gone before you get there
+	if not _p.no_sprint:
+		_end(1, "the sprint key still works in the corridor")
+		return
+	# down the corridor: a locker creaks open and the red ball bounces out; come near and it runs off into a side room,
+	# then the figure before the far doors shows and is gone before you get there
+	await _walk([hall.to_global(Vector3(0, 0.05, 9.0))], 2.2)
+	await _wait(1.5)
+	_p.look_at_point(hall.ball.global_position, 0.3)
+	await _shot("27b_ball", 0.6)
+	await _walk([hall.to_global(Vector3(0, 0.05, 11.2))], 1.4)
+	_p.look_at_point(hall.to_global(Vector3(1.4, 0.6, ServiceHall.SIDE_DOORS[ServiceHall.BALL_DOOR])), 0.2)
+	await _wait(0.9)
+	await _shot("27c_ball_door", 0.0)
+	await _wait(2.0)
+	_p.look_at_point(hall.to_global(Vector3(0, 1.4, ServiceHall.LENGTH)), 0.3)
+	await _shot("27d_figure", 0.6)
 	await _walk([hall.to_global(Vector3(0, 0.05, ServiceHall.LENGTH - 1.3))], 2.2)
+	if not part._ball_gone:
+		_end(1, "the red ball never ran off into the side room")
+		return
+	if not part._figure_shown:
+		_end(1, "the figure never showed at the end of the corridor")
+		return
 	if hall.figure.visible:
 		_end(1, "the figure at the end of the corridor is still there")
 		return
+	_log("corridor: the ball ran off into the side room, the figure showed and was gone")
 	_p.look_at_point(hall.to_global(Vector3(0, 1.1, ServiceHall.LENGTH)), 0.05)
 	await _wait(0.25)
 	if _p.current_interactable != hall.far_doors.use:
@@ -547,19 +569,19 @@ func _ch1() -> void:
 		return
 	_p.look_at_point(Vector3(10.0, 1.0, 42.0), 0.3)
 	await _shot("30_deck", 0.6)
-	# along the deck to the stopped escalator and down it to the lounge floor
-	var z := Terminal.ESC_FOOT.z
-	await _walk([Vector3(25.2, 0.0, door.z + 1.4), Vector3(24.6, 0.0, z)], 1.6)
-	await _walk([Vector3(Terminal.ESC_FOOT.x - 1.5, 0.0, z), Vector3(12.4, 0.0, z)], 1.4)
+	# along the edge to the nearest down escalator and down it to the lounge floor
+	var downs: Array = Terminal.escalator_units().filter(func(u: Array) -> bool: return u[1])
+	downs.sort_custom(func(a: Array, b: Array) -> bool: return absf(a[0].x - door.x) < absf(b[0].x - door.x))
+	var down: Vector3 = downs[0][0]
+	await _walk([Vector3(down.x, 0.0, door.z + 1.5), Vector3(down.x, 0.0, Terminal.ESC_FOOT_Z + 3.5)], 1.6)
 	if _p.global_position.y > 0.3:
 		_end(1, "could not walk down the escalator (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 		return
 	_log("down the escalator at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 	_p.look_at_point(Vector3(3.0, 1.5, 40.0), 0.3)
 	await _shot("31_lounge_floor", 0.6)
-	# past the knocked-down belt and west along the north aisle: the chapter ends
-	await _walk([Vector3(12.5, 0.0, z + 1.3), Vector3(14.0, 0.0, z + 1.6), Vector3(14.0, 0.0, Terminal.AISLES[0]),
-			Vector3(-6.0, 0.0, Terminal.AISLES[0])], 2.4)
+	# past the out-of-service belt and west along the south aisle: the chapter ends
+	await _walk([Vector3(24.0, 0.0, Terminal.AISLES[1]), Vector3(-12.0, 0.0, Terminal.AISLES[1])], 2.4)
 	if _mode == "loop":
 		_log("ch1: key, padlock, the office, the key card, the service corridor, the lounge; the game goes on")
 		return

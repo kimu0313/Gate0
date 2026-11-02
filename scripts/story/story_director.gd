@@ -20,6 +20,13 @@ var _pa_cut := false
 var _guide: AudioStreamPlayer3D
 var _guide_path: Array = []      # [point, reach m] still ahead of the player, the guide waiting at the first
 var _guide_speed := 4.0
+var _guide_db := 0.0
+var _guide_focus := 0.0          # 0..1, eased: how squarely you are looking toward it
+## Extra gain on the guide set by the part (Prologue: faint behind the shut office door, slowly louder, clear once it
+## opens). guide() resets it to 0.
+var guide_gain_db := 0.0
+## The guide is this much louder while you look toward it (user: looking the figure's way, it should be louder).
+const GUIDE_FOCUS_DB := 6.0
 
 
 func setup(w: Node3D) -> void:
@@ -67,6 +74,9 @@ func guide(sound: String, path: Array, db := 0.0, unit := 6.0, speed := 4.0) -> 
 	_guide = Snd.make_loop(sound, world, db, unit, 70.0)
 	_guide_path = path.duplicate()
 	_guide_speed = speed
+	_guide_db = db
+	_guide_focus = 0.0
+	guide_gain_db = 0.0
 	_guide.global_position = _guide_path[0][0]
 	_guide.play()
 
@@ -100,6 +110,10 @@ func _process(delta: float) -> void:
 			break
 		_guide_path.pop_front()
 	_guide.global_position = _guide.global_position.move_toward(_guide_path[0][0], _guide_speed * delta)
+	# louder while you look its way (eased, so turning the head does not click)
+	var look := smoothstep(0.3, 0.92, player.facing_dot(_guide.global_position))
+	_guide_focus = move_toward(_guide_focus, look, delta * 2.5)
+	_guide.volume_db = _guide_db + guide_gain_db + GUIDE_FOCUS_DB * _guide_focus
 
 
 # --- lines --------------------------------------------------------------------------------------

@@ -271,7 +271,6 @@ var exit_signs: Array[MeshInstance3D] = []
 var arrivals: FidsBoard
 var emergency_light_root: Node3D
 var wreck: Node3D          # the airliner that came in through the lounge glass (_wreck)
-var wreck_cells := {}      # the 1 m floor cells inside the lounge it lies on (_wreck_cells)
 var lounge_door: Dictionary   # the staff double doors in the lounge's east wall (ServiceHall.double_door), locked
 var _ceilings: Array = []  # [Rect2, y] of every ceiling, for _ceiling_details()
 var _probes := {}          # zone -> ReflectionProbe (faded with the zone's lights)
@@ -569,7 +568,6 @@ func _build_hall() -> void:
 	_wreck()
 	var breaks := _facade_breaks()
 	var crushed := _wreck_cells(3.0)
-	wreck_cells = crushed
 	# facade on the apron (south): mullions every 3 m, transoms every 3.2 m up to the soffit, smashed where the
 	# airliner came through; the main entrance and the emergency exit at the west end
 	_glass_facade(Vector2(-20, HALL_S), Vector2(HALL_E, HALL_S), HALL_ROOF, [[-9.7, -5.9, 2.7], [-17.8, -16.2, 2.4]],
@@ -768,11 +766,6 @@ func _seat_row(pos: Vector3, n: int, rot: float, crushed: Dictionary) -> void:
 		if rng.randf() < 0.45:
 			row.rotate_object_local(Vector3.RIGHT, 1.45 if rng.randf() < 0.5 else -1.45)
 			row.position.y += 0.3
-
-
-## Whether `p` is within `metres` (cells) of where the airliner lies in the lounge.
-func near_wreck(p: Vector3, metres := 4) -> bool:
-	return _crushed_at(wreck_cells, p, metres)
 
 
 ## Whether the floor at `p` (or a cell within `r` of it) is under the airliner.

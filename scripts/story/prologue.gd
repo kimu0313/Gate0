@@ -39,6 +39,12 @@ const CART_PATH := [
 	[Vector3(-13.1, 0.8, -46.8), 0.0],
 ]
 const CHECKLIST := [["조명 설비", "ok"], ["안내방송 설비", "ok"], ["수하물 운송 설비", "check"], ["직원 통로", "todo"]]
+## The cart behind the shut office door: from GUIDE_SHUT_FROM dB up to GUIDE_SHUT_TO over GUIDE_CREEP s, then 0 (clear)
+## when the door opens.
+const GUIDE_SHUT_FROM := -24.0
+const GUIDE_SHUT_TO := -8.0
+const GUIDE_CREEP := 10.0
+const OUT_OF_OFFICE_X := -12.1                        # past the office's east wall: out in the passage
 
 var fig: CrewFigure
 var _talked := false
@@ -49,6 +55,7 @@ var _crumb := Vector3.INF
 var _door_hit := false
 var _door_use: Interactable      # Terminal.sec_use: out of the office at the start
 var _door_open := false          # opened from inside, waiting to swing shut behind you
+var _office_opened := false      # the office door has been opened (the cart beyond it is heard clearly from then on)
 var _fire_l: Node3D              # the fire door's leaves (hinge nodes), its collider and its [E]
 var _fire_r: Node3D
 var _fire_block: StaticBody3D
@@ -138,13 +145,29 @@ func _scene_01() -> void:
 	await d.until(func(): return d.ui.modal == "" and (d.player.global_position.distance_to(from) > 1.5 or Time.get_ticks_msec() - t0 > 10000))
 	d.objective("수하물 운송 설비 확인하기")
 	d.guide("cart_rattle_loop", CART_PATH, 2.0, 6.0, 3.6)
-	await d.wait(2.4)
-	Events.notify.emit("[F] 손전등을 켜고 끌 수 있습니다.", "info")      # off until you switch it on
+	_guide_through_door()
 	d.objective("소리가 난 곳 확인하기")
+	# out of the office door the passage is dark: that is when the torch is mentioned (it is off until you switch it on)
+	await d.until(func(): return d.player.global_position.x > OUT_OF_OFFICE_X)
+	if not d.player.flashlight_on:
+		Events.notify.emit("[F] 손전등을 켜고 끌 수 있습니다.", "info")
 	await d.until(func(): return d.player.global_position.z < -24.0)
 	d.set_clock(2 * 60 + 18)
 	await d.until(func(): return d.player.global_position.z < -38.5)
 	await _scene_02()
+
+
+## The rattle beyond the shut office door: very faint at first and slowly a little louder (muffled through the door,
+## Snd's occlusion does that), then, the moment you open the door, out in the open and clear.
+func _guide_through_door() -> void:
+	if _office_opened:
+		return
+	d.guide_gain_db = GUIDE_SHUT_FROM
+	var creep := create_tween()
+	creep.tween_property(d, "guide_gain_db", GUIDE_SHUT_TO, GUIDE_CREEP).set_trans(Tween.TRANS_SINE)
+	await d.until(func(): return _office_opened)
+	creep.kill()
+	create_tween().tween_property(d, "guide_gain_db", 0.0, 0.6).set_trans(Tween.TRANS_SINE)
 
 
 ## [E] on the office door from inside: it opens (and swings shut by itself once you are up the passage).
@@ -152,6 +175,7 @@ func _door_pressed() -> void:
 	if _door_open:
 		return
 	_door_open = true
+	_office_opened = true
 	_door_use.enabled = false
 	Snd.play_at("door_heavy", SEC_DOOR + Vector3(-0.3, 1.0, 0), -10.0, 1.15, 5.0)
 	d.terminal.swing_sec_door(84.0, 1.1)

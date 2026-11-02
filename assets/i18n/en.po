@@ -4937,9 +4937,6 @@ msgstr "Do not move during the regular broadcast. Stay where you are until it en
 msgid "앞으로 나아가기"
 msgstr "Move forward"
 
-msgid "다음 이야기는 준비 중입니다."
-msgstr "The next part is still being prepared."
-
 msgid "열쇠 줍기"
 msgstr "Pick up the key"
 
@@ -5205,3 +5202,87 @@ msgstr "Looks like it needs a key card."
 
 msgid "……카드 리더기에 대 봐야겠다."
 msgstr "I should try the card reader."
+
+msgid "수속 장치 살펴보기"
+msgstr "Look at the device"
+
+msgid "수속 장치에 넣기"
+msgstr "Put them in the device"
+
+msgid "……탑승 수속? 빈칸이 세 개 있다."
+msgstr "Check-in? Three empty slots."
+
+msgid "서해항공 Flight 000편이 출발 준비를 마쳤습니다. 아직 탑승하지 않으신 승객께서는, 0번 탑승구로 오시기 바랍니다."
+msgstr "Seohae Air Flight 000 is ready for departure. Passengers not yet aboard, please come to Gate 0."
+
+msgid "Flight 000편은, 승객 한 분을 기다리고 있습니다. 승객님, 0번 탑승구로 오시기 바랍니다."
+msgstr "Flight 000 is waiting for one passenger. Passenger, please come to Gate 0."
+
+msgid "탑승 수속이 완료되었습니다. 안녕히 가십시오."
+msgstr "Check-in is complete. Goodbye."
+
+msgid "탑승권 줍기"
+msgstr "Pick up the boarding pass"
+
+msgid "탑승권 — FLIGHT 000 · GATE 0, 내 이름이 찍혀 있다."
+msgstr "Boarding pass: FLIGHT 000, GATE 0. It has my name on it."
+
+msgid "스위치 올리기"
+msgstr "Flip the switch"
+
+msgid "신원 카드 줍기"
+msgstr "Pick up the identity card"
+
+msgid "신원 카드 — 사진은 나인데, 직함이 승객으로 되어 있다."
+msgstr "Identity card: my photo, but it says PASSENGER."
+
+msgid "수하물표 — 내 이름이 적혀 있다. 맡긴 적 없는 가방이다. 한쪽이 찢겨 있다."
+msgstr "Baggage tag: my name. I never checked this bag. One side is torn."
+
+msgid "모르는 사람의 이름표다."
+msgstr "A stranger's name tag."
+
+msgid "벨트에 올라타기"
+msgstr "Climb onto the belt"
+
+msgid "탑승권"
+msgstr "Boarding pass"
+
+msgid "신원 카드"
+msgstr "Identity card"
+
+msgid "수하물표"
+msgstr "Baggage tag"
+
+msgid "소지품"
+msgstr "Belongings"
+
+msgid "BELONGINGS · 소지품"
+msgstr "BELONGINGS"
+
+msgid "PASSENGER · 탑승객"
+msgstr "PASSENGER"
+
+msgid "가진 것이 없다."
+msgstr "Nothing on me."
+
+msgid "쇠사슬 자물쇠에 맞는 작은 놋쇠 열쇠."
+msgstr "A small brass key that fits the chain's padlock."
+
+msgid "경비 책상 서랍에 있던 직원 카드."
+msgstr "A staff card from the guard's desk drawer."
+
+msgid "FLIGHT 000 · GATE 0. 산 적 없는 표에 내 이름이 찍혀 있다."
+msgstr "FLIGHT 000, GATE 0. I never bought this, but my name is on it."
+
+msgid "사진은 나인데 직함이 승객으로 바뀌어 있다."
+msgstr "My photo, but the title has changed to PASSENGER."
+
+msgid "맡긴 적 없는 가방에 달려 있던 표. 한쪽이 찢겨 있다."
+msgstr "From a bag I never checked. One side is torn."
+
+msgid "승객 · FLIGHT 000"
+msgstr "Passenger · FLIGHT 000"
+
+msgid "탑승 수속 완료. GATE 0으로 이동해 주십시오."
+msgstr "Check-in complete. Please proceed to Gate 0."

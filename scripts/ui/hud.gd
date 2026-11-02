@@ -17,7 +17,6 @@ var _objective: FlapLabel
 var _clock: FlapLabel
 var _phase_chip: Label
 var _phase_box: PanelContainer
-var _zone: FlapLabel
 var _obj_text := ""
 var _boarding := false           # BOARDING-style signage (navy); off for now
 var chip_text := ""              # chip beside the clock
@@ -63,7 +62,8 @@ var _clock_override := ""        # "--:--" where time has stopped
 var _items: HBoxContainer        # what you carry (bottom right)
 
 ## Names and icons of the things you can carry (Game.inventory).
-const ITEMS := {"key_gate": ["열쇠", "key"], "keycard": ["키 카드", "card"]}
+const ITEMS := {"key_gate": ["열쇠", "key"], "keycard": ["키 카드", "card"], "boarding_pass": ["탑승권", "card"],
+	"id_card": ["신원 카드", "card"], "bag_tag": ["수하물표", "card"]}
 
 
 func _ready() -> void:
@@ -199,13 +199,6 @@ func _build_objective(root: Control) -> void:
 	_phase_chip = UiKit.label("", UiKit.MIN_TEXT, UiKit.INK_0, "display", 700)
 	_phase_box.add_child(_phase_chip)
 	_refresh_phase_chip()
-	var pin := UiIcon.make("pin", 18, UiKit.TEXT_DIM)
-	pin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mh.add_child(pin)
-	_zone = FlapLabel.make("", 18, UiKit.BODY, "sans", 500)
-	_zone.tick_sound = false
-	_zone.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	mh.add_child(_zone)
 
 
 ## DAY 1 is the tutorial: the current order's place gets a green diamond, on screen or pinned to the screen edge
@@ -523,7 +516,6 @@ func _process(delta: float) -> void:
 		_keys.modulate.a = move_toward(_keys.modulate.a, clampf(_keys_t / 3.0, 0.0, 1.0), delta * 4.0)
 		_keys.visible = _keys_t > 0.0
 	# meta row
-	_zone.flap_to(_zone_text())
 	if _clock_override != "":
 		_clock.flap_to(_clock_override, false)
 	else:
@@ -543,12 +535,6 @@ func _process(delta: float) -> void:
 	var top := 44.0 + (_obj_head.size.y + 14.0 if _obj_head.visible and _obj_head.modulate.a > 0.1 else 0.0)
 	_notes_root.offset_top = lerpf(_notes_root.offset_top, top, 1.0 - exp(-delta * 10.0))
 	_notes_root.offset_bottom = _notes_root.offset_top + 656.0
-
-
-func _zone_text() -> String:
-	if player == null:
-		return ""
-	return UiKit.t(Terminal.ZONE_NAMES.get(player.zone, ""))
 
 
 # =========================================================================================

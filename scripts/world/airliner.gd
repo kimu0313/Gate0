@@ -99,6 +99,10 @@ var lining_x := 0.0
 var doors: Array = DOORS
 var seat_z0 := SEAT_Z0
 var seat_z1 := CAB_Z1 - 0.7
+var seat_pitch := SEAT_PITCH
+var light_pitch := 2.4
+var joint_pitch := 1.64
+var psu_x := NAN              # the passenger service panels' x under the bins, one a row (none if NAN)
 var bins := Vector2(SEAT_Z0 - 0.62, CAB_Z1)
 var light_z0 := CAB_Z0 + 1.1
 var light_tint := Color(0, 0, 0, 0)   # the lights' colour (none: the zone's panels') and how strong they are
@@ -551,10 +555,10 @@ func _cabin(zone: LightZone) -> void:
 	cabin = Node3D.new()
 	cabin.name = "Cabin"
 	root.add_child(cabin)
-	var liner := Mats.std(Color(0.8, 0.79, 0.75), 0.6)
-	var bin_m := Mats.std(Color(0.84, 0.83, 0.79), 0.42)
-	var carpet := Mats.shader_mat("res://shaders/carpet.gdshader", {"base_color": Color(0.23, 0.205, 0.18),
-			"pattern_color": Color(0.255, 0.23, 0.2), "pattern_scale": 1.6})
+	var liner := Mats.std(Color(0.9, 0.85, 0.73), 0.6)
+	var bin_m := Mats.std(Color(0.9, 0.86, 0.75), 0.42)
+	var carpet := Mats.shader_mat("res://shaders/carpet.gdshader", {"base_color": Color(0.27, 0.195, 0.125),
+			"pattern_color": Color(0.3, 0.22, 0.14), "pattern_scale": 1.6})
 	var dark := Mats.std(Color(0.08, 0.085, 0.085), 0.7)
 	var seam_m := Mats.std(Color(0.6, 0.6, 0.57), 0.6)
 	var wall: Array = sec.wall
@@ -610,11 +614,11 @@ func _cabin(zone: LightZone) -> void:
 	if aft_end == "bulkhead":
 		details.box(Transform3D(Basis(), Vector3(sec.lav_x, FLOOR_Y + 0.98, cz1 - 0.02)), Vector3(0.62, 1.96, 0.04))
 	# bin door joints every two rows
-	var bz := bins.x + 1.64
+	var bz := bins.x + joint_pitch
 	while bz < bins.y - 0.5:
 		for j: Vector2 in sec.joints:
 			details.box(Transform3D(Basis(), Vector3(j.x, FLOOR_Y + j.y, bz)), Vector3(0.08, 0.46, 0.012))
-		bz += 1.64
+		bz += joint_pitch
 	details.into(mesh, Mats.std(Color(0.42, 0.42, 0.41), 0.5))
 	if aft_end == "bulkhead":
 		var curtain := Mesher.new()
@@ -632,6 +636,7 @@ func _cabin(zone: LightZone) -> void:
 	# windows (deep bezels, pale blinds drawn), seams between the wall panels, grilles at the foot of the walls
 	_windows(dz0, dz1, dark, seam_m)
 	_seats()
+	_service_panels()
 	_ceiling_lights(zone)
 	_blockers(dz0, dz1)
 	for gi: GeometryInstance3D in cabin.find_children("*", "GeometryInstance3D", true, false):
@@ -756,30 +761,33 @@ static func _prism(m: Mesher, poly: Array, z0: float, z1: float) -> void:
 ## Windows down both walls (none at a door), each a deep moulded bezel round a pale drawn blind; a seam between the
 ## wall panels and a grille at the foot of the wall between each pair.
 func _windows(dz0: float, dz1: float, dark: Material, seam_m: Material) -> void:
+	# a tall scoop: the panel swells gently out of the wall round the window and falls back to the pane, so the window
+	# sits deep in it
 	var bez := Mesher.new()
-	var a := _rrect(0.46, 0.68, 0.21)
-	var b := _rrect(0.38, 0.58, 0.17)
-	var c := _rrect(0.25, 0.38, 0.11)
+	var o := _rrect(0.8, 1.12, 0.36)
+	var a := _rrect(0.62, 0.92, 0.29)
+	var b := _rrect(0.36, 0.6, 0.17)
+	var c := _rrect(0.24, 0.42, 0.11)
 	var rings := []
-	for r: Array in [[a, 0.004], [b, 0.06], [c, 0.024]]:
+	for r: Array in [[o, 0.003], [a, 0.062], [b, 0.03], [c, 0.006]]:
 		var row: Array[int] = []
 		for p: Vector2 in r[0]:
 			row.append(bez.add(Vector3(p.x, p.y, r[1])))
 		rings.append(row)
-	for i in 2:
+	for i in 3:
 		for k in a.size():
 			var k1 := (k + 1) % a.size()
 			bez.quad(rings[i][k], rings[i][k1], rings[i + 1][k1], rings[i + 1][k], Vector3(0, 0, 1))
 	var pane := Mesher.new()
 	pane.smooth = false
-	var pc := pane.add(Vector3(0, 0, 0.022), Vector3(0, 0, 1))
+	var pc := pane.add(Vector3(0, 0, 0.007), Vector3(0, 0, 1))
 	var pr: Array[int] = []
 	for p: Vector2 in c:
-		pr.append(pane.add(Vector3(p.x, p.y, 0.022), Vector3(0, 0, 1)))
+		pr.append(pane.add(Vector3(p.x, p.y, 0.007), Vector3(0, 0, 1)))
 	for k in pr.size():
 		pane.tri(pc, pr[k], pr[(k + 1) % pr.size()], Vector3(0, 0, 1))
 	var wm := ArrayMesh.new()
-	bez.into(wm, Mats.std(Color(0.87, 0.86, 0.82), 0.4))
+	bez.into(wm, Mats.std(Color(0.92, 0.88, 0.78), 0.42))
 	var blind := Mats.std(Color(0.74, 0.77, 0.74), 0.5)
 	blind.emission_enabled = true
 	blind.emission = Color(0.55, 0.62, 0.56)
@@ -829,10 +837,18 @@ func _windows(dz0: float, dz1: float, dark: Material, seam_m: Material) -> void:
 		seam.smooth = false
 		_sweep(seam, sp, side, -0.007, 0.007)
 		_multi(cabin, _one(seam, seam_m), seams_r if side > 0.0 else seams_l).name = "Seams"
+	# a big louvred grille in every panel at the foot of the wall
 	var grille := Mesher.new()
 	grille.smooth = false
-	grille.box(Transform3D(), Vector3(0.012, 0.16, 0.5))
-	_multi(cabin, _one(grille, dark), grilles).name = "Grilles"
+	grille.box(Transform3D(), Vector3(0.012, 0.24, 0.86))
+	var slats := Mesher.new()
+	slats.smooth = false
+	for i in 7:
+		slats.box(Transform3D(Basis(), Vector3(0.008, -0.09 + i * 0.03, 0)), Vector3(0.006, 0.012, 0.8))
+	var gm := ArrayMesh.new()
+	grille.into(gm, dark)
+	slats.into(gm, Mats.std(Color(0.5, 0.46, 0.38), 0.5))
+	_multi(cabin, gm, grilles).name = "Grilles"
 
 
 ## A rounded rectangle's outline (w x h, corner radius r), counter-clockwise from the right.
@@ -861,20 +877,22 @@ func _seats() -> void:
 	for lx: float in [-0.2, 0.2]:
 		for lz: float in [-0.15, 0.18]:
 			frame.box(Transform3D(Basis(), Vector3(lx, 0.165, lz)), Vector3(0.035, 0.33, 0.05))
-	fabric.box(Transform3D(Basis(), Vector3(0, 0.43, -0.02)), Vector3(0.44, 0.12, 0.46))
+	# the cushion, soft at the edges (seen from the side)
+	var side := Basis(Vector3.UP, PI / 2)
+	_rbox(fabric, Transform3D(side, Vector3(0, 0.43, -0.02)), 0.46, 0.13, 0.44, 0.05)
 	var back := Transform3D(Basis(Vector3.RIGHT, 0.17), Vector3(0, 0.45, 0.22))
-	# the back: fabric, a white shell over its lower part behind (the tray in it), a cover over the headrest both sides
-	fabric.box(back * Transform3D(Basis(), Vector3(0, 0.36, 0)), Vector3(0.44, 0.68, 0.09))
-	shell.box(back * Transform3D(Basis(), Vector3(0, 0.27, 0.06)), Vector3(0.46, 0.5, 0.035))
-	shell.box(back * Transform3D(Basis(), Vector3(0, 0.3, 0.083)), Vector3(0.34, 0.22, 0.012))
+	# the back: rounded at the top, a white shell behind it (the tray in it), a cover over the headrest both sides
+	_rbox(fabric, back * Transform3D(Basis(), Vector3(0, 0.36, 0)), 0.44, 0.72, 0.09, 0.1)
+	_rbox(shell, back * Transform3D(Basis(), Vector3(0, 0.27, 0.06)), 0.45, 0.5, 0.035, 0.07)
+	_rbox(shell, back * Transform3D(Basis(), Vector3(0, 0.3, 0.083)), 0.33, 0.21, 0.012, 0.03)
 	for cz: float in [-0.052, 0.052]:
-		cover.box(back * Transform3D(Basis(), Vector3(0, 0.6, cz)), Vector3(0.42, 0.2, 0.012))
+		_rbox(cover, back * Transform3D(Basis(), Vector3(0, 0.6, cz)), 0.42, 0.24, 0.014, 0.08)
 	for ax: float in [-0.222, 0.222]:
-		shell.box(Transform3D(Basis(), Vector3(ax, 0.63, 0.02)), Vector3(0.035, 0.06, 0.4))
+		_rbox(shell, Transform3D(side, Vector3(ax, 0.63, 0.02)), 0.4, 0.06, 0.035, 0.028)
 		frame.box(Transform3D(Basis(), Vector3(ax, 0.5, 0.17)), Vector3(0.03, 0.2, 0.05))
 	var mesh := ArrayMesh.new()
-	fabric.into(mesh, Mats.std(Color(0.66, 0.59, 0.48), 0.92))
-	cover.into(mesh, Mats.std(Color(0.8, 0.75, 0.66), 0.9))
+	fabric.into(mesh, Mats.std(Color(0.72, 0.6, 0.45), 0.92))
+	cover.into(mesh, Mats.std(Color(0.84, 0.75, 0.6), 0.9))
 	shell.into(mesh, Mats.std(Color(0.86, 0.85, 0.81), 0.38))
 	frame.into(mesh, Mats.std(Color(0.42, 0.43, 0.44), 0.35, 0.6))
 	var xfs: Array[Transform3D] = []
@@ -896,8 +914,54 @@ func seat_rows() -> Array[float]:
 			at_door = at_door or absf(z - dz) < 0.75
 		if not at_door:
 			out.append(z)
-		z += SEAT_PITCH
+		z += seat_pitch
 	return out
+
+
+## A rounded-corner slab: w x h in its own XY, d thick along its Z, corner radius r, placed by `xf`.
+static func _rbox(m: Mesher, xf: Transform3D, w: float, h: float, d: float, r: float) -> void:
+	var outline := _rrect(w, h, r)
+	for s: float in [-1.0, 1.0]:
+		var n := (xf.basis * Vector3(0, 0, s)).normalized()
+		var c := m.add(xf * Vector3(0, 0, s * d * 0.5), n)
+		var ring: Array[int] = []
+		for p: Vector2 in outline:
+			ring.append(m.add(xf * Vector3(p.x, p.y, s * d * 0.5), n))
+		for k in ring.size():
+			m.tri(c, ring[k], ring[(k + 1) % ring.size()], n)
+	for k in outline.size():
+		var a := outline[k]
+		var b := outline[(k + 1) % outline.size()]
+		var e := (b - a).normalized()
+		var out := (xf.basis * Vector3(e.y, -e.x, 0)).normalized()
+		var v0 := m.add(xf * Vector3(a.x, a.y, -d * 0.5), out)
+		var v1 := m.add(xf * Vector3(b.x, b.y, -d * 0.5), out)
+		var v2 := m.add(xf * Vector3(b.x, b.y, d * 0.5), out)
+		var v3 := m.add(xf * Vector3(a.x, a.y, d * 0.5), out)
+		m.quad(v0, v1, v2, v3, out)
+
+
+## Under the bins, a passenger service panel over each row: a pale strip with its reading lights and an air outlet.
+func _service_panels() -> void:
+	if is_nan(psu_x):
+		return
+	var strip := Mesher.new()
+	strip.smooth = false
+	strip.box(Transform3D(), Vector3(1.2, 0.012, 0.3))
+	var bits := Mesher.new()
+	bits.smooth = false
+	for i in 3:
+		bits.box(Transform3D(Basis(), Vector3(-0.36 + i * 0.16, -0.008, 0.04)), Vector3(0.07, 0.008, 0.07))
+	bits.box(Transform3D(Basis(), Vector3(0.3, -0.008, 0.0)), Vector3(0.34, 0.008, 0.16))
+	var pm := ArrayMesh.new()
+	strip.into(pm, Mats.std(Color(0.82, 0.78, 0.68), 0.5))
+	bits.into(pm, Mats.std(Color(0.34, 0.33, 0.3), 0.5))
+	var xfs: Array[Transform3D] = []
+	var bottom: float = float((sec.bins[0][0] as Vector2).y)
+	for z: float in seat_rows():
+		xfs.append(Transform3D(Basis(), Vector3(psu_x, FLOOR_Y + bottom - 0.008, z)))
+	if not xfs.is_empty():
+		_multi(cabin, pm, xfs).name = "ServicePanels"
 
 
 ## Square light boxes down the ceiling over the wide aisle (the zone's panel material, so they go with its lights)
@@ -921,7 +985,7 @@ func _ceiling_lights(zone: LightZone) -> void:
 						2.4 * light_gain, 5.5)
 				lights.append(l)
 		k += 1
-		z += 2.4
+		z += light_pitch
 	z = cz0 + 2.5
 	while z < cz1:
 		var f := Geo.omni(cabin, Vector3(sec.fill_x, FLOOR_Y + 1.6, z), col, 0.32 * light_gain, 7.0)

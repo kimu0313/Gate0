@@ -1,11 +1,11 @@
 extends Node
 ## `res://scenes/menu.tscn -- --skip-boot --looptest --storytest loop` (headless OK): the whole game once, end to end,
 ## through the real scenes — main menu → 새 게임 → the prologue played by the story bot → the title's "계속하려면 아무 키나
-## 누르세요" (a key press) → chapter 1 played by the bot → TO BE CONTINUED → back on the main menu. Lives on the scene
+## 누르세요" (a key press) → the main story played by the bot, to the end → back on the main menu. Lives on the scene
 ## tree's root so it survives every scene change. Exit 0 = the loop closed; 1 = stuck somewhere (the step is printed).
 ## With --storytest the player's save is never written or deleted.
 
-const LIMIT := 900.0
+const LIMIT := 1200.0
 
 var _step := "menu"
 var _t0 := 0
@@ -84,5 +84,5 @@ func _process(_delta: float) -> void:
 		"back":
 			if is_menu and scene.get("_state") == "menu" and not bool(scene.get("_after_prologue")):
 				var rows: Array = scene.get("_rows")
-				_end(0 if rows.size() >= 4 else 1, "back on the main menu after TO BE CONTINUED (%d rows)" % rows.size())
+				_end(0 if rows.size() >= 4 else 1, "back on the main menu after the ending (%d rows)" % rows.size())
 				set_process(false)

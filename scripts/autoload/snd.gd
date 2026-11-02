@@ -60,6 +60,22 @@ var _amb_duck := 0.0
 var _occluders: Array = []
 var _occ_t := 0.0
 
+## Rooms (the reverb zone Area3Ds' reverb_bus_name): [room_size, damping, predelay ms, wet, hipass].
+const ROOMS := {
+	"RevHall": [0.7, 0.6, 22.0, 0.5, 0.2],          # double-height check-in lobby: big stone room
+	"RevLong": [0.78, 0.5, 30.0, 0.5, 0.22],        # long glass corridor and gate lounge: longer tail
+	"RevMid": [0.5, 0.65, 12.0, 0.42, 0.22],        # security and baggage halls: wide but low ceilings
+	"RevRoom": [0.25, 0.75, 4.0, 0.35, 0.28],       # office, storage, maintenance: small and dull
+	"RevTight": [0.15, 0.6, 2.0, 0.4, 0.3],         # jet bridge: narrow tube
+}
+## World sounds' room: the reverb on the World bus takes the reverb zone the listener stands in (_update_room).
+var _world_bus := -1
+var _room_fx: AudioEffectReverb
+var _room_t := 0.0
+var _room_name := ""             # the room the reverb is set to now
+var _room_want := ""             # the reverb zone the listener is in ("" = none: dry)
+var _room_amount := 0.0
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -152,25 +168,29 @@ func _setup_buses() -> void:
 	AudioServer.add_bus_effect(radio, dist)
 	AudioServer.set_bus_volume_db(radio, -WORLD_GAIN)
 
-	# Reverb sends for the Terminal's reverb zones (Area3D), one per kind of space. Wet only: the dry sound
-	# stays on SFX. hipass keeps the low end out of the tails so big rooms do not boom; no predelay feedback
-	# (it repeats the early echo into a metallic flutter) and a low-pass so the tail is softer than the sound.
-	for r in [
-		["RevHall", 0.7, 0.6, 22.0, 0.5, 0.2],          # double-height check-in lobby: big stone room
-		["RevLong", 0.78, 0.5, 30.0, 0.5, 0.22],        # long glass corridor and gate lounge: longer tail
-		["RevMid", 0.5, 0.65, 12.0, 0.42, 0.22],        # security and baggage halls: wide but low ceilings
-		["RevRoom", 0.25, 0.75, 4.0, 0.35, 0.28],       # office, storage, maintenance: small and dull
-		["RevTight", 0.15, 0.6, 2.0, 0.4, 0.3],         # jet bridge: narrow tube
-	]:
-		var bus := _add_bus(r[0], "SFX")
+	# World: every 3D world sound (setup_3d moves it here from SFX). The sound itself at full level, plus the tail of
+	# the room the listener stands in (_update_room). hipass keeps the low end out of the tails so big rooms do not
+	# boom; no predelay feedback (it repeats the early echo into a metallic flutter).
+	_world_bus = _add_bus("World", "SFX")
+	_room_fx = AudioEffectReverb.new()
+	_room_fx.dry = 1.0
+	_room_fx.wet = 0.0
+	_room_fx.predelay_feedback = 0.0
+	_room_fx.spread = 0.9
+	AudioServer.add_bus_effect(_world_bus, _room_fx)
+	# Wet-only reverb buses, one per room (the title's distant cart plays through RevLong). World sounds no longer
+	# reach these through the reverb zones (see setup_3d).
+	for rn: String in ROOMS:
+		var r: Array = ROOMS[rn]
+		var bus := _add_bus(rn, "SFX")
 		var zrev := AudioEffectReverb.new()
-		zrev.room_size = r[1]
-		zrev.damping = r[2]
-		zrev.predelay_msec = r[3]
+		zrev.room_size = r[0]
+		zrev.damping = r[1]
+		zrev.predelay_msec = r[2]
 		zrev.predelay_feedback = 0.0
 		zrev.dry = 0.0
-		zrev.wet = r[4]
-		zrev.hipass = r[5]
+		zrev.wet = r[3]
+		zrev.hipass = r[4]
 		zrev.spread = 0.9
 		var soft := AudioEffectLowPassFilter.new()
 		soft.cutoff_hz = 4500.0
@@ -253,10 +273,26 @@ func play(sound_name: String, volume_db := 0.0, pitch := 1.0, bus := "UI") -> Au
 	return p
 
 
-## Every world sound goes through here: reverb zones (area_mask), air absorption over distance, and occlusion
-## (muffled and quieter when a wall stands between it and the listener, see _update_occlusion).
+## Panning of world sounds when the output is surround (Windows set to 5.1 / 7.1, as most gaming headsets with
+## virtual surround are): Godot then pans a sound behind you into the rear speakers and takes it almost out of the
+## front pair (-15 dB), and a headset that only plays the front pair loses it — you heard things only when facing
+## them. At 0.3 a sound behind stays within ~4.5 dB of one ahead and left/right still differ by ~4.5 dB.
+## Stereo output keeps full panning (there, front and back already sound alike).
+const PAN_SURROUND := 0.3
+
+
+## Every world sound goes through here: the room's reverb (a player on SFX moves to the World bus, see _update_room),
+## air absorption over distance, and occlusion (muffled and quieter when a wall stands between it and the listener,
+## see _update_occlusion).
+## Never through Godot's own reverb zones (area_mask): in 4.7 a sound inside an Area3D with a reverb bus loses its own
+## bus — only the reverb send is heard, ~18 dB down and all tail — and on a surround output it plays nothing at all
+## (measured: the jet bridge's PA, the baggage hall, the lounge were silent on a 7.1 headset).
 func setup_3d(p: AudioStreamPlayer3D, occlude := true) -> void:
-	p.area_mask = Geo.LAYER_AUDIO
+	p.area_mask = 0
+	if p.bus == &"SFX":
+		p.bus = &"World"
+	if AudioServer.get_speaker_mode() != AudioServer.SPEAKER_MODE_STEREO:
+		p.panning_strength = PAN_SURROUND
 	p.attenuation_filter_cutoff_hz = 7000.0
 	p.attenuation_filter_db = -14.0
 	p.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_DISABLED
@@ -346,6 +382,7 @@ func _process(delta: float) -> void:
 	_update_layer(_whisper, "whisper_loop", clampf((_tension - 0.45) / 0.55, 0.0, 1.0), -36.0, -14.0, 0.0, delta)
 	_update_scatter(delta)
 	_update_occlusion(delta)
+	_update_room(delta)
 	# eyes-closed muffle
 	if _muffle_fx_index >= 0:
 		var fx := AudioServer.get_bus_effect(bus_master, _muffle_fx_index) as AudioEffectLowPassFilter
@@ -410,6 +447,54 @@ func _set_bed(sound_name: String, volume_db: float, duck: float, fade: float) ->
 		var t := create_tween()
 		t.tween_property(prev, "volume_db", -60.0, fade)
 		t.tween_callback(prev.stop)
+
+
+## The room you hear: every 0.2 s, the reverb zone (Area3D on Geo.LAYER_AUDIO, highest priority) the listener stands
+## in sets the World bus's reverb — that room's profile (ROOMS[reverb_bus_name]) at its reverb_bus_amount. Changing
+## rooms fades the tail out, swaps the room, fades it back in. Outside every zone the world is dry.
+func _update_room(delta: float) -> void:
+	if _room_fx == null:
+		return
+	_room_t -= delta
+	if _room_t <= 0.0:
+		_room_t = 0.2
+		_find_room()
+	var target := 0.0
+	if _room_want == _room_name and ROOMS.has(_room_name):
+		target = _room_amount * float(ROOMS[_room_name][3])
+	_room_fx.wet = move_toward(_room_fx.wet, target, delta * 0.6)
+	if _room_want != _room_name and _room_fx.wet <= 0.001:
+		_room_name = _room_want
+		if ROOMS.has(_room_name):
+			var r: Array = ROOMS[_room_name]
+			_room_fx.room_size = r[0]
+			_room_fx.damping = minf(float(r[1]) + 0.1, 1.0)     # (the wet-only buses low-pass their tail instead)
+			_room_fx.predelay_msec = r[2]
+			_room_fx.hipass = r[4]
+
+
+func _find_room() -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or not cam.is_inside_tree():
+		_room_want = ""
+		return
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = cam.global_position
+	q.collision_mask = Geo.LAYER_AUDIO
+	q.collide_with_areas = true
+	q.collide_with_bodies = false
+	var best: Area3D = null
+	for hit: Dictionary in cam.get_world_3d().direct_space_state.intersect_point(q, 8):
+		var a := hit.collider as Area3D
+		if a and a.reverb_bus_enabled and (best == null or a.priority > best.priority):
+			best = a
+	_room_want = str(best.reverb_bus_name) if best else ""
+	_room_amount = best.reverb_bus_amount if best else 0.0
+
+
+## The room the world sounds are in now ("" = none), for the debug tools.
+func room_now() -> String:
+	return _room_name if _room_fx and _room_fx.wet > 0.001 else ""
 
 
 ## Occlusion: every ~0.12 s a ray from the listener to each world sound; a wall in between (not the sound's own

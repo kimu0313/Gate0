@@ -14,6 +14,7 @@ var world: Node3D
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	await get_tree().create_timer(1.5).timeout
+	CabinWay.way.unseal()                                # (the story opens the cabin's door on the device: this walk uses it)
 	var p: Player = world.player
 	var bad := 0
 	# [foot, which way it rises along z (-1 = north), the 2F edge it comes up over, name]

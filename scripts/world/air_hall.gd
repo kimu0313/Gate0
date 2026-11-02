@@ -37,7 +37,7 @@ const ESC_FOOT := Vector3(-29.03, 0.0, -15.0)     # the escalator's lower workin
                                                   # beside the parapet, its foot just out of CabinWay's cabin section
 const LIGHT := Color(0.86, 1.0, 0.86)
 const FILL := Color(0.68, 0.88, 0.74)
-const HAZE_GLOW := Color(0.8, 1.0, 0.8)
+const HAZE_GLOW := Color(1.15, 1.42, 1.12)
 
 static var plane: Airliner
 
@@ -71,7 +71,7 @@ static func build(t: Terminal) -> void:
 	_lights(root, zone)
 	# the haze glows of itself, pale green (the reference's white-out), on top of what the lights put into it
 	t.air_haze = t._smoke(AABB(Vector3(RECT.position.x, PIT_Y, RECT.position.y), Vector3(RECT.size.x, ROOF_W - PIT_Y, RECT.size.y)), 77,
-			0.04, Color(0.8, 0.9, 0.8), HAZE_GLOW)
+			0.085, Color(0.86, 0.94, 0.84), HAZE_GLOW)
 	# the hall's lights stop at the airliner's skin: only the cabin's own reach in there
 	for l: Light3D in zone.lights:
 		if l.light_cull_mask != Airliner.VIS_CABIN:
@@ -127,15 +127,17 @@ static func _shell(root: Node3D, wall_m: Material, white: Material, zone: LightZ
 		for bx: float in beams:
 			clear = clear and absf(x - bx) > 1.0
 		if clear:
-			var z := z0 + 1.4
+			# a bundle of tubes side by side, every few metres along the roof, so they read as blocks of light
+			var z := z0 + 1.6
 			while z < z1 - 1.0:
-				strips.append(Transform3D(Basis(Vector3.BACK, -a), Vector3(x, roof_y(x) - 0.03, z)))
-				z += 2.2
-		x -= 3.0
+				for off: float in [-0.5, 0.0, 0.5]:
+					strips.append(Transform3D(Basis(Vector3.BACK, -a), Vector3(x + off, roof_y(x + off) - 0.03, z)))
+				z += 4.4
+		x -= 3.6
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	var sm := BoxMesh.new()
-	sm.size = Vector3(0.12, 0.05, 1.6)
+	sm.size = Vector3(0.3, 0.05, 3.2)
 	mm.mesh = sm
 	mm.instance_count = strips.size()
 	for i in strips.size():

@@ -184,7 +184,7 @@ func _spawn_bag(kind: String) -> void:
 			tag = "A0 · 1987\n→ HOME"
 			soft = randf() < 0.4
 	var root := Props.suitcase(self, color, tag, soft) if kind != "wet" else Props.old_suitcase(self, color, tag, true)
-	var it := Interactable.create(root, Vector3(0, 0.15, 0), Vector3(0.5, 0.32, 0.72), "가방 들어 확인하기", _on_touch_bag.bind(kind))
+	var it := Interactable.create(root, Vector3(0, 0.45, 0), Vector3(0.6, 0.9, 0.8), "가방 들어 확인하기", _on_touch_bag.bind(kind))
 	it.press_sound = ""
 	var b := {"node": root, "s": hatch_s, "kind": kind}
 	bags.append(b)

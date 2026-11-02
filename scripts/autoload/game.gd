@@ -97,6 +97,14 @@ func _debug_args() -> void:
 	i = args.find("--checkpoint")
 	if i >= 0 and i + 1 < args.size():
 		checkpoint = args[i + 1]
+	# `--storytest --test-save <json>`: start from a copy of a player's save (it stays a test save, never written back)
+	i = args.find("--test-save")
+	if i >= 0 and i + 1 < args.size() and _testing():
+		var f := FileAccess.open(args[i + 1], FileAccess.READ)
+		var data = JSON.parse_string(f.get_as_text()) if f else null
+		if typeof(data) == TYPE_DICTIONARY:
+			_test_save = data
+			load_game()
 
 
 func reset_session() -> void:
@@ -259,15 +267,22 @@ func clock_text(minutes: int = -1) -> String:
 func set_checkpoint(name_text: String) -> void:
 	checkpoint = name_text
 	_snapshot = {"inventory": inventory.duplicate(), "flags": flags.duplicate(true), "clock": clock_minutes}
+	save_game()
 
 
 # --- scene flow ------------------------------------------------------------------------
 ## 새 게임: the story from the very beginning — the prologue (the old save is dropped; the prologue's end saves the
 ## main story's start).
 func start_new_game() -> void:
-	if has_save() and not OS.get_cmdline_user_args().has("--storytest"):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	_drop_save()
 	start_prologue()
+
+
+func _drop_save() -> void:
+	if _testing():
+		_test_save = {}
+	elif has_save():
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
 
 func start_prologue() -> void:
@@ -293,6 +308,13 @@ func finish_prologue() -> void:
 	change_scene(SCENE_MENU)
 
 
+## The ending has played: the save goes and the title comes back with nothing to continue.
+func finish_game() -> void:
+	_drop_save()
+	reset_session()
+	go_menu()
+
+
 ## Caught: back to the last checkpoint with what you carried then.
 func restart_checkpoint() -> void:
 	if not _snapshot.is_empty():
@@ -315,20 +337,34 @@ func change_scene(path: String) -> void:
 
 
 # --- save / load ------------------------------------------------------------------------
+## A test run (--storytest) saves and loads here instead of the player's save file: it never touches theirs, and a
+## save left by their own play (a later checkpoint) does not leak into the run when the bot presses 계속하기.
+var _test_save := {}
+
+
+func _testing() -> bool:
+	return OS.get_cmdline_user_args().has("--storytest")
+
+
 func has_save() -> bool:
+	if _testing():
+		return not _test_save.is_empty()
 	return FileAccess.file_exists(SAVE_PATH)
 
 
 func save_game() -> void:
-	if chapter == "prologue" or OS.get_cmdline_user_args().has("--storytest"):
-		return   # the prologue is not saved, and a test run never touches the player's save
+	if chapter == "prologue":
+		return   # the prologue is not saved
 	var data := {
 		"version": 2,
 		"chapter": chapter,
 		"checkpoint": checkpoint,
-		"inventory": inventory,
-		"flags": flags,
+		"inventory": inventory.duplicate(),
+		"flags": flags.duplicate(true),
 	}
+	if _testing():
+		_test_save = data
+		return
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data, "\t"))
@@ -343,10 +379,14 @@ func saved_chapter() -> String:
 func _read_save() -> Dictionary:
 	if not has_save():
 		return {}
-	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if f == null:
-		return {}
-	var data = JSON.parse_string(f.get_as_text())
+	var data
+	if _testing():
+		data = _test_save.duplicate(true)
+	else:
+		var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+		if f == null:
+			return {}
+		data = JSON.parse_string(f.get_as_text())
 	if typeof(data) != TYPE_DICTIONARY or int(data.get("version", 0)) != 2 or not CHAPTERS.has(str(data.get("chapter", ""))):
 		return {}
 	return data

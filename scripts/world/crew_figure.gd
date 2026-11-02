@@ -34,6 +34,8 @@ var speed := 0.0
 ## Breadcrumbs of where the player went (the prologue drops one every few tenths of a second): it follows them
 ## instead of cutting through walls.
 var trail: Array[Vector3] = []
+var no_cart := false             # it comes without the cart's rattle: you only hear it running
+var step_db := -5.0
 
 var _pelvis: Node3D
 var _spine: Node3D
@@ -406,7 +408,8 @@ func chase(p: Player) -> void:
 	_body_col.disabled = true
 	interactable.enabled = false
 	_glow.light_energy = 0.32
-	_rattle.play()
+	if not no_cart:
+		_rattle.play()
 	_pos = global_position
 	_twist()
 
@@ -478,7 +481,7 @@ func _croak() -> void:
 
 ## A heel coming down: the step, and now and then the knee cracking further back under it.
 func _footfall(i: int) -> void:
-	Snd.play_at(Snd.variant("footstep_tile"), _pos, -5.0, randf_range(0.6, 0.72), 5.0)
+	Snd.play_at(Snd.variant("footstep_tile"), _pos, step_db, randf_range(0.6, 0.72), 5.0 if no_cart == false else 11.0)
 	_snap[i] = randf_range(0.25, 0.5)
 	if randf() < 0.22:
 		_crack(randf_range(-12.0, -7.0))

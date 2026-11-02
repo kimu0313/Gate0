@@ -41,10 +41,15 @@ const HAZE := Color(1.45, 1.75, 1.47)  # the haze's glow at full light (brighter
 const LAMP := Color(1.0, 0.97, 0.9)    # the cabins' ceiling lights (the reference's cream cabin; the green is the haze's)
 const LAMP_GAIN := 1.7
 const LEAF := Color(0.84, 0.85, 0.84)
+const LOOP_Z := 40.0         # the long aisle: on past here (world z) and you are...
+const LOOP_STEP := 4.0       # ...this far back: whole rows, windows and lights, so nothing jumps
 
 static var way: CabinWay
 
 var zone: LightZone
+var looping := false         # the aisle goes on and on (the story lets you through)
+var turns := 0               # how many times it has
+var _seal: MeshInstance3D    # its door in the lounge's wall, shut
 var _fogs: Array = []        # [FogMaterial, its glow at full light]
 var _env: Environment
 var _fog_ours := false
@@ -112,7 +117,7 @@ func _build(t: Terminal) -> void:
 	var spec := {"sec": Airliner.NARROW, "cz0": Z_FWD, "cz1": Z_AFT, "fwd_end": "plain", "door_z": Z_DOOR,
 			"door_side": -1.0, "lining_x": LINING, "doors": [Z_DOOR], "seat_z0": Z_SEATS, "seat_z1": Z_DOOR - 1.0,
 			"bins": Vector2(Z_FWD, Z_DOOR - 0.85), "light_z0": Airliner.CAB_Z0 + 1.1, "light_tint": LAMP,
-			"light_gain": LAMP_GAIN}
+			"light_gain": LAMP_GAIN, "seat_pitch": 0.8, "light_pitch": 2.0, "joint_pitch": 2.0, "psu_x": 0.74}
 	Airliner.build_cabin(self, cabin_xf(), zone, spec, "Cabin")
 	# the stub: the same section from the hall's north wall to its cut end, no seats
 	Airliner.build_cabin(self, stub_xf(), zone, {"sec": Airliner.NARROW, "cz0": Z_FWD, "cz1": Z_STUB, "fwd_end": "open",
@@ -375,10 +380,29 @@ func _physics_process(_delta: float) -> void:
 	var at := p.global_position
 	if at.y < -1.0 or at.y > 2.5:
 		return
+	if looping and absf(at.x - AXIS_X) < HALF + 0.15 and at.z > LOOP_Z and at.z < cabin_z(Z_FWD) + 0.5:
+		turns += 1
+		_shift(p, Vector3(0, 0, -LOOP_STEP))
+		return
 	if absf(at.x - AXIS_X) < HALF + 0.15 and at.z > join_z() and at.z < cabin_z(Z_FWD) + 0.5:
 		_shift(p, offset())
 	elif absf(at.x - STUB_X) < HALF + 0.15 and at.z > JOIN_HALL - 3.0 and at.z < JOIN_HALL:
 		_shift(p, -offset())
+
+
+## Its door in the lounge's wall, shut (it is a door that opens on the story's word).
+func seal() -> void:
+	if _seal:
+		return
+	var w := Airliner.DOOR_W
+	var h := Airliner.DOOR_H
+	_seal = Geo.box(self, Vector3(-19.82, h * 0.5 + 0.02, DOOR_Z), Vector3(0.1, h, w), Mats.std(LEAF, 0.3, 0.05))
+
+
+func unseal() -> void:
+	if _seal:
+		_seal.queue_free()
+		_seal = null
 
 
 ## Through the join: the same place in the other section, heading, pitch and pace kept.

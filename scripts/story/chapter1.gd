@@ -14,12 +14,16 @@ extends StoryScript
 ## lights as you come near (_corridor_loop). The office and the corridor are a floor up: the doors open onto the main
 ## lounge's 2F at the atrium's edge
 ## (another PortalView: the 2F from the admin wing's staff doors), the hall below with the airliner that came through
-## its glass; you come out of those doors, they slam and lock, and you go down a stopped escalator — on the lounge
-## floor, walking on toward the wreck is "TO BE CONTINUED" for now, back to the title. The inspector says nothing on screen
-## and keeps the controls the whole way (only the end takes them); no markers.
+## its glass; you come out of those doors, they slam and lock, and you go down a stopped escalator. From there the
+## lounge is the hub (PartHub): a check-in device at security wants three things, one from each of three branches
+## (PartFog, PartRepeat, PartBaggage), in any order; then PartFinal, the last run to Gate 0 and back to the start. The
+## office you come back to here is not the one you left (_warp_office). The inspector says nothing on screen and keeps
+## the controls the whole way (a thought at a locked door or the device apart); no markers.
+##
+## Checkpoints: "" (the gate door), "hub" (the lounge, your progress in the flags), "baggage" (caught there), "final".
 
+const STAGES := ["", "hub", "baggage", "final"]
 const CARD_DRAWER := "c3"                # the guard's desk, bottom drawer
-const LOUNGE_WALK := 18.0                # how far from the escalators' feet, down on the lounge floor, it ends at the latest
 const HINT_GAP_MS := 6000                # the locked passage door's thought comes again at most this often
 const BALL_NEAR := 4.5                   # in the corridor: how close you come before the red ball is off
 const FIGURE_GONE := 12.0                # ...and to the figure at its far end before it is gone
@@ -39,15 +43,42 @@ var _in_hall := false
 var _far_open := false
 var _in_lounge := false
 var _ball_gone := false           # the red ball has run off into the side room and its door slammed
+var hub: PartHub
+var fog: PartFog
+var repeat: PartRepeat
+var bags: PartBaggage
+var final_part: PartFinal
+var _caught_once := false
+var _warp_nodes: Array[Node3D] = []   # what _warp_office added to your office
+var _clock_labels: Array[Label3D] = []
+var _screens := {}                    # MeshInstance3D -> [dead, snow] as they were
 var _figure_shown := false        # the figure has stood at the corridor's far end
 
 
 func setup() -> void:
-	var b := d.bridge
 	var t := d.terminal
 	# 02:17 still: only your office is lit; the passage outside it is dark
 	for zn in t.zones.keys():
 		t.set_zone_light(zn, zn == "secoffice", true)
+	d.ui.hud.set_clock_override("--:--")
+	d.ui.tablet.show_belongings()
+	hub = PartHub.new()
+	fog = PartFog.new()
+	repeat = PartRepeat.new()
+	bags = PartBaggage.new()
+	final_part = PartFinal.new()
+	var parts: Array[StoryPart] = [fog, repeat, bags, hub, final_part]
+	for part: StoryPart in parts:
+		part.d = d
+		part.ch = self
+		add_child(part)
+		part.setup()
+	var at := STAGES.find(Game.checkpoint)
+	if at > 0:
+		_restore()
+		return
+	_warp_office()
+	var b := d.bridge
 	b.zone.set_on(true, true)
 	b.zone.night_dim = 0.7
 	b.set_board(JetBridge.BOARD_BOARDING, false)
@@ -55,9 +86,6 @@ func setup() -> void:
 	d.player.teleport(Transform3D(b.global_basis.orthonormalized(), b.door_front()))
 	d.player.set_look(d.player.rotation.y, deg_to_rad(-10.0))
 	d.player.zone_override = "jetbridge"
-	d.ui.hud.set_clock_override("--:--")
-	d.ui.tablet.lost = true
-	d.ui.tablet.lose_signal_now()
 	if not Game.has_item("key_gate") and not Game.flag("gate_unlocked"):
 		Game.add_item("key_gate")
 	b.door_use.callback = _door
@@ -71,9 +99,118 @@ func setup() -> void:
 	_build_hall()
 
 
-func run() -> void:
+## Picked up from a checkpoint in the lounge or past it: the lounge lit, what you have done in the flags.
+func _restore() -> void:
 	var t := d.terminal
+	_hub_lights()
+	t.set_zone_light("secoffice", false, true)
+	d.bridge.zone.set_on(false, true)
+	for leaf: Node3D in t.lounge_door.leaves:
+		leaf.visible = true
+	if not Game.has_item("keycard") and not Game.flag("checked_in"):
+		Game.add_item("keycard")
+	hub.restore()
+	match Game.checkpoint:
+		"baggage":
+			d.player.teleport(Transform3D(Basis(), PartBaggage.ARRIVE))
+			d.player.set_look(PI, 0.0)
+		"final":
+			hub.checked_in = true
+			d.ui.tablet.set_passenger()
+			d.player.teleport(Transform3D(Basis(), PartHub.DEVICE_AT + Vector3(-1.2, 0.05, 1.2)))
+			d.player.set_look(0.0, 0.0)
+		_:
+			d.player.teleport(Transform3D(Basis(), PartHub.DEVICE_AT + Vector3(0.0, 0.05, 4.0)))
+			d.player.set_look(0.0, 0.0)
+
+
+func _hub_lights() -> void:
+	var t := d.terminal
+	for zn: String in ["hall", "shops", "airhall"]:
+		t.set_zone_light(zn, true, true)
+		(t.zones[zn] as LightZone).night_dim = 0.62
+
+
+func run() -> void:
 	Snd.set_ambience("amb_night_loop", -20.0, 3.0)
+	if STAGES.find(Game.checkpoint) > 0:
+		await d.ui.fade_to(0.0, 1.4)
+		if Game.checkpoint != "final":
+			await hub.run()
+		await final_part.run()
+		return
+	await _arrive()
+	d.objective("라운지로 내려가기")
+	await hub.run()
+	await final_part.run()
+
+
+## Caught anywhere past the lounge: black at once, the thing screaming in the dark, back at the last checkpoint.
+func caught() -> void:
+	if _caught_once:
+		return
+	_caught_once = true
+	d.dead = true
+	d.cutscene(true)
+	d.player.controls_enabled = false
+	d.ui.hud.hide_subtitle()
+	d.ui.cut_to(1.0)
+	d.pa_stop()
+	Snd.stop_all_world()
+	Snd.play("monster_scream", -5.0, 1.0, "SFX")
+	await d.wait(2.2)
+	Game.restart_checkpoint()
+
+
+## The office as you come back to it: not the room you left. The clock has gone to 0:00, every monitor is snow, a row
+## of airport seats stands in the middle of the floor, bags have been left round it, something is written across the
+## floor. (The key card is where it always was.)
+func _warp_office() -> void:
+	var t := d.terminal
+	var rect: Rect2 = Terminal.ZONE_RECTS.secoffice
+	for l: Label3D in t.find_children("*", "Label3D", true, false):
+		if l.text == "2:17" and rect.has_point(Vector2(l.global_position.x, l.global_position.z)):
+			Geo.set_text(l, "0:00")
+			_clock_labels.append(l)
+	for m: MeshInstance3D in t.find_children("*", "MeshInstance3D", true, false):
+		var sm := m.material_override as ShaderMaterial
+		if sm and sm.shader and sm.shader.resource_path.ends_with("cctv_feed.gdshader"):
+			_screens[m] = [m.get_instance_shader_parameter("dead"), m.get_instance_shader_parameter("snow")]
+			m.set_instance_shader_parameter("dead", 0.0)
+			m.set_instance_shader_parameter("split", 1.0)
+			m.set_instance_shader_parameter("snow", 1.0)
+	var row := Props.seat_row(t, Vector3(-16.2, 0, -12.6), 4, PI)
+	_warp_nodes.append(row)
+	for i in 3:
+		var bag := Props.suitcase(t, Color.from_hsv(0.05 + i * 0.3, 0.3, 0.3))
+		bag.position = Vector3(-17.9 + i * 1.3, 0.0, -13.4 - (i % 2) * 0.5)
+		bag.rotation.y = i * 1.4
+		_warp_nodes.append(bag)
+	var writing := Geo.label(t, "FLIGHT 000\nGATE 0", Vector3(-15.2, 0.004, -15.4), 0.0, 120, Color(0.45, 0.04, 0.03), 0.0048, false, "hand")
+	writing.rotation.x = -PI / 2                      # across the floor in front of you
+	writing.set_meta("no_fit", true)
+	_warp_nodes.append(writing)
+
+
+## The first shot again: the office as it was at 02:17.
+func restore_office() -> void:
+	var t := d.terminal
+	for n in _warp_nodes:
+		n.visible = false
+	for l in _clock_labels:
+		Geo.set_text(l, "2:17")
+	for m: MeshInstance3D in _screens.keys():
+		m.set_instance_shader_parameter("dead", _screens[m][0])
+		m.set_instance_shader_parameter("snow", _screens[m][1])
+	t.swing_sec_door(0.0, 0.01)
+	t.swing_door(t.sec_entry, 0.0, 0.01)
+	var z: LightZone = t.zones.secoffice
+	z.night_dim = 1.0
+	z.set_on(true, true)
+
+
+func _arrive() -> void:
+	var t := d.terminal
 	d.player.controls_enabled = false
 	await d.ui.fade_to(0.0, 1.8)
 	d.player.controls_enabled = true
@@ -117,14 +254,6 @@ func run() -> void:
 	d.player.add_shake(0.25)
 	await d.wait(0.25)
 	Snd.play_at("lock_click", (ld.root as Node3D).global_position + Vector3(0, 1.0, 0), -6.0, 0.9, 4.0)
-	d.objective("라운지로 내려가기")
-	await d.until(func(): return _down_in_lounge())
-	d.clear_objective()
-	d.cutscene(true)
-	await d.ui.fade_to(1.0, 1.4)
-	Snd.stop_all_world()
-	await d.ui.title_card("TO BE CONTINUED", "다음 이야기는 준비 중입니다.", 2.0, false)
-	Game.go_menu()
 
 
 ## Past the gate door the bridge's dark vestibule shows the vestibule outside your office's west door (PortalView), so
@@ -209,28 +338,12 @@ func _into_hall() -> void:
 	_hall_portal.set_active(false)
 	(hall.entry.leaf as Node3D).visible = true
 	var t := d.terminal
-	for zn: String in ["hall", "shops", "airhall"]:
-		t.set_zone_light(zn, true, true)
-		(t.zones[zn] as LightZone).night_dim = 0.62
+	_hub_lights()
 	t.set_zone_light("secoffice", false, true)          # behind you for good
 	_lounge_portal = PortalView.create(hall, hall.far_frame(), (t.lounge_door.root as Node3D).global_transform, p.camera, _env())
 	for m2 in hall.far_vestibule:
 		m2.material_override = _lounge_portal.surface_material()
 	d.objective("복도 끝 문 열기")
-
-
-## Down an escalator on the lounge floor and either up to the airliner or well away from the escalators' feet (the
-## aircraft hall past the lounge's west wall does not count: it is there to walk round).
-func _down_in_lounge() -> bool:
-	var p := d.player.global_position
-	if p.y > 0.6 or not Rect2(-20, -2.5, Terminal.HALL_E + 20.0, Terminal.HALL_S + 2.5).has_point(Vector2(p.x, p.z)):
-		return false
-	if d.terminal.near_wreck(p, 4):
-		return true
-	for foot: Vector3 in Terminal.escalator_feet():
-		if Vector2(p.x, p.z).distance_to(Vector2(foot.x, foot.z)) <= LOUNGE_WALK:
-			return false
-	return true
 
 
 ## The corridor's own little loop (no running in here): a locker creaks open and a red ball bounces out and comes to

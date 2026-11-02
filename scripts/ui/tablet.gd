@@ -12,10 +12,20 @@ const TEX_SIZE := Vector2(1536, 1024)
 const ART_SCALE := 1.08
 ## Checklist states: [label, chip colour]
 const STATES := {"ok": ["정상", UiKit.CLEAR], "check": ["확인 필요", UiKit.WARN], "todo": ["미점검", UiKit.TEXT_MUTE]}
+## The main story's tablet is a list of what you carry: [name, what it is].
+const BELONGINGS := {
+	"key_gate": ["열쇠", "쇠사슬 자물쇠에 맞는 작은 놋쇠 열쇠."],
+	"keycard": ["키 카드", "경비 책상 서랍에 있던 직원 카드."],
+	"boarding_pass": ["탑승권", "FLIGHT 000 · GATE 0. 산 적 없는 표에 내 이름이 찍혀 있다."],
+	"id_card": ["신원 카드", "사진은 나인데 직함이 승객으로 바뀌어 있다."],
+	"bag_tag": ["수하물표", "맡긴 적 없는 가방에 달려 있던 표. 한쪽이 찢겨 있다."],
+}
 
 var ui: GameUI
 var lost := false              # SCENE 04 on: the app has no idea where you are
 var checklist: Array = []      # [[item, state]] (STATES keys)
+var belongings := false        # the main story: the list page shows what you carry
+var passenger := false         # the check-in is done: the first row is your passenger record
 
 var _backdrop: Control
 var _rig: Control
@@ -33,6 +43,7 @@ var _pages := {}
 var _current_tab := "list"
 var _list: VBoxContainer
 var _list_caption: Label
+var _list_title: Label
 var _map: MapView
 var _sys: Control             # LOCATION: UNKNOWN overlay
 var _sys_t := 0.0
@@ -262,7 +273,8 @@ func _build_list_page(parent: Control) -> void:
 	_pages["list"] = page
 	_list_caption = UiKit.caption("NIGHT INSPECTION · 야간 시설 점검", UiKit.TEXT_MUTE)
 	page.add_child(_list_caption)
-	page.add_child(UiKit.label("최종 점검 구역", 34, UiKit.TEXT, "sans", 900))
+	_list_title = UiKit.label("최종 점검 구역", 34, UiKit.TEXT, "sans", 900)
+	page.add_child(_list_title)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 8)
 	page.add_child(gap)
@@ -276,6 +288,9 @@ func _refresh_list() -> void:
 		return
 	for c in _list.get_children():
 		c.queue_free()
+	if belongings:
+		_refresh_belongings()
+		return
 	for it in checklist:
 		var st: Array = STATES.get(str(it[1]), STATES.todo)
 		var row := PanelContainer.new()
@@ -294,6 +309,54 @@ func _refresh_list() -> void:
 		chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(chip)
 		_list.add_child(row)
+
+
+## What you carry, a row each; once the check-in is done your passenger record comes first.
+func _refresh_belongings() -> void:
+	if passenger:
+		_list.add_child(_belonging("승객 · FLIGHT 000", "탑승 수속 완료. GATE 0으로 이동해 주십시오.", UiKit.ALERT))
+	for id: String in Game.inventory:
+		var it: Array = BELONGINGS.get(id, [id, ""])
+		_list.add_child(_belonging(it[0], it[1], UiKit.SIGNAL_TEXT))
+	if Game.inventory.is_empty() and not passenger:
+		_list.add_child(UiKit.label("가진 것이 없다.", 20, UiKit.TEXT_DIM, "sans", 500))
+
+
+func _belonging(title: String, body: String, edge: Color) -> Control:
+	var row := PanelContainer.new()
+	var sb := UiKit.boxm(UiKit.SCREEN_2, Vector4(22, 12, 22, 12))
+	sb.border_width_left = 4
+	sb.border_color = edge
+	row.add_theme_stylebox_override("panel", sb)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	row.add_child(v)
+	v.add_child(UiKit.label(title, 22, UiKit.TEXT, "sans", 700))
+	v.add_child(UiKit.label(body, 18, UiKit.TEXT_DIM, "sans", 500))
+	return row
+
+
+## From the main story on: the checklist is gone, the list page is what you carry, the plan has lost you.
+func show_belongings() -> void:
+	lost = true
+	belongings = true
+	_map.show_player = false
+	_header_title.flap_to("NO SIGNAL", false)
+	_list_caption.text = UiKit.t("BELONGINGS · 소지품")
+	_list_title.text = UiKit.t("소지품")
+	(_tabs.list.label as Label).text = UiKit.t("소지품")
+	_sys.visible = false
+	if not Events.inventory_changed.is_connected(_refresh_list):
+		Events.inventory_changed.connect(_refresh_list)
+	_refresh_list()
+
+
+## The check-in is done: you are a passenger now.
+func set_passenger() -> void:
+	passenger = true
+	_header_title.flap_to("PASSENGER", false)
+	_list_caption.text = UiKit.t("PASSENGER · 탑승객")
+	_refresh_list()
 
 
 func _build_map_page(parent: Control) -> void:

@@ -105,8 +105,9 @@ func _ready() -> void:
 	flashlight.shadow_enabled = true
 	flashlight.light_volumetric_fog_energy = 0.9      # the beam shows in the haze, the dust shines in it
 	flashlight.visible = false
-	# footsteps carry their own room (recorded in the space), so they skip the engine reverb zones; three players
-	# take turns so each step's echo rings out under the next one
+	# footsteps carry their own room (recorded in the space), so they stay on SFX, off the World bus's room reverb
+	# (Snd.setup_3d only moves players already on SFX); three players take turns so each step's echo rings out
+	# under the next one
 	for i in 3:
 		var f := AudioStreamPlayer3D.new()
 		f.unit_size = 4.0

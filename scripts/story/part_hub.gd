@@ -148,10 +148,12 @@ func _stage(n: int, instant: bool) -> void:
 			var flip := Basis(Vector3.BACK, PI)
 			var rows: Array = t.warp.benches
 			for i in rows.size():
-				if i % 4 == 0:
-					var row: Node3D = rows[i]
-					var p := row.position
-					row.transform = Transform3D(flip * row.basis, Vector3(p.x, Terminal.roof_y(p.z), p.z))
+				var row: Node3D = rows[i]
+				var p := row.position
+				# only under the flat ceiling: past ROOF_Z there is no roof, only the dark (LoungeShaft), and nothing
+				# hangs up there
+				if i % 4 == 0 and p.z < Terminal.ROOF_Z:
+					row.transform = Transform3D(flip * row.basis, Vector3(p.x, Terminal.HALL_H, p.z))
 		2:
 			for board: Variant in [t.facilities.get("fids"), t.arrivals]:
 				if board:

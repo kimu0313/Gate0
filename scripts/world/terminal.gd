@@ -4,8 +4,9 @@ extends Node3D
 ##
 ## Layout from the level plan (Downloads/image (9).png, 2 m grid, drawn with the airside at the bottom); the hall
 ## is the main lounge of the lounge reference (SKETCH_SHOTS ref_lounge). Metres, Y up, -Z = north/airside, +X = east:
-##   HALL (main lounge) x[-20,44] z[-2.5,52] (9 m, a soffit rising to 18 m at the glass facade on the apron to the
-##                south, four rows of columns with ad screens, an airliner through the glass) + its north strip
+##   HALL (main lounge) x[-20,44] z[-2.5,52] (12 m over its north part; over the glass side, z 22..52, no roof: the
+##                walls (over the glass facade on the apron to the south too) go on up into the dark with nothing between them,
+##                LoungeShaft; four rows of columns with ad screens, an airliner through the glass) + its north strip
 ##                x[-12.2,12] z[-8.5,-2.5]
 ##   2F       the lounge's upper floor (MEZZ_Y): a gallery of one width on three sides round its atrium (UPPER), the
 ##            staff doors in its north wall, two pairs of escalators from its edge down into the atrium; the shops
@@ -21,17 +22,18 @@ extends Node3D
 ##            wall, its door at z 27.5; through its haze you come out of a cabin section on the hall's deck at z -24..-20
 
 const HALL_H := 12.0         # main lounge: flat ceiling over its north half (over the 2F)
-const HALL_ROOF := 21.0      # ...then a soffit rising to the head of the glass facade
+const HALL_ROOF := 21.0      # the glass facade's own frame up to here; LoungeShaft's wall on up
 const HALL_E := 44.0         # the lounge's east end wall
 const HALL_S := 52.0         # glass facade on the apron (south)
-const ROOF_Z := 22.0         # where the soffit starts rising (the third column row)
+const ROOF_Z := 22.0         # where the flat ceiling stops and the endless shaft over the glass side begins (LoungeShaft)
 const COL_X := [-6.0, 3.0, 12.0, 21.0, 30.0]   # lounge column grid (1.3 m square columns) on four rows; the east bay
 const COL_Z := [4.0, 11.0, 22.0, 33.0]          # is clear, and only the grid's edge has columns (lounge_columns)
 const AISLES := [7.5, 27.5]  # the two aisles along the hall (z), between the column rows 4|11 and 22|33
 const MEZZ_Y := 4.2          # the lounge's 2F floor
 const SLAB := 0.35           # its thickness (the lounge's ceiling under it at MEZZ_Y - SLAB)
 ## The 2F over the lounge, an empty floor for what comes later: plates [x0, z0, x1, z1] round the ATRIUM (open from
-## the lounge floor to the roof over the middle and the glass side, where the airliner lies). The 2F wraps the lounge
+## the lounge floor to the ceiling over the middle, and on up into the dark over the glass side, where the airliner
+## lies: LoungeShaft). The 2F wraps the lounge
 ## like a ㄷ, a gallery 7.8 m wide from the walls on all three sides: the north side the length of the hall, the east
 ## and west sides down to the glass. No column stands on the 2F.
 const UPPER := [[-19.9, -2.4, 43.9, 5.5], [-19.9, 5.5, -12.0, 51.85], [36.0, 5.5, 43.9, 51.85]]
@@ -147,6 +149,13 @@ const SKETCH_SHOTS := [
 	["lounge_crash", Vector3(35.0, 1.65, 28.0), 140.0, Vector2(0.5, 0.56), 74.0],
 	["lounge_nose", Vector3(9.0, 1.65, 33.0), 160.0, Vector2(0.5, 0.55), 72.0],
 	["lounge_west", Vector3(-6.0, 1.65, 27.5), -90.0, Vector2(0.5, 0.55), 72.0],
+	# looking up from the lounge floor (a 6th value = pitch, deg): toward the glass, straight up, up the glass
+	["lounge_up", Vector3(12.0, 1.65, 34.0), 180.0, Vector2(0.5, 0.5), 75.0, 55.0],
+	["lounge_zenith", Vector3(12.0, 1.65, 37.0), 180.0, Vector2(0.5, 0.5), 75.0, 86.0],
+	["lounge_glass_up", Vector3(4.0, 1.65, 47.0), 160.0, Vector2(0.5, 0.5), 75.0, 40.0],
+	["lounge_up_aisle", Vector3(30.0, 1.65, 27.5), 120.0, Vector2(0.5, 0.5), 75.0, 35.0],
+	["lounge_up_mid", Vector3(14.0, 1.65, 25.0), 180.0, Vector2(0.5, 0.5), 75.0, 62.0],     # the user's look up over the middle
+	["lounge_up_2f", Vector3(-16.0, 5.85, 40.0), 120.0, Vector2(0.5, 0.5), 75.0, 50.0],
 	# the service corridor (ServiceHall at (-160, -320, 0); built for the main story: run these with `--chapter ch1`)
 	["hall_ref", Vector3(-159.8, -318.38, 1.4), 180.0, Vector2(0.5, 0.53), 60.0],
 	["hall_far", Vector3(-160.3, -318.38, 30.0), 180.0, Vector2(0.5, 0.53), 62.0],
@@ -551,7 +560,8 @@ func _build_office() -> void:
 
 # --------------------------------------------------------------------------------------------
 ## Main lounge (the lounge reference, SKETCH_SHOTS ref_lounge from its east end): a 64 x 54 m hall, the glass facade
-## on the apron to the south under a soffit rising to 18 m, four rows of graphite columns carrying digital ad screens,
+## on the apron to the south and over its glass side no roof, only walls going on up into black air (LoungeShaft:
+## the free-standing column row with them; SKETCH_SHOTS lounge_up / lounge_zenith), four rows of graphite columns carrying digital ad screens,
 ## two aisles under hanging Departures / Arrivals signs and a grid of small downlights, black seat rows in two bands,
 ## the arrivals board hung near the east end, the escalator up to the closed 2F deck on the north side, the broadcast
 ## desk at the far (west) end in front of the office, and the strip to the north that leads on to security, the staff
@@ -563,23 +573,22 @@ func _build_hall() -> void:
 	_floor(Rect2(-12.2, -8.5, 24.2, 6), "floor")
 	_ceiling(Rect2(-20, -2.5, HALL_E + 20, ROOF_Z + 2.5), HALL_H, "ceiling_lounge")
 	_ceiling(Rect2(-12.2, -8.5, 24.2, 6), STRIP_H)
-	_soffit()
 	# the airliner first: where it came through decides which panes are gone and where no seat can stand
 	_wreck()
 	var breaks := _facade_breaks()
 	var crushed := _wreck_cells(3.0)
-	# facade on the apron (south): mullions every 3 m, transoms every 3.2 m up to the soffit, smashed where the
-	# airliner came through; the main entrance and the emergency exit at the west end
+	# facade on the apron (south): mullions every 3 m, transoms every 3.2 m up to HALL_ROOF (LoungeShaft's wall on
+	# up above it), smashed where the airliner came through; the main entrance and the emergency exit at the west end
 	_glass_facade(Vector2(-20, HALL_S), Vector2(HALL_E, HALL_S), HALL_ROOF, [[-9.7, -5.9, 2.7], [-17.8, -16.2, 2.4]],
 			-19.4, 3.0, [0.1, 3.3, 6.5, 9.7, 12.9, 16.1, 19.3], breaks)
-	# end walls up into the 2F's slab (the 2F's own, with the shops' fronts in them, go on up to the ceiling), the
-	# gables over them under the soffit
+	# no roof over the glass side: its walls (and one over the facade) go on up into the black (LoungeShaft)
+	LoungeShaft.build(self)
+	# end walls up into the 2F's slab (the 2F's own, with the shops' fronts in them, go on up to the ceiling, and the
+	# shaft's on from there)
 	Geo.wall(self, Vector2(-20, 7.6), Vector2(-20, HALL_S), MEZZ_Y - 0.1, wm, 0.4,
 			[[CabinWay.DOOR_Z - 7.6 - Airliner.DOOR_W * 0.5 - 0.02, CabinWay.DOOR_Z - 7.6 + Airliner.DOOR_W * 0.5 + 0.02,
 			Airliner.DOOR_H + 0.02]])      # the cabin's door (CabinWay: its lining runs through)
 	Geo.wall(self, Vector2(HALL_E, -2.5), Vector2(HALL_E, HALL_S), MEZZ_Y - 0.1, wm)
-	_gable(-20.0, wm)
-	_gable(HALL_E, wm)
 	# north: the lounge floor's back wall, up into the 2F's slab (the 2F's north wall stands on it): the opening into
 	# the strip, the storage room's own wall (x 12..22) with this one on top, then a plain wall
 	var top := MEZZ_Y - 0.1
@@ -603,10 +612,13 @@ func _build_hall() -> void:
 		ch.name = "Chain%d" % i
 	exit_door_use = Interactable.create(self, Vector3(-17, 1.2, HALL_S - 0.3), Vector3(1.6, 2.4, 0.3), "비상구 — 체인으로 잠겨 있다", Callable())
 	exit_door_use.press_sound = "door_heavy"
-	# structure: a beam on each column row across the ceiling, columns with ad screens facing east and onto the aisle
-	# beside them round the edge of the grid only (the middle of the lounge is open)
+	# structure: a beam on each column row across the ceiling (none over the glass side, where there is no ceiling),
+	# columns with ad screens facing east and onto the aisle beside them round the edge of the grid only (the middle of
+	# the lounge is open)
 	for cz: float in COL_Z:
-		Geo.box(self, Vector3(12.0, roof_y(cz) - 0.4, cz), Vector3(HALL_E + 20.0, 1.0, 0.7), Mats.get_mat("column"), false)
+		if cz > ROOF_Z:
+			continue
+		Geo.box(self, Vector3(12.0, HALL_H - 0.4, cz), Vector3(HALL_E + 20.0, 1.0, 0.7), Mats.get_mat("column"), false)
 	for c: Vector3 in lounge_columns():
 		_lounge_column(c, 1.0 if COL_Z.find(c.z) % 2 == 0 else -1.0)
 	_hall_lights()
@@ -678,16 +690,18 @@ func _build_hall() -> void:
 		["arrow", 0.0, 0.55, Vector2(2.65, 0)],
 	], HALL_H)
 	# the south aisle (under the atrium): exit to the left (the entrance at the west end of the glass), departures ahead
-	Props.wayfinding_sign(self, Vector3(24.0, 6.8, AISLES[1]), PI / 2, Vector2(7.8, 1.15), [
-		["arrow", 180.0, 0.62, Vector2(-3.4, 0)],
-		["text", "출구 · 교통센터", 54, Vector2(-1.75, 0.2)],
-		["text", "Exit · Transport", 40, Vector2(-1.75, -0.22)],
+	# (nothing to hang it from over the glass side: it spans the columns at x 30, z 22 and 33, its ends in them, like
+	# the north aisle's)
+	Props.wayfinding_sign(self, Vector3(30.5, 3.3, AISLES[1]), PI / 2, Vector2(11.0, 1.15), [
+		["arrow", 180.0, 0.62, Vector2(-4.25, 0)],
+		["text", "출구 · 교통센터", 54, Vector2(-2.2, 0.2)],
+		["text", "Exit · Transport", 40, Vector2(-2.2, -0.22)],
 		["rule", Vector2(0, 0)],
-		["tile", "icon_departures", 0.78, Vector2(0.75, 0)],
-		["text", "출발", 60, Vector2(2.0, 0.2)],
-		["text", "Departures", 44, Vector2(2.0, -0.22)],
-		["arrow", 90.0, 0.62, Vector2(3.4, 0)],
-	], roof_y(AISLES[1]))
+		["tile", "icon_departures", 0.78, Vector2(0.95, 0)],
+		["text", "출발", 60, Vector2(2.5, 0.2)],
+		["text", "Departures", 44, Vector2(2.5, -0.22)],
+		["arrow", 90.0, 0.62, Vector2(4.25, 0)],
+	])
 	signs["hall_departures"] = Props.hanging_sign(self, Vector3(0, 3.0, -5.0), 0.0, Vector2(6.0, 0.9), [
 		["↑  출국 · 보안검색", 60, Color(1, 1, 1), Vector2(-0.6, 0.18)],
 		["DEPARTURES · SECURITY", 40, Color(0.85, 0.88, 0.95), Vector2(-0.6, -0.24)],
@@ -707,7 +721,7 @@ func _build_hall() -> void:
 ## A thin smoke hanging in the whole lounge, thicker in slow drifts (a noise density), so the light shows in the air
 ## (the night-airport reference; on top of the world's own faint fog).
 func _lounge_smoke() -> void:
-	_smoke(AABB(Vector3(-20, 0, -2.5), Vector3(HALL_E + 20.0, HALL_ROOF, HALL_S + 2.5)), 21)
+	_smoke(AABB(Vector3(-20, 0, -2.5), Vector3(HALL_E + 20.0, LoungeShaft.CLEAR_FROM, HALL_S + 2.5)), 21)
 
 
 func _smoke(box: AABB, noise_seed: int, density := 0.065, albedo := Color(0.72, 0.86, 0.9), glow := Color.BLACK) -> FogMaterial:
@@ -733,13 +747,6 @@ func _smoke(box: AABB, noise_seed: int, density := 0.065, albedo := Color(0.72, 
 	add_child(smoke)
 	smoke.position = box.get_center()
 	return fm
-
-
-## Ceiling height of the lounge over `z`: the flat ceiling, then the soffit rising to the head of the glass.
-static func roof_y(z: float) -> float:
-	if z <= ROOF_Z:
-		return HALL_H
-	return HALL_H + (minf(z, HALL_S) - ROOF_Z) * (HALL_ROOF - HALL_H) / (HALL_S - ROOF_Z)
 
 
 ## A seat row (Props.seat_row) unless the airliner lies where it would stand (`crushed`: _wreck_cells); a row it
@@ -785,12 +792,11 @@ static func desk_xform() -> Transform3D:
 	return Transform3D(b, DESK_AT - b * Vector3(0.2, 0, 6.05))
 
 
-## The lounge's lights: a grid of small square downlights in the dark ceiling and, tilted, in the soffit (along the
-## aisles every other one throws light down, elsewhere fewer), dim fills that stand in for the bounce, a faint wash
-## up the soffit, the strip's troffers. All on the hall zone.
+## The lounge's lights: a grid of small square downlights in the dark ceiling (along the aisles every other one throws
+## light down, elsewhere fewer), over the glass side lights up in the dark with no fixture and washes up its walls
+## (LoungeShaft.lights), dim fills that stand in for the bounce, the strip's troffers. All on the hall zone.
 func _hall_lights() -> void:
 	var z: LightZone = zones.hall
-	var tilt := atan2(HALL_ROOF - HALL_H, HALL_S - ROOF_Z)
 	# under the 2F: the lounge floor's low ceiling and the galleries' undersides, a downlight every 5 m, every other
 	# one throwing light
 	var low := MEZZ_Y - SLAB - 0.02
@@ -807,19 +813,15 @@ func _hall_lights() -> void:
 			z.add_downlight(Vector3(gx, low, gz), 0.36, k % 2 == 0, 4.2, 7.5, 50.0)
 			k += 1
 			gz += 5.0
-	# the 2F's ceiling and the atrium's: [z, every nth one lit, spot energy]
-	var rows := [[1.6, 2, 6.5], [6.0, 2, 7.0], [9.0, 2, 7.0], [14.4, 3, 7.5], [18.6, 3, 7.5],
-		[AISLES[1], 2, 12.0], [38.0, 3, 13.0], [45.5, 3, 13.5]]
+	# the 2F's ceiling and the atrium's (over the glass side there is none: LoungeShaft.lights): [z, every nth one lit,
+	# spot energy]
+	var rows := [[1.6, 2, 6.5], [6.0, 2, 7.0], [9.0, 2, 7.0], [14.4, 3, 7.5], [18.6, 3, 7.5]]
 	for r in rows.size():
 		var rz: float = rows[r][0]
 		var x := -16.0
 		var i := r
 		while x < HALL_E - 1.0:
-			var lit: bool = i % rows[r][1] == 0
-			if rz <= ROOF_Z:
-				z.add_downlight(Vector3(x, HALL_H - 0.02, rz), 0.42, lit, rows[r][2], 18.0)
-			else:
-				z.add_downlight(Vector3(x, roof_y(rz) - 0.03, rz), 0.5, lit, rows[r][2], 26.0, 38.0, Color.TRANSPARENT, tilt)
+			z.add_downlight(Vector3(x, HALL_H - 0.02, rz), 0.42, i % rows[r][1] == 0, rows[r][2], 18.0)
 			i += 1
 			x += 5.0
 	# fills standing in for the bounce: on the lounge floor under the 2F, on the 2F, in the atrium
@@ -843,56 +845,19 @@ func _hall_lights() -> void:
 			Vector3(DECK_DOOR.x - 1.5, MEZZ_Y, DECK_DOOR.z + 2.6), ZONE_LIGHT, 4.5, 15.0, 55.0)
 	door_light.light_volumetric_fog_energy = 0.3
 	z.add_light(door_light)
-	# two spots in the soffit left on over where the airliner came to rest: its nose and its wing in the light
-	for s: Array in [[Vector3(8.0, roof_y(37.0) - 0.4, 37.0), _wreck_point(Vector3(0, 2.0, 24.0))],
-			[Vector3(26.0, roof_y(40.0) - 0.4, 40.0), _wreck_point(Vector3(-12.0, 3.0, 4.0))]]:
-		var sp := Geo.spot(self, s[0], s[1], ZONE_LIGHT, 7.0, 32.0, 32.0)
-		sp.light_volumetric_fog_energy = 0.6
+	# two spots up in the dark over the glass side left on over where the airliner came to rest: its nose and its wing
+	# in the light
+	for s: Array in [[Vector3(8.0, LoungeShaft.LAMP_Y, 38.5), _wreck_point(Vector3(0, 2.0, 24.0))],
+			[Vector3(26.0, LoungeShaft.LAMP_Y, 38.5), _wreck_point(Vector3(-12.0, 3.0, 4.0))]]:
+		var sp := Geo.spot(self, s[0], s[1], ZONE_LIGHT, 8.0, 38.0, 32.0)
+		sp.light_volumetric_fog_energy = 0.0        # no glow: looking up along them the middle stays black
 		z.add_light(sp)
-	# a faint wash up the soffit so the high slope reads against the night outside
-	for wx: float in [-14.0, -2.0, 10.0, 22.0, 34.0]:
-		for wz: float in [31.0, 45.0]:
-			var w := Geo.omni(self, Vector3(wx, roof_y(wz) - 1.3, wz), FILL_LIGHT, 1.0, 12.0)
-			w.light_specular = 0.0
-			w.light_volumetric_fog_energy = 0.0
-			z.add_light(w)
+	LoungeShaft.lights(self, z)
 	for sx: float in [-6.0, 0.0, 6.0]:
 		z.add_panel(Vector3(sx, STRIP_H - 0.08, -5.5), Vector2(0.5, 2.4), sx == 0.0, 1.4, 10.0)
 	for h: Vector3 in [Vector3(4, 7, 7), Vector3(30, 7, 7), Vector3(4, 8, 30), Vector3(30, 8, 30)]:
 		z.add_hum(h, -19.0)
 	z.add_hum(Vector3(0, 3.2, -5.5), -20.0)
-
-
-## The sloped soffit from the south column row (HALL_H) up to the head of the glass (HALL_ROOF), the full length of
-## the lounge; its low edge runs into the beam.
-func _soffit() -> void:
-	var run := HALL_S - ROOF_Z
-	var rise := HALL_ROOF - HALL_H
-	var a := atan2(rise, run)
-	var mi := Geo.box(self, Vector3.ZERO, Vector3(HALL_E + 20.0, 0.2, sqrt(run * run + rise * rise) + 0.3),
-			Mats.get_mat("ceiling_lounge"), false)
-	mi.rotation.x = -a
-	mi.position = Vector3((HALL_E - 20.0) * 0.5, (HALL_H + HALL_ROOF) * 0.5, (ROOF_Z + HALL_S) * 0.5) \
-			+ Vector3(0, cos(a), -sin(a)) * 0.103
-
-
-## Triangle of end wall under the soffit at `x` (the wall below it stops at the flat ceiling height).
-func _gable(x: float, mat: Material) -> void:
-	var tri := [Vector2(ROOF_Z - 0.4, HALL_H - 0.05), Vector2(HALL_S, HALL_H - 0.05), Vector2(HALL_S, HALL_ROOF + 0.3)]
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for s: float in [-1.0, 1.0]:
-		var n := Vector3(s, 0, 0)
-		var v: Array = tri.map(func(p: Vector2): return Vector3(x + s * 0.2, p.y, p.x))
-		if (v[1] - v[0]).cross(v[2] - v[0]).dot(n) > 0.0:     # front faces wind clockwise
-			v = [v[0], v[2], v[1]]
-		for p: Vector3 in v:
-			st.set_normal(n)
-			st.add_vertex(p)
-	var mi := MeshInstance3D.new()
-	mi.mesh = st.commit()
-	mi.material_override = mat
-	add_child(mi)
 
 
 ## The lounge's columns (floor points): the edge of the grid (COL_X x COL_Z), the middle left open.
@@ -906,13 +871,20 @@ static func lounge_columns() -> Array:
 
 
 ## A graphite column of the lounge grid on a steel base: up to the 2F's floor where the 2F is over it or on its edge
-## (no column stands on the 2F), else up to the ceiling (into the soffit on its high side); a digital ad screen on its
-## east face (what you see down the hall from the east end) and one on the face toward the aisle beside it (`side` +1:
-## the +Z face, -1: the -Z face).
+## (no column stands on the 2F), up to the ceiling where it stands under the ceiling's edge, and the row standing out
+## over the glass side, where there is no ceiling, on up into the dark with the walls (LoungeShaft, user: "가운데
+## 기둥도 천장이랑 같은 높이로"); a digital ad screen on its east face (what you see down the hall from the east end)
+## and one on the face toward the aisle beside it (`side` +1: the +Z face, -1: the -Z face).
 func _lounge_column(p: Vector3, side: float) -> void:
 	var s := 1.3
-	var h := MEZZ_Y - 0.005 if p.z <= ATRIUM.position.y + 0.1 else roof_y(p.z + s * 0.5)
-	Geo.box(self, p + Vector3(0, h * 0.5, 0), Vector3(s, h, s), Mats.get_mat("column"))
+	var h := HALL_H
+	var mat := Mats.get_mat("column")
+	if p.z <= ATRIUM.position.y + 0.1:
+		h = MEZZ_Y - 0.005
+	elif p.z > ROOF_Z + s:
+		h = LoungeShaft.TOP
+		mat = Mats.get_mat("column_shaft")
+	Geo.box(self, p + Vector3(0, h * 0.5, 0), Vector3(s, h, s), mat)
 	Geo.box(self, p + Vector3(0, 0.07, 0), Vector3(s + 0.04, 0.14, s + 0.04), Mats.get_mat("metal_dark"), false)
 	_ad_screen(p + Vector3(s * 0.5, 0, 0), 90.0)
 	_ad_screen(p + Vector3(0, 0, s * 0.5 * side), 0.0 if side > 0.0 else 180.0)
@@ -2233,7 +2205,7 @@ func _build_facility_systems() -> void:
 	arrivals.build(4.4, 2.05, false)
 	arrivals.screen.title = "도착  ARRIVALS"
 	arrivals.screen.icon = load("res://assets/textures/level/icon_arrivals.png")
-	var rod := roof_y(arrivals.position.z) - arrivals.position.y - 1.175
+	var rod := HALL_H - arrivals.position.y - 1.175
 	for rx: float in [-1.6, 1.6]:
 		Geo.cyl(arrivals, Vector3(rx, 1.175 + rod * 0.5, -0.12), 0.025, rod, Mats.get_mat("steel_frame"))
 	# PA console on the broadcast desk

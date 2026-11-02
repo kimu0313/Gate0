@@ -762,8 +762,10 @@ func _after_lounge(part: Chapter1) -> void:
 		await _lounge_route(_at(1.2, -5.9))
 		if not await _press(PartHub.DEVICE_AT + Vector3(0, 1.3, 0.2), "수속 장치에 넣기"):
 			return
+		# checked_in comes at the end of the check-in announcement, which plays in real time (not at SPEED): 13-15 s
+		# on a free machine, more under load, so give it room
 		var t1 := Time.get_ticks_msec()
-		while not hub.checked_in and Time.get_ticks_msec() - t1 < 15000:
+		while not hub.checked_in and Time.get_ticks_msec() - t1 < 30000:
 			await _tree.process_frame
 		if not hub.checked_in:
 			_end(1, "all three in the device and the check-in did not complete (%s)" % str(hub._in))

@@ -57,8 +57,15 @@ static func _make(mat_name: String) -> Material:
 			return shader_mat("res://shaders/wall_panel.gdshader", {
 				"color": Color(0.56, 0.52, 0.46), "seam_color": Color(0.36, 0.33, 0.29), "panel_w": 100.0,
 				"panel_h": 1.5, "seam": 0.01, "roughness": 0.5, "skirting": 0.14, "skirting_color": Color(0.22, 0.2, 0.18)})
+		"column_shaft":
+			# the same, on the columns that go on up over the lounge's glass side, fading into the dark with its walls
+			# (LoungeShaft)
+			var cs := (get_mat("column") as ShaderMaterial).duplicate() as ShaderMaterial
+			cs.set_shader_parameter("fade_from", LoungeShaft.FADE_FROM)
+			cs.set_shader_parameter("fade", LoungeShaft.FADE)
+			return cs
 		"ceiling_lounge":
-			# the lounge's ceilings, soffit and the 2F's underside: warm grey panels
+			# the lounge's ceilings and the 2F's underside: warm grey panels
 			return shader_mat("res://shaders/ceiling.gdshader", {"color": Color(0.5, 0.48, 0.45), "grid_color": Color(0.36, 0.34, 0.31), "tile": 1.2})
 		"ad_screen":
 			return shader_mat("res://shaders/ad_screen.gdshader", {

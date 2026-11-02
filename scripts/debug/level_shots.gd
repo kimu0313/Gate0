@@ -30,7 +30,7 @@ func _ready() -> void:
 	for s in level.SKETCH_SHOTS:
 		if not only.is_empty() and not (s[0] in only):
 			continue
-		var cam := _sketch_camera(s[1], s[2], s[3], s[4])
+		var cam := _sketch_camera(s[1], s[2], s[3], s[4], s[5] if s.size() > 5 else 0.0)
 		await get_tree().create_timer(wait).timeout
 		await _capture(out_dir, s[0])
 		cam.queue_free()
@@ -47,12 +47,12 @@ func _ready() -> void:
 
 
 ## Level camera looking along -Z turned by `yaw`, with the frustum shifted so the vanishing point of its axis
-## lands at `vp` (fractions of the image) and the vertical field of view is `vfov`.
-func _sketch_camera(eye: Vector3, yaw: float, vp: Vector2, vfov: float) -> Camera3D:
+## lands at `vp` (fractions of the image) and the vertical field of view is `vfov`; `pitch` (deg, up +) tilts it.
+func _sketch_camera(eye: Vector3, yaw: float, vp: Vector2, vfov: float, pitch := 0.0) -> Camera3D:
 	var cam := Camera3D.new()
 	level.add_child(cam)
 	cam.position = eye
-	cam.rotation.y = deg_to_rad(yaw)
+	cam.rotation = Vector3(deg_to_rad(pitch), deg_to_rad(yaw), 0.0)
 	var aspect := get_viewport().get_visible_rect().size.aspect()
 	cam.projection = Camera3D.PROJECTION_FRUSTUM
 	cam.keep_aspect = Camera3D.KEEP_HEIGHT

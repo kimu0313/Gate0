@@ -10,6 +10,8 @@ uniform float roughness = 0.55;
 uniform float base_height = 0.0;
 uniform vec3 skirting_color : source_color = vec3(0.12, 0.12, 0.13);
 uniform float skirting = 0.12;
+uniform float fade_from = 100000.0;  // darker above here by e every `fade` metres (the lounge columns that go on up
+uniform float fade = 30.0;           // into the dark, LoungeShaft); off by default
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -39,7 +41,8 @@ void fragment() {
 		s = 0.0;
 	}
 	col = mix(col, skirting_color, sk);
-	ALBEDO = col;
+	float k = exp(-max(wpos.y - fade_from, 0.0) / fade);
+	ALBEDO = col * k;
 	ROUGHNESS = mix(roughness, 0.4, sk);
-	SPECULAR = 0.4;
+	SPECULAR = 0.4 * k;
 }

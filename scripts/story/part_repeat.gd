@@ -10,7 +10,7 @@ const ENTRY_SOUND := "door_heavy"
 const ROOMS := 5
 ## What each room wants: [kind, index] (switch = which of RepeatRoom.switches, drawer = any of the desk's).
 const TASKS := [["switch", 0], ["drawer", 0], ["switch", 1], ["drawer", 2], ["card", 0]]
-const OUT_DOOR := Vector3(43.78, 0.0, 20.0)      # in the lounge's 1F east wall
+const OUT_DOOR := Vector3(Terminal.HALL_E - 0.22, 0.0, 21.8)   # in the lounge's 1F east wall, between two seat rows
 const SHOP_DOOR_Z := -5.44                       # in unit e2's frame: its back wall
 
 var room: RepeatRoom

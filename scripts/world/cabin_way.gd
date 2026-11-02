@@ -20,16 +20,17 @@ extends Node3D
 ## airliner's cabin (only their own lights).
 
 const AXIS_X := -22.0        # the cabin's centreline (its left wall just inside the lounge's west wall at x -20)
-const DOOR_Z := 27.5         # its door in the lounge's west wall (world z: the lounge's south aisle)
+const DOOR_Z := 13.0         # its door in the lounge's west wall (world z: the lounge's south aisle)
 const STUB_X := -29.7        # the stub's centreline on its landing (its wide aisle comes out at the escalator's foot; its
                              # other side reaches out over the edge, the landing's parapet runs from it)
 const STUB_LIFT := 0.006     # its floor over the deck's (they would share a plane)
 const JOIN_HALL := -22.0     # where the stub's haze gives you back (world z, on its axis)
 # the cabin's own frame (Airliner's, turned so that its nose points south, +Z): its ends, the door, the rows, the join
-const Z_FWD := 14.4          # the forward end, closed, in the thickest haze (the stub's cut end is here too)
-const Z_JOIN := 16.4
-const Z_STUB := 18.4         # the stub's back, in the hall's north wall
-const Z_SEATS := 17.5        # the forward-most row (the rows run aft from here to the door's cross aisle)
+const Z_FWD := 22.4          # the forward end, closed, in the thickest haze (the stub's cut end is here too); the
+                             # cabin was 8 m longer (to 14.4) before the lounge was cut down: it now ends at its glass
+const Z_JOIN := 24.4
+const Z_STUB := 26.4         # the stub's back, in the hall's north wall
+const Z_SEATS := 25.5        # the forward-most row (the rows run aft from here to the door's cross aisle)
 const Z_DOOR := 38.4
 const Z_AFT := 40.0          # the aft bulkhead (the curtain, the EXIT light) behind the door
 const LINING := 2.2          # the door's lining runs out through the lounge's wall to its face (x -19.8)
@@ -41,7 +42,7 @@ const HAZE := Color(1.45, 1.75, 1.47)  # the haze's glow at full light (brighter
 const LAMP := Color(1.0, 0.97, 0.9)    # the cabins' ceiling lights (the reference's cream cabin; the green is the haze's)
 const LAMP_GAIN := 1.7
 const LEAF := Color(0.84, 0.85, 0.84)
-const LOOP_Z := 40.0         # the long aisle: on past here (world z) and you are...
+const LOOP_Z := 19.9         # the long aisle: on past here (world z, short of where the white-out starts) and you are...
 const LOOP_STEP := 4.0       # ...this far back: whole rows, windows and lights, so nothing jumps
 
 static var way: CabinWay

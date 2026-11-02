@@ -700,20 +700,20 @@ func _ch1() -> void:
 	if absf(ld[0].rotation.y) > 0.05 or absf(ld[1].rotation.y) > 0.05:
 		_end(1, "the deck's staff doors did not shut behind the player")
 		return
-	_p.look_at_point(Vector3(10.0, 1.0, 42.0), 0.3)
+	_p.look_at_point(Vector3(-3.0, 1.0, 20.0), 0.3)
 	await _shot("30_deck", 0.6)
 	Engine.time_scale = SPEED
 	# along the edge to the nearest down escalator and down it to the lounge floor
 	var downs: Array = Terminal.escalator_units().filter(func(u: Array) -> bool: return u[1])
 	downs.sort_custom(func(a: Array, b: Array) -> bool: return absf(a[0].x - door.x) < absf(b[0].x - door.x))
 	var down: Vector3 = downs[0][0]
-	await _walk([Vector3(down.x, 0.0, door.z + 1.5), Vector3(down.x, 0.0, Terminal.ESC_FOOT_Z + 3.5)], 2.0)
+	await _walk([Vector3(down.x, 0.0, door.z + 1.5), Vector3(down.x, 0.0, SOUTH_LANE)], 2.0)
 	if _p.global_position.y > 0.3:
 		_end(1, "could not walk down the escalator (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 		return
 	_log("down the escalator at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 	await _shot("31_lounge_floor", 0.3)
-	await _walk([_at(20.9, 17.3), _at(20.9, 7.5)], 3.0)
+	await _walk([_at(down.x + 1.6, SOUTH_LANE), _at(MID_LANE, SOUTH_LANE), _at(MID_LANE, NORTH_AISLE)], 3.0)
 	await _after_lounge(part)
 
 
@@ -726,7 +726,7 @@ func _after_lounge(part: Chapter1) -> void:
 		return
 	if Game.checkpoint != "final":
 		if not hub.seen:
-			await _walk([_at(1.2, 7.5), _at(1.2, -5.9)], 3.0)
+			await _walk([_at(MID_LANE, NORTH_AISLE), _at(MID_LANE, -4.0), _at(1.2, -5.9)], 3.0)
 			var t0 := Time.get_ticks_msec()
 			while not hub.seen and Time.get_ticks_msec() - t0 < 6000:
 				await _tree.process_frame
@@ -774,21 +774,52 @@ func _after_lounge(part: Chapter1) -> void:
 	await _final(part)
 
 
-## Across the lounge floor to `to`, round the seats and the escalators.
+## The lounge's walking lanes (since it was cut down to 28 x 32 m): the north aisle under the 2F's edge, a south lane
+## past the ends of the escalators' side rails (1.2 m out past the foot) and short of the down unit's side of their
+## out-of-service clutter, north of the seats the nose threw (the cabin's door is at its west end), the lane between
+## the north seat blocks (it runs on through the strip's opening), and the 2F's north gallery.
+const NORTH_AISLE := 3.8
+const SOUTH_LANE := 13.6
+const MID_LANE := 0.35
+const GALLERY_Z := 0.0
+
+
+## Across the lounge floor to `to`, round the seats and the escalators: from among the seats on the glass side out
+## along the east wall, then by the lanes above.
 func _lounge_route(to: Vector3) -> void:
 	if _p.global_position.y > 3.0:
-		# down from the 2F by the near escalator: round its north side
+		# down from the 2F by the down escalator: round its north side
 		var from := _p.global_position
-		var first: Array = [_at(-16.0, from.z), _at(-16.0, 3.0)] if from.x < -12.0 else [_at(from.x, 3.0)]
-		await _walk(first + [_at(6.83, 3.0), Vector3(6.83, 0.0, 17.3), _at(8.2, 17.3)], 2.4)
+		var first: Array
+		if from.x < -15.0:
+			first = [_at(-17.5, from.z), _at(-17.5, GALLERY_Z)]
+		elif from.x > 3.0 and from.z > 2.5:
+			first = [_at(5.5, from.z), _at(5.5, GALLERY_Z)]
+		else:
+			first = [_at(from.x, GALLERY_Z)]
+		var down: float = Terminal.escalator_units().filter(func(u: Array) -> bool: return u[1])[0][0].x
+		await _walk(first + [_at(down, GALLERY_Z), Vector3(down, 0.0, SOUTH_LANE), _at(down + 1.6, SOUTH_LANE)], 2.4)
 	var q := _p.global_position
 	var pts: Array = []
-	if q.x > 8.0 and q.x < 8.5:
-		pts.append(_at(8.2, 7.5))
+	if q.z > 16.0:
+		pts += [_at(7.4, q.z), _at(7.4, SOUTH_LANE)]
 	elif q.z > 9.0:
-		pts.append(_at(20.9, 27.5) if q.z > 21.0 else _at(20.9, q.z))
-		pts.append(_at(20.9, 7.5))
-	pts.append(_at(1.2, 7.5))
+		pts += [_at(q.x, SOUTH_LANE)]
+	elif q.z < -2.5:
+		pts += [_at(MID_LANE, -4.0)]
+	else:
+		pts += [_at(q.x, NORTH_AISLE)]
+	var south := q.z > 9.0
+	if to.z > 9.0:
+		if not south:
+			pts += [_at(MID_LANE, NORTH_AISLE), _at(MID_LANE, SOUTH_LANE)]
+		pts += [_at(to.x, SOUTH_LANE)]
+	else:
+		if south:
+			pts += [_at(MID_LANE, SOUTH_LANE)]
+		pts += [_at(MID_LANE, NORTH_AISLE)]
+		if to.z < -2.5:
+			pts += [_at(MID_LANE, -4.0)]
 	pts.append(to)
 	await _walk(pts, 3.0)
 
@@ -796,9 +827,8 @@ func _lounge_route(to: Vector3) -> void:
 func _branch_a(part: Chapter1) -> bool:
 	var fog := part.fog
 	_log("branch A")
-	if _p.global_position.z < 9.0:
-		await _walk([_at(_p.global_position.x, 7.5), _at(20.9, 7.5)], 3.0)
-	await _walk([_at(20.9, 27.5), _at(-15.6, 27.5), _at(-21.65, 27.6), _at(-21.65, 30.0)], 3.0)
+	await _lounge_route(_at(-16.0, SOUTH_LANE))
+	await _walk([_at(-19.0, CabinWay.DOOR_Z), _at(-21.65, CabinWay.DOOR_Z + 0.1), _at(-21.65, CabinWay.DOOR_Z + 2.5)], 3.0)
 	await _shot("41_cabin", 0.2)
 	var way := CabinWay.way
 	var t0 := Time.get_ticks_msec()
@@ -840,19 +870,23 @@ func _branch_a(part: Chapter1) -> bool:
 func _to_2f(x: float) -> void:
 	var q := _p.global_position
 	if q.y > 3.0:
-		var way: Array = [_at(-16.0, q.z), _at(-16.0, 3.0)] if q.x < -12.0 else [_at(q.x, 3.0)]
-		await _walk(way + [_at(x, 3.0)], 3.0)
+		var way: Array = [_at(-17.5, q.z), _at(-17.5, GALLERY_Z)] if q.x < -15.0 else [_at(q.x, GALLERY_Z)]
+		await _walk(way + [_at(x, GALLERY_Z)], 3.0)
 		return
-	await _lounge_route(_at(20.9, 7.5))
-	await _walk([_at(20.9, 17.3), _at(17.17, 17.3), Vector3(17.17, 0.0, 3.0)], 2.2)
-	await _walk([_at(x, 3.0)], 3.0)
+	var up: float = Terminal.escalator_units().filter(func(u: Array) -> bool: return not u[1])[0][0].x
+	await _lounge_route(_at(up + 3.0, SOUTH_LANE))
+	await _walk([_at(up, SOUTH_LANE), Vector3(up, 0.0, GALLERY_Z - 0.5)], 2.2)
+	await _walk([_at(x, GALLERY_Z)], 3.0)
 
 
 func _branch_b(part: Chapter1) -> bool:
 	var rep := part.repeat
 	_log("branch B")
-	await _to_2f(40.0)
-	await _walk([_at(40.0, 3.0), _at(40.0, 17.0), _at(47.9, 17.0)], 3.0)
+	# up on the 2F and along its east gallery into unit e2, to the door in its back wall
+	var e2 := Shops.frame(Shops.UNITS[6])
+	var gx := (Terminal.ATRIUM.end.x + Terminal.HALL_E) * 0.5
+	await _to_2f(gx)
+	await _walk([_at(gx, GALLERY_Z), _at(gx, e2.origin.z), _at(Terminal.HALL_E + 4.4, e2.origin.z)], 3.0)
 	var t0 := Time.get_ticks_msec()
 	while not rep.room.to_local(_p.global_position).length() < 12.0 and Time.get_ticks_msec() - t0 < 6000:
 		await _tree.process_frame

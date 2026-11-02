@@ -8,9 +8,9 @@ extends StoryPart
 
 const ENTRY_SOUND := "door_heavy"
 const TURNS := 14                                 # how many times the aisle comes round before the light is on
-const SEAT := Vector3(-22.26, 0.5, 38.8)          # the aisle seat in the row the light picks out
+const SEAT := Vector3(-22.26, 0.5, 18.7)          # the aisle seat in the row the light picks out (1.2 m short of LOOP_Z)
 const DECK_DOOR := Vector3(-26.08, Terminal.MEZZ_Y, 26.0)   # in the hall's east wall, off its 2F deck
-const OUT_AT := Vector3(-22.3, Terminal.MEZZ_Y + 0.05, 36.25)   # in unit w2, in front of the door you came out of
+const OUT_AT := Vector3(-22.3, Terminal.MEZZ_Y + 0.05, 22.25)   # in unit w2, in front of the door you came out of
 
 var taken := false
 var _lamp: SpotLight3D
@@ -28,7 +28,7 @@ func setup() -> void:
 	(door.use as Interactable).prompt = "문 열기"
 	(door.use as Interactable).callback = _leave_hall
 	# and its other side, in the back wall of unit w2
-	var back := ServiceHall.double_door(t, Transform3D(Basis(Vector3.UP, PI / 2), Vector3(-23.42, Terminal.MEZZ_Y, 36.25)))
+	var back := ServiceHall.double_door(t, Transform3D(Basis(Vector3.UP, PI / 2), Vector3(-23.42, Terminal.MEZZ_Y, OUT_AT.z)))
 	(back.use as Interactable).enabled = false
 	(back.use as Interactable).collision_layer = 0
 

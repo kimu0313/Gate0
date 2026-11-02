@@ -91,8 +91,11 @@ func _ready() -> void:
 			var inner := ob.grow(-0.03)
 			if inner.size.x <= 0.0 or inner.size.y <= 0.0 or inner.size.z <= 0.0:
 				continue          # a sheet thinner than the slack (stickers, plates) cannot swallow text
+			# tested in the mesh's own space: a turned mesh's world box (the crashed airliner's) covers far more than it
+			var to_local := mi.global_transform.affine_inverse()
+			var local_inner := mi.get_aabb().grow(-0.03 / maxf(mi.global_transform.basis.get_scale().x, 0.001))
 			for p: Vector3 in corners:
-				if inner.has_point(p):
+				if inner.has_point(p) and local_inner.has_point(to_local * p):
 					clipped += 1
 					print("LABEL CLIP  %s  into %s  at %s" % [l.text.replace("\n", " / ").left(40), _name(mi), str(p.snapped(Vector3.ONE * 0.01))])
 					break

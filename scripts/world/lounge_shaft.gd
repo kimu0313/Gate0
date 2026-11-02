@@ -6,14 +6,15 @@ extends RefCounted
 ## 가운데 기둥도 천장이랑 같은 높이로, 천장 쪽 안개는 검은색"): from the south column row (Terminal.ROOF_Z) to the
 ## glass, the whole width of the lounge, the walls go on straight up to TOP — over the glass facade (its own frame
 ## and panes up to Terminal.HALL_ROOF stay as they are) a wall too — and nothing crosses the space between them, no
-## beam, rib or frame; only the lounge's free-standing column row there goes on up with them (Terminal._lounge_column).
+## beam, rib or frame, and no column stands in it (the row that once rose into the dark with the walls was taken out:
+## "가운데 기둥 4개 다 빼줘").
 ## Up there the air is black: a fog that scatters no light swallows the walls (BlackAir), and the walls themselves
 ## darken with height (shaders/shaft_fade.gdshader, so they read black even without the volumetric fog). A black lid
 ## closes it at TOP, long after everything has gone. The lights over the floor hang nowhere and light nothing but the
 ## floor (no cone in the haze, no wash up the walls), so the floor stays lit and above it nothing is. Nothing up there
 ## collides: nobody can reach it.
 
-const RECT := Rect2(-20.0, 22.0, 64.0, 30.0)   # x: the lounge's end walls (-20, Terminal.HALL_E), z: ROOF_Z .. the glass
+const RECT := Rect2(-20.0, Terminal.ROOF_Z, Terminal.HALL_E + 20.0, Terminal.HALL_S - Terminal.ROOF_Z)   # x: the end walls, z: ROOF_Z .. the glass
 const BASE := 12.0             # the walls go up from the lounge's ceiling height (Terminal.HALL_H)
 const OVER_GLASS := 20.9       # the wall over the facade starts on its head bar (Terminal.HALL_ROOF)
 const TOP := 400.0
@@ -29,9 +30,9 @@ const LAMP_RANGE := 34.0
 ## taken out ("중앙부분만 조명 치워줘"), then the cones at the ends and the washes up the end walls ("라인 조명도
 ## 없애줘"), so nothing lights the dark up there at all.
 const LAMPS := [
-	[-11.0, 27.5, 15.0], [-1.0, 27.5, 15.0], [9.0, 27.5, 15.0], [19.0, 27.5, 15.0], [29.0, 27.5, 15.0], [39.0, 27.5, 15.0],
-	[-16.0, 38.5, 16.0], [-1.0, 38.5, 16.0], [14.0, 38.5, 16.0], [29.0, 38.5, 16.0],
-	[-6.0, 44.0, 16.5], [9.0, 44.0, 16.5], [24.0, 44.0, 16.5], [39.0, 44.0, 16.5]]
+	[-14.0, 13.0, 15.0], [-4.0, 13.0, 15.0], [5.0, 13.0, 15.0],
+	[-10.0, 20.5, 16.0], [1.0, 20.5, 16.0],
+	[-15.0, 26.0, 16.5], [-6.0, 26.0, 16.5], [4.0, 26.0, 16.5]]
 const CONCRETE := Color(0.72, 0.72, 0.7)
 
 

@@ -4,12 +4,13 @@ extends Node3D
 ##
 ## Layout from the level plan (Downloads/image (9).png, 2 m grid, drawn with the airside at the bottom); the hall
 ## is the main lounge of the lounge reference (SKETCH_SHOTS ref_lounge). Metres, Y up, -Z = north/airside, +X = east:
-##   HALL (main lounge) x[-20,44] z[-2.5,52] (12 m over its north part; over the glass side, z 22..52, no roof: the
-##                walls (over the glass facade on the apron to the south too) go on up into the dark with nothing between them,
-##                LoungeShaft; four rows of columns with ad screens, an airliner through the glass) + its north strip
+##   HALL (main lounge) x[-20,17] z[-2.5,29.5] (a third of its first floor area, user: "라운지만 3분의 1 규모로";
+##                12 m over its north part; over the glass side, z 9.5..29.5, no roof: the walls (over the glass facade
+##                on the apron to the south too) go on up into the dark with nothing between them, LoungeShaft; four
+##                rows of columns with ad screens, an airliner's nose through the glass) + its north strip
 ##                x[-12.2,12] z[-8.5,-2.5]
 ##   2F       the lounge's upper floor (MEZZ_Y): a gallery of one width on three sides round its atrium (UPPER), the
-##            staff doors in its north wall, two pairs of escalators from its edge down into the atrium; the shops
+##            staff doors in its north wall, a pair of escalators from its edge down into the atrium; the shops
 ##            behind its three walls (Shops: eight empty units of different sizes, the biggest facing the escalators)
 ##   OFFICE   x[-20,-12.2] z[-2.5,7.6]    STORAGE x[12,22] z[-8.5,-2.5]
 ##   SECURITY OFFICE (보안실) x[-20,-12.4] z[-21,-11], its door on the staff passage's west wall at z -16
@@ -23,41 +24,49 @@ extends Node3D
 
 const HALL_H := 12.0         # main lounge: flat ceiling over its north half (over the 2F)
 const HALL_ROOF := 21.0      # the glass facade's own frame up to here; LoungeShaft's wall on up
-const HALL_E := 44.0         # the lounge's east end wall
-const HALL_S := 52.0         # glass facade on the apron (south)
-const ROOF_Z := 22.0         # where the flat ceiling stops and the endless shaft over the glass side begins (LoungeShaft)
-const COL_X := [-6.0, 3.0, 12.0, 21.0, 30.0]   # lounge column grid (1.3 m square columns) on four rows; the east bay
-const COL_Z := [4.0, 11.0, 22.0, 33.0]          # is clear, and only the grid's edge has columns (lounge_columns)
-const AISLES := [7.5, 27.5]  # the two aisles along the hall (z), between the column rows 4|11 and 22|33
+## The lounge was 64 x 54.5 m (x -20..44, z -2.5..52); the user had it cut to a third of that floor area, its height
+## kept ("라운지만 3분의 1 규모로", "높이는 그대로"), then narrower still ("가로로 넓은 넓이 더 줄여줘"): 28 x 32 m.
+## Its north wall (the strip, security, the office, the staff doors) and its west wall (the cabin's door, the
+## aircraft hall) stay where they were; the east wall and the glass came in.
+const HALL_E := 8.0          # the lounge's east end wall
+const HALL_S := 29.5         # glass facade on the apron (south)
+const ROOF_Z := 9.5          # where the flat ceiling stops and the endless shaft over the glass side begins (LoungeShaft)
+## The lounge's columns (1.3 m square): two lines (x) on three rows (z) — the row at z 1 under the 2F, the rows at 6 and
+## 9.5 standing in the atrium a little in from its sides, clear of the escalators and of the view from the staff doors.
+## Nothing stands over the glass side (user: "가운데 기둥 4개 다 빼줘" — the row that rose into the dark there is gone).
+const COL_X := [-11.0, 2.0]
+const COL_Z := [1.0, 6.0, 9.5]
+const AISLES := [3.8, 13.0]  # the two aisles along the hall (z): under the 2F's edge, and the one from the cabin's door
 const MEZZ_Y := 4.2          # the lounge's 2F floor
 const SLAB := 0.35           # its thickness (the lounge's ceiling under it at MEZZ_Y - SLAB)
 ## The 2F over the lounge, an empty floor for what comes later: plates [x0, z0, x1, z1] round the ATRIUM (open from
 ## the lounge floor to the ceiling over the middle, and on up into the dark over the glass side, where the airliner
 ## lies: LoungeShaft). The 2F wraps the lounge
-## like a ㄷ, a gallery 7.8 m wide from the walls on all three sides: the north side the length of the hall, the east
+## like a ㄷ, a gallery 5 m wide from the walls on all three sides: the north side the length of the hall, the east
 ## and west sides down to the glass. No column stands on the 2F.
-const UPPER := [[-19.9, -2.4, 43.9, 5.5], [-19.9, 5.5, -12.0, 51.85], [36.0, 5.5, 43.9, 51.85]]
-const ATRIUM := Rect2(-12.0, 5.5, 48.0, 46.35)
-## Two pairs of escalators (an up and a down side by side, ESC_GAP apart) from the 2F's edge down into the atrium,
+const UPPER := [[-19.9, -2.4, 7.9, 2.5], [-19.9, 2.5, -15.0, 29.35], [3.0, 2.5, 7.9, 29.35]]
+const ATRIUM := Rect2(-15.0, 2.5, 18.0, 26.85)
+## A pair of escalators (an up and a down side by side, ESC_GAP apart) from the 2F's edge down into the atrium,
 ## toward the airliner (south): the pairs' centres and the lower working points' z. The down one of each pair is the
 ## one nearer the staff doors.
-const ESC_X := [6.0, 18.0]
-const ESC_FOOT_Z := 13.8
+const ESC_X := [-7.0]
+const ESC_FOOT_Z := 10.8
 const ESC_GAP := 1.66
 ## The terminal's light at night (the abandoned-hall reference): a cold, slightly cyan white. Every zone's panels and
 ## the lights that take the zone's colour (LightZone) are this; screens and signs keep their own. FILL_LIGHT is the
 ## colour of the dim omnis that stand in for bounce light: the teal the haze turns everything.
 const ZONE_LIGHT := Color(0.84, 0.95, 1.0)
 const FILL_LIGHT := Color(0.62, 0.86, 0.92)
-const DESK_AT := Vector3(-9.0, 0, 7.5)     # the broadcast desk's middle, at the far (west) end of the aisle
-const DECK_DOOR := Vector3(32.0, 4.2, -2.5)   # the staff double doors in the 2F's north wall (MEZZ_Y), facing the
+const DESK_AT := Vector3(-10.5, 0, 3.5)    # the broadcast desk's middle, at the far (west) end of the north aisle
+const DECK_DOOR := Vector3(-2.0, 4.2, -2.5)   # the staff double doors in the 2F's north wall (MEZZ_Y), facing the
                                               # atrium; the service corridor comes out here in the main story
 ## The airliner that came down on the apron and slid into the lounge (Props.aircraft frame: nose +Z): its length, the
-## frame's origin, heading (north-west, 50° off square to the glass) and roll onto its near (right) wing, so the nose
-## and that wing with its engine have broken through the facade.
+## frame's origin, heading (a little west of north, 20° off square to the glass) and roll onto its right wing: its nose
+## has broken through the facade and lies 9 m into the lounge; the wing with its engine lies out on the apron by the
+## glass (the lounge is too narrow now for the wing to come in with it).
 const WRECK_LEN := 50.0
-const WRECK_AT := Vector3(22.0, -1.9, 58.1)
-const WRECK_YAW := -2.27
+const WRECK_AT := Vector3(5.1, -1.9, 43.3)
+const WRECK_YAW := -2.8
 const WRECK_ROLL := 0.2
 const WRECK_PITCH := 0.05
 const STRIP_H := 3.65       # the strip's and security's ceilings, under the 2F's slab height (MEZZ_Y - SLAB)
@@ -77,7 +86,7 @@ const SEC_ENTRY_PLANE := Vector3(-22.0, 0, -14.6)
 const ZONE_RECTS := {
 	"office": Rect2(-20, -2.5, 7.8, 10.1),
 	"secoffice": Rect2(-20, -21, 7.6, 10),
-	"hall": [Rect2(-20, -2.5, 64, 54.5), Rect2(-12.2, -8.5, 24.2, 6)],
+	"hall": [Rect2(-20, -2.5, 28, 32), Rect2(-12.2, -8.5, 24.2, 6)],
 	"storage": Rect2(12, -8.5, 10, 6),
 	"security": Rect2(-10, -27.3, 20, 18.8),
 	"corridor": Rect2(-10, -76, 20, 48.7),
@@ -87,7 +96,7 @@ const ZONE_RECTS := {
 	"bridge0": Rect2(-1.5, -130, 3, 30),
 	# the aircraft hall west of the lounge (AirHall.RECT) and the cabin that is the way in: behind the lounge's west wall
 	# (CabinWay.cabin_rect, out to the wall's middle) and its section on the hall's landing (CabinWay.stub_rect)
-	"cabin": [Rect2(-23.75, 25.9, 3.75, 25.6), Rect2(-31.45, -24.0, 3.5, 4.0)],
+	"cabin": [Rect2(-23.75, 11.4, 3.75, 17.6), Rect2(-31.45, -24.0, 3.5, 4.0)],
 	"airhall": Rect2(-74, -24, 48, 86),
 }
 const ZONE_NAMES := {
@@ -118,7 +127,7 @@ const SPOTS := {
 	# where a person stands to work each panel (feet) and what they look at
 	"view_lights": Vector3(-18.4, 0.05, 8.9), "look_lights": Vector3(-19.78, 1.45, 8.9),
 	"view_fids": Vector3(0.0, 0.05, 6.5), "look_fids": Vector3(0.0, 5.8, -2.3),
-	"view_pa": Vector3(-9.95, 0.05, 7.5), "look_pa": Vector3(-8.8, 1.0, 7.5),
+	"view_pa": Vector3(-11.45, 0.05, 3.5), "look_pa": Vector3(-10.3, 1.0, 3.5),
 	"view_baggage": Vector3(-34.3, 0.05, -57.4), "look_baggage": Vector3(-25.5, 0.6, -59.0),
 	"view_walkway": Vector3(1.2, 0.05, -28.4), "look_walkway": Vector3(3.4, 0.2, -40.0),
 	"view_xray": Vector3(-2.35, 0.05, -18.0), "look_xray": Vector3(-3.4, 1.24, -18.0),
@@ -131,62 +140,62 @@ const SPOTS := {
 	"office_entry": Vector3(-15.2, 0.05, 11.4), "reader_stand": Vector3(-16.95, 0.05, 8.5),
 	"office_door_front": Vector3(-17.9, 0.05, 8.35), "office_doorway": Vector3(-18.1, 0.05, 6.7),
 	"office_arrive": Vector3(-17.9, 0.05, 5.2),
-	"entrance_out": Vector3(-7.8, 0, 54.8),
-	"cut_arrivals": Vector3(38.5, 0.05, 9.5),
+	"entrance_out": Vector3(-7.8, 0, 32.3),
+	"cut_arrivals": Vector3(4.0, 0.05, 5.0),
 	"boarding_hold": Vector3(-1.5, 0.05, -62.0), "boarding_look": Vector3(-1.5, 1.6, -40.0),
-	"exit_inside": Vector3(-17.0, 0.05, 49.5), "exit_look": Vector3(-17.0, 1.5, 52.0),
-	"exit_outside": Vector3(-17.0, 0.05, 54.0), "exit_out_look": Vector3(-17.0, 1.5, 58.0),
-	"lounge_start": Vector3(42.5, 0.05, 30.0),    # `--lounge`: the east end of the south aisle, looking west
+	"exit_inside": Vector3(-17.0, 0.05, 27.0), "exit_look": Vector3(-17.0, 1.5, 29.5),
+	"exit_outside": Vector3(-17.0, 0.05, 31.5), "exit_out_look": Vector3(-17.0, 1.5, 35.5),
+	"lounge_start": Vector3(7.0, 0.05, 13.0),     # `--lounge`: the east end of the south aisle, looking west
 	"airhall_start": Vector3(-29.35, 0.05, -18.5), # `--airhall`: the aircraft hall's deck by its escalator's foot
-	"cabinway_front": Vector3(-16.5, 0.05, 27.5), # `--cabinway`: the lounge's south aisle before the cabin's door
+	"cabinway_front": Vector3(-16.5, 0.05, 13.0), # `--cabinway`: the lounge's south aisle before the cabin's door
 }
 ## Views matching the sketches: [name, eye, yaw (deg, 0 = -Z), vanishing point (fraction of the image), vertical fov]
 ## (debug/level_shots.gd, `-- --level-shots <dir>` on the game scene; render at the sketch's aspect). ref_lounge is
 ## the main lounge reference (dark hall seen from its east end down the aisle; render 1536x1024).
 const SKETCH_SHOTS := [
-	["ref_lounge", Vector3(43.0, 1.65, 31.0), 90.0, Vector2(0.495, 0.59), 77.0],
-	["lounge_north", Vector3(42.5, 1.65, 8.2), 90.0, Vector2(0.495, 0.59), 77.0],
-	["lounge_crash", Vector3(35.0, 1.65, 28.0), 140.0, Vector2(0.5, 0.56), 74.0],
-	["lounge_nose", Vector3(9.0, 1.65, 33.0), 160.0, Vector2(0.5, 0.55), 72.0],
-	["lounge_west", Vector3(-6.0, 1.65, 27.5), -90.0, Vector2(0.5, 0.55), 72.0],
+	["ref_lounge", Vector3(7.2, 1.65, 14.5), 90.0, Vector2(0.495, 0.59), 77.0],
+	["lounge_north", Vector3(7.2, 1.65, 4.2), 90.0, Vector2(0.495, 0.59), 77.0],
+	["lounge_crash", Vector3(6.5, 1.65, 13.0), 128.0, Vector2(0.5, 0.56), 74.0],
+	["lounge_nose", Vector3(-6.0, 1.65, 14.0), 205.0, Vector2(0.5, 0.55), 72.0],
+	["lounge_west", Vector3(-14.0, 1.65, 13.0), -90.0, Vector2(0.5, 0.55), 72.0],
 	# looking up from the lounge floor (a 6th value = pitch, deg): toward the glass, straight up, up the glass
-	["lounge_up", Vector3(12.0, 1.65, 34.0), 180.0, Vector2(0.5, 0.5), 75.0, 55.0],
-	["lounge_zenith", Vector3(12.0, 1.65, 37.0), 180.0, Vector2(0.5, 0.5), 75.0, 86.0],
-	["lounge_glass_up", Vector3(4.0, 1.65, 47.0), 160.0, Vector2(0.5, 0.5), 75.0, 40.0],
-	["lounge_up_aisle", Vector3(30.0, 1.65, 27.5), 120.0, Vector2(0.5, 0.5), 75.0, 35.0],
-	["lounge_up_mid", Vector3(14.0, 1.65, 25.0), 180.0, Vector2(0.5, 0.5), 75.0, 62.0],     # the user's look up over the middle
-	["lounge_up_2f", Vector3(-16.0, 5.85, 40.0), 120.0, Vector2(0.5, 0.5), 75.0, 50.0],
+	["lounge_up", Vector3(-4.0, 1.65, 18.0), 180.0, Vector2(0.5, 0.5), 75.0, 55.0],
+	["lounge_zenith", Vector3(-10.0, 1.65, 20.0), 180.0, Vector2(0.5, 0.5), 75.0, 86.0],
+	["lounge_glass_up", Vector3(-8.0, 1.65, 25.0), 160.0, Vector2(0.5, 0.5), 75.0, 40.0],
+	["lounge_up_aisle", Vector3(5.0, 1.65, 13.0), 120.0, Vector2(0.5, 0.5), 75.0, 35.0],
+	["lounge_up_mid", Vector3(-3.0, 1.65, 12.0), 180.0, Vector2(0.5, 0.5), 75.0, 62.0],     # the user's look up over the middle
+	["lounge_up_2f", Vector3(-17.5, 5.85, 22.0), 120.0, Vector2(0.5, 0.5), 75.0, 50.0],
 	# the service corridor (ServiceHall at (-160, -320, 0); built for the main story: run these with `--chapter ch1`)
 	["hall_ref", Vector3(-159.8, -318.38, 1.4), 180.0, Vector2(0.5, 0.53), 60.0],
 	["hall_far", Vector3(-160.3, -318.38, 30.0), 180.0, Vector2(0.5, 0.53), 62.0],
 	["hall_back", Vector3(-160.0, -318.38, 40.0), 0.0, Vector2(0.5, 0.53), 66.0],
-	["deck_arrive", Vector3(32.0, 5.85, -0.9), 180.0, Vector2(0.5, 0.66), 74.0],
-	["upper_back", Vector3(12.0, 5.85, 5.0), 0.0, Vector2(0.5, 0.55), 74.0],
-	["upper_ring", Vector3(40.0, 5.85, 50.0), 25.0, Vector2(0.5, 0.55), 74.0],
-	["escalators_1f", Vector3(12.0, 1.65, 31.0), 0.0, Vector2(0.5, 0.55), 72.0],
-	["upper_north", Vector3(42.0, 5.85, 1.6), 90.0, Vector2(0.5, 0.55), 74.0],
-	["upper_west", Vector3(-16.0, 5.85, 46.0), 0.0, Vector2(0.5, 0.55), 74.0],
-	["atrium_from_2f", Vector3(-13.5, 5.85, 24.0), -110.0, Vector2(0.5, 0.62), 74.0],
-	["escalator_down", Vector3(18.83, 5.85, 3.9), 180.0, Vector2(0.5, 0.62), 72.0],
+	["deck_arrive", Vector3(-2.0, 5.85, -0.9), 180.0, Vector2(0.5, 0.66), 74.0],
+	["upper_back", Vector3(-7.0, 5.85, 2.0), 0.0, Vector2(0.5, 0.55), 74.0],
+	["upper_ring", Vector3(6.0, 5.85, 28.0), 25.0, Vector2(0.5, 0.55), 74.0],
+	["escalators_1f", Vector3(-7.0, 1.65, 18.0), 0.0, Vector2(0.5, 0.55), 72.0],
+	["upper_north", Vector3(7.0, 5.85, 0.0), 90.0, Vector2(0.5, 0.55), 74.0],
+	["upper_west", Vector3(-17.5, 5.85, 27.5), 0.0, Vector2(0.5, 0.55), 74.0],
+	["atrium_from_2f", Vector3(-16.0, 5.85, 14.0), -110.0, Vector2(0.5, 0.62), 74.0],
+	["escalator_down", Vector3(-6.17, 5.85, 1.6), 180.0, Vector2(0.5, 0.62), 72.0],
 	# the 2F's empty shop units (Shops): down the west and east galleries, then each unit from its opening (n2, the big
 	# one, from the escalators' tops and inside)
-	["shops_west", Vector3(-13.0, 5.85, 46.0), 0.0, Vector2(0.5, 0.55), 74.0],
-	["shops_east", Vector3(37.0, 5.85, 46.0), 0.0, Vector2(0.5, 0.55), 74.0],
-	["unit_n1", Vector3(-16.1, 5.85, 4.0), 0.0, Vector2(0.5, 0.55), 72.0],
-	["unit_n2", Vector3(12.6, 5.85, 4.6), 0.0, Vector2(0.5, 0.58), 74.0],
-	["unit_n2_in", Vector3(12.6, 5.85, -3.5), 0.0, Vector2(0.5, 0.56), 74.0],
-	["unit_n3", Vector3(39.5, 5.85, 4.5), 0.0, Vector2(0.5, 0.55), 74.0],
+	["shops_west", Vector3(-16.5, 5.85, 27.5), 0.0, Vector2(0.5, 0.55), 74.0],
+	["shops_east", Vector3(5.5, 5.85, 27.5), 0.0, Vector2(0.5, 0.55), 74.0],
+	["unit_n1", Vector3(-17.5, 5.85, 2.0), 0.0, Vector2(0.5, 0.55), 72.0],
+	["unit_n2", Vector3(-7.0, 5.85, 2.2), 0.0, Vector2(0.5, 0.58), 74.0],
+	["unit_n2_in", Vector3(-7.0, 5.85, -3.5), 0.0, Vector2(0.5, 0.56), 74.0],
+	["unit_n3", Vector3(4.8, 5.85, 2.0), 0.0, Vector2(0.5, 0.55), 74.0],
 	["unit_w1", Vector3(-15.8, 5.85, 3.1), 90.0, Vector2(0.5, 0.55), 72.0],
-	["unit_e1", Vector3(39.5, 5.85, 5.5), -90.0, Vector2(0.5, 0.55), 72.0],
-	["unit_e2", Vector3(39.5, 5.85, 17.0), -90.0, Vector2(0.5, 0.55), 72.0],
-	["unit_e3_in", Vector3(44.6, 5.85, 31.0), -90.0, Vector2(0.5, 0.55), 74.0],
+	["unit_e1", Vector3(4.0, 5.85, 5.0), -90.0, Vector2(0.5, 0.55), 72.0],
+	["unit_e2", Vector3(4.0, 5.85, 15.25), -90.0, Vector2(0.5, 0.55), 72.0],
+	["unit_e3_in", Vector3(10.0, 5.85, 26.0), -90.0, Vector2(0.5, 0.55), 74.0],
 	# the way in (CabinWay): its door from the lounge's south aisle, the cabin from the door looking forward (the cabin
 	# reference), deeper into the haze, at the join (all haze); out of it in the hall's section (all haze), stepping
 	# out of its cut end, and the section from the deck
-	["cabinway_door", Vector3(-12.0, 1.65, 27.5), 90.0, Vector2(0.5, 0.55), 70.0],
-	["cabinway_ref", Vector3(-21.65, 1.65, 28.4), 180.0, Vector2(0.49, 0.28), 70.0],
-	["cabinway_deep", Vector3(-21.65, 1.65, 45.5), 180.0, Vector2(0.5, 0.4), 70.0],
-	["cabinway_join", Vector3(-21.65, 1.65, 49.3), 180.0, Vector2(0.5, 0.5), 70.0],
+	["cabinway_door", Vector3(-12.0, 1.65, 13.0), 90.0, Vector2(0.5, 0.55), 70.0],
+	["cabinway_ref", Vector3(-21.65, 1.65, 13.9), 180.0, Vector2(0.49, 0.28), 70.0],
+	["cabinway_deep", Vector3(-21.65, 1.65, 23.0), 180.0, Vector2(0.5, 0.4), 70.0],
+	["cabinway_join", Vector3(-21.65, 1.65, 26.8), 180.0, Vector2(0.5, 0.5), 70.0],
 	["stub_join", Vector3(-29.35, 1.65, -21.8), 180.0, Vector2(0.5, 0.5), 70.0],
 	["stub_out", Vector3(-29.35, 1.65, -20.3), 170.0, Vector2(0.5, 0.45), 70.0],
 	["stub_mouth", Vector3(-27.2, 1.65, -9.0), -12.0, Vector2(0.5, 0.55), 70.0],
@@ -213,7 +222,7 @@ const NAV := {
 	"office_door_in": [Vector3(-18.2, 0, 6.2), ["office", "office_door_out"]],
 	"office_door_out": [Vector3(-18.2, 0, 9.2), ["office_door_in", "hall_sw"]],
 	"hall_sw": [Vector3(-11.0, 0, 10.0), ["office_door_out", "entrance_in", "hall_s"]],
-	"entrance_in": [Vector3(-7.8, 0, 50.4), ["hall_sw"]],
+	"entrance_in": [Vector3(-7.8, 0, 27.9), ["hall_sw"]],
 	"hall_s": [Vector3(-4.8, 0, 12.3), ["hall_sw", "hall_c"]],
 	"hall_c": [Vector3(-1.5, 0, 7.5), ["hall_s", "desk_s", "hall_w"]],
 	"desk_s": [Vector3(-7.6, 0, 9.6), ["hall_c", "hall_ne"]],
@@ -559,7 +568,7 @@ func _build_office() -> void:
 
 
 # --------------------------------------------------------------------------------------------
-## Main lounge (the lounge reference, SKETCH_SHOTS ref_lounge from its east end): a 64 x 54 m hall, the glass facade
+## Main lounge (the lounge reference, SKETCH_SHOTS ref_lounge from its east end): a 37 x 32 m hall, the glass facade
 ## on the apron to the south and over its glass side no roof, only walls going on up into black air (LoungeShaft:
 ## the free-standing column row with them; SKETCH_SHOTS lounge_up / lounge_zenith), four rows of graphite columns carrying digital ad screens,
 ## two aisles under hanging Departures / Arrivals signs and a grid of small downlights, black seat rows in two bands,
@@ -590,11 +599,10 @@ func _build_hall() -> void:
 			Airliner.DOOR_H + 0.02]])      # the cabin's door (CabinWay: its lining runs through)
 	Geo.wall(self, Vector2(HALL_E, -2.5), Vector2(HALL_E, HALL_S), MEZZ_Y - 0.1, wm)
 	# north: the lounge floor's back wall, up into the 2F's slab (the 2F's north wall stands on it): the opening into
-	# the strip, the storage room's own wall (x 12..22) with this one on top, then a plain wall
+	# the strip, then the storage room's own wall (x 12..22, on past the lounge's east end) with this one on top
 	var top := MEZZ_Y - 0.1
 	Geo.wall(self, Vector2(-12.2, -2.5), Vector2(12, -2.5), top, wm, 0.4, [[7.2, 17.2, STRIP_H]])
-	Geo.wall(self, Vector2(12, -2.5), Vector2(22, -2.5), top - 3.2, wm, 0.4, [], 3.2)
-	Geo.wall(self, Vector2(22, -2.5), Vector2(HALL_E, -2.5), top, wm)
+	Geo.wall(self, Vector2(12, -2.5), Vector2(HALL_E, -2.5), top - 3.2, wm, 0.4, [], 3.2)
 	# strip: west end, storage door east, security + staff passage north
 	Geo.wall(self, Vector2(-12.2, -8.5), Vector2(-12.2, -2.5), STRIP_H, wm)
 	Geo.wall(self, Vector2(12, -8.5), Vector2(12, -2.5), STRIP_H, wm, 0.4, [[2.1, 3.9, 2.4]])
@@ -618,7 +626,7 @@ func _build_hall() -> void:
 	for cz: float in COL_Z:
 		if cz > ROOF_Z:
 			continue
-		Geo.box(self, Vector3(12.0, HALL_H - 0.4, cz), Vector3(HALL_E + 20.0, 1.0, 0.7), Mats.get_mat("column"), false)
+		Geo.box(self, Vector3((HALL_E - 20.0) * 0.5, HALL_H - 0.4, cz), Vector3(HALL_E + 20.0, 1.0, 0.7), Mats.get_mat("column"), false)
 	for c: Vector3 in lounge_columns():
 		_lounge_column(c, 1.0 if COL_Z.find(c.z) % 2 == 0 else -1.0)
 	_hall_lights()
@@ -632,76 +640,61 @@ func _build_hall() -> void:
 	desk.transform = desk_xform()
 	warp.desk = desk
 	LevelKit.wall_sign(self, Vector3(-12.0, 3.4, 4.2), 90.0, "안내  INFORMATION", Vector2(3.6, 0.75))
-	# seat rows: back-to-back pairs in blocks between the columns (walk through the gaps) in the two seating bands
-	# (between the rows at 11 and 22, and from the row at 33 to the glass), a row facing the glass at the front; none
-	# in front of the entrance or the emergency exit, none where the airliner lies or under the escalators (one block
-	# between their pairs instead). One row each on the north side.
-	for x0: float in [-16.0, -1.5, 7.5, 12.0, 16.5, 25.5, 34.5, 40.8]:
-		var n := 7 if x0 > 40.0 else 10
-		for zz: float in [14.4, 18.6, 37.0, 41.2, 45.4]:
+	# seat rows: back-to-back pairs in blocks (walk through the gaps) in the two seating bands (between the column rows
+	# at 6 and 9.5, and from the cabin's aisle to the glass), a row facing the glass at the front; none in front of the
+	# office's wall, the entrance or the emergency exit, none where the airliner lies or under the escalators. One row
+	# on the north side, under the 2F.
+	for band: Array in [[8.3, [-2.5, 5.0]], [20.3, [-15.5, -8.5, -1.5, 5.0]], [24.3, [-15.5, -8.5, -1.5, 5.0]]]:
+		var zz: float = band[0]
+		var n := 6
+		for x0: float in band[1]:
 			var under := false
 			for r: Rect2 in escalator_rects(0.3):
 				under = under or r.intersects(Rect2(x0 - n * 0.31, zz - 1.1, n * 0.62, 1.6))
-			if under or (x0 == 12.0 and zz > 30.0):
+			if under:
 				continue
 			_seat_row(Vector3(x0, 0, zz), n, 0.0, crushed)
 			_seat_row(Vector3(x0, 0, zz - 0.58), n, PI, crushed)
-		if x0 > -10.0 and x0 != 12.0:
-			_seat_row(Vector3(x0, 0, 49.2), n, 0.0, crushed)
-	for x0: float in [7.5, 39.0]:
-		_seat_row(Vector3(x0, 0, 0.9), 8, 0.0, crushed)
+	for x0: float in [-1.5, 5.0]:
+		_seat_row(Vector3(x0, 0, 27.4), 6, 0.0, crushed)
+	_seat_row(Vector3(-7.6, 0, -1.4), 6, 0.0, crushed)       # (clear of the strip's opening, x -5..5)
 	# bins at the ends of the seat blocks and against the walls, planters in the facade corners
-	for p: Vector3 in [Vector3(37.9, 0, 16.5), Vector3(20.0, 0, 16.5), Vector3(2.0, 0, 16.5), Vector3(-5.2, 0, 13.0),
-			Vector3(-12.6, 0, 39.1), Vector3(2.0, 0, 39.1), Vector3(37.9, 0, 39.1), Vector3(5.85, 0, -1.95),
-			Vector3(-6.6, 0, -1.95), Vector3(43.3, 0, 0.0)]:
+	for p: Vector3 in [Vector3(7.4, 0, 8.0), Vector3(-12.0, 0, 22.3), Vector3(-5.0, 0, 22.3),
+			Vector3(1.75, 0, 22.3), Vector3(-5.6, 0, -1.95), Vector3(7.5, 0, 1.0)]:
 		if not _crushed_at(crushed, p) and not _under_escalator(p, 0.6):
 			Props.trash_bin(self, p)
-	for p in [Vector3(-19.2, 0, HALL_S - 0.8), Vector3(-11.6, 0, HALL_S - 0.8), Vector3(43.1, 0, HALL_S - 0.9)]:
+	for p in [Vector3(-19.2, 0, HALL_S - 0.8), Vector3(-11.6, 0, HALL_S - 0.8), Vector3(HALL_E - 0.9, 0, HALL_S - 0.9)]:
 		Props.planter(self, p)
 	# signage: Departures / Arrivals across the north aisle seen from the east end (from column to column, below the
 	# 2F's level so it does not stand in the view from the staff doors), exit and lounge under the 2F in the north-east
-	# corner, security further down (hung from the ceiling between the escalators), the staff sign by the office at the
-	# far end
+	# corner, security over the atrium west of the escalators (hung from the ceiling, edge-on to the staff doors), the
+	# staff sign by the office at the far end
 	var under := MEZZ_Y - SLAB                   # the ceiling under the 2F
-	Props.wayfinding_sign(self, Vector3(30.5, 2.95, 7.5), PI / 2, Vector2(7.8, 1.15), [
-		["arrow", 90.0, 0.62, Vector2(-3.4, 0)],
-		["tile", "icon_departures", 0.78, Vector2(-2.6, 0)],
-		["text", "출발", 60, Vector2(-1.35, 0.2)],
-		["text", "Departures", 44, Vector2(-1.35, -0.22)],
+	Props.wayfinding_sign(self, Vector3(COL_X[1] + 0.5, 2.95, (COL_Z[0] + COL_Z[1]) * 0.5), PI / 2, Vector2(5.0, 1.15), [
+		["arrow", 90.0, 0.42, Vector2(-1.55, 0)],
+		["text", "출발", 50, Vector2(-0.78, 0.2)],
+		["text", "Departures", 34, Vector2(-0.78, -0.22)],
 		["rule", Vector2(0, 0)],
-		["text", "도착", 60, Vector2(1.35, 0.2)],
-		["text", "Arrivals", 44, Vector2(1.35, -0.22)],
-		["tile", "icon_luggage", 0.78, Vector2(2.6, 0)],
-		["arrow", 0.0, 0.62, Vector2(3.4, 0)],
+		["text", "도착", 50, Vector2(0.78, 0.2)],
+		["text", "Arrivals", 34, Vector2(0.78, -0.22)],
+		["arrow", 0.0, 0.42, Vector2(1.55, 0)],
 	])
-	Props.wayfinding_sign(self, Vector3(35.5, 3.0, 0.4), PI / 2, Vector2(5.0, 0.95), [
-		["arrow", 180.0, 0.5, Vector2(-2.05, 0)],
-		["text", "출구 · 교통센터", 48, Vector2(-0.95, 0.17)],
-		["text", "Exit · Transport", 34, Vector2(-0.95, -0.2)],
-		["rule", Vector2(0.25, 0)],
-		["text", "2층 라운지", 48, Vector2(1.3, 0.17)],
-		["text", "Lounge 2F", 34, Vector2(1.3, -0.2)],
-		["arrow", 90.0, 0.5, Vector2(2.15, 0)],
+	Props.wayfinding_sign(self, Vector3(HALL_E - 1.5, 3.0, 0.0), PI / 2, Vector2(4.6, 0.95), [
+		["arrow", 180.0, 0.46, Vector2(-1.9, 0)],
+		["text", "출구 · 교통센터", 44, Vector2(-0.88, 0.17)],
+		["text", "Exit · Transport", 32, Vector2(-0.88, -0.2)],
+		["rule", Vector2(0.23, 0)],
+		["text", "2층 라운지", 44, Vector2(1.2, 0.17)],
+		["text", "Lounge 2F", 32, Vector2(1.2, -0.2)],
+		["arrow", 90.0, 0.46, Vector2(1.98, 0)],
 	], under)
-	Props.wayfinding_sign(self, Vector3(12.0, 6.0, 9.6), PI / 2, Vector2(6.4, 1.0), [
+	Props.wayfinding_sign(self, Vector3(-13.0, 6.0, 6.0), PI / 2, Vector2(6.4, 1.0), [
 		["tile", "icon_departures", 0.68, Vector2(-2.65, 0)],
 		["text", "출국 · 보안검색", 54, Vector2(-0.2, 0.18)],
 		["text", "Departures · Security", 38, Vector2(-0.2, -0.2)],
 		["arrow", 0.0, 0.55, Vector2(2.65, 0)],
 	], HALL_H)
-	# the south aisle (under the atrium): exit to the left (the entrance at the west end of the glass), departures ahead
-	# (nothing to hang it from over the glass side: it spans the columns at x 30, z 22 and 33, its ends in them, like
-	# the north aisle's)
-	Props.wayfinding_sign(self, Vector3(30.5, 3.3, AISLES[1]), PI / 2, Vector2(11.0, 1.15), [
-		["arrow", 180.0, 0.62, Vector2(-4.25, 0)],
-		["text", "출구 · 교통센터", 54, Vector2(-2.2, 0.2)],
-		["text", "Exit · Transport", 40, Vector2(-2.2, -0.22)],
-		["rule", Vector2(0, 0)],
-		["tile", "icon_departures", 0.78, Vector2(0.95, 0)],
-		["text", "출발", 60, Vector2(2.5, 0.2)],
-		["text", "Departures", 44, Vector2(2.5, -0.22)],
-		["arrow", 90.0, 0.62, Vector2(4.25, 0)],
-	])
+	# (the south aisle has no sign now: over the glass side there is nothing to hang one from, and no column to span)
 	signs["hall_departures"] = Props.hanging_sign(self, Vector3(0, 3.0, -5.0), 0.0, Vector2(6.0, 0.9), [
 		["↑  출국 · 보안검색", 60, Color(1, 1, 1), Vector2(-0.6, 0.18)],
 		["DEPARTURES · SECURITY", 40, Color(0.85, 0.88, 0.95), Vector2(-0.6, -0.24)],
@@ -710,7 +703,7 @@ func _build_hall() -> void:
 	signs["hall_baggage"] = Props.hanging_sign(self, Vector3(-7.4, 3.05, -6.2), 0.0, Vector2(4.6, 0.8), [
 		["◀  수하물 수취  BAGGAGE CLAIM", 44, Color(1, 1, 1), Vector2(0, 0.0)],
 	], STRIP_H)
-	signs["hall_staff"] = Props.hanging_sign(self, Vector3(-13.0, 3.1, 10.6), PI / 2, Vector2(4.4, 0.8), [
+	signs["hall_staff"] = Props.hanging_sign(self, Vector3(-16.2, 3.1, 10.2), PI / 2, Vector2(4.4, 0.8), [
 		["◀  시설관리실  STAFF ONLY", 44, Color(1, 1, 1), Vector2(0, 0.0)],
 	], under)
 	LevelKit.wall_sign(self, Vector3(-11.05, 2.95, -8.28), 0.0, "직원 통로 · 수하물 수취\nSTAFF · BAGGAGE CLAIM", Vector2(1.7, 0.5))   # clear of the west wall
@@ -801,13 +794,13 @@ func _hall_lights() -> void:
 	# one throwing light
 	var low := MEZZ_Y - SLAB - 0.02
 	var k := 0
-	for rz: float in [0.2, 2.8]:
+	for rz: float in [-0.9, 1.4]:
 		var x := -10.0
 		while x < HALL_E - 1.0:
 			z.add_downlight(Vector3(x, low, rz), 0.36, k % 2 == 0, 4.2, 7.5, 50.0)
 			k += 1
 			x += 5.0
-	for gx: float in [-17.5, -14.5, 38.5, 41.5]:
+	for gx: float in [-18.5, -16.5, HALL_E - 3.5, HALL_E - 1.5]:
 		var gz := ATRIUM.position.y + 2.5
 		while gz < HALL_S - 1.0:
 			z.add_downlight(Vector3(gx, low, gz), 0.36, k % 2 == 0, 4.2, 7.5, 50.0)
@@ -815,7 +808,7 @@ func _hall_lights() -> void:
 			gz += 5.0
 	# the 2F's ceiling and the atrium's (over the glass side there is none: LoungeShaft.lights): [z, every nth one lit,
 	# spot energy]
-	var rows := [[1.6, 2, 6.5], [6.0, 2, 7.0], [9.0, 2, 7.0], [14.4, 3, 7.5], [18.6, 3, 7.5]]
+	var rows := [[0.0, 2, 6.5], [4.0, 2, 7.0], [8.0, 3, 7.5]]
 	for r in rows.size():
 		var rz: float = rows[r][0]
 		var x := -16.0
@@ -825,11 +818,11 @@ func _hall_lights() -> void:
 			i += 1
 			x += 5.0
 	# fills standing in for the bounce: on the lounge floor under the 2F, on the 2F, in the atrium
-	for fx: float in [-8.0, 6.0, 20.0, 34.0]:
-		for f: Array in [[Vector3(fx, 3.0, AISLES[0]), 0.45, 12.0], [Vector3(fx + 7.0, 3.0, 16.5), 0.45, 12.0],
-				[Vector3(fx, 3.0, AISLES[1]), 0.45, 12.0], [Vector3(fx, MEZZ_Y + 4.0, 1.6), 0.7, 18.0],
-				[Vector3(fx + 7.0, MEZZ_Y + 4.0, 26.0), 0.7, 18.0], [Vector3(fx + 7.0, 8.0, 42.0), 0.7, 18.0],
-				[Vector3(fx, 9.0, 48.0), 0.6, 16.0]]:
+	for fx: float in [-13.0, -1.0]:
+		for f: Array in [[Vector3(fx, 3.0, AISLES[0]), 0.45, 12.0], [Vector3(fx + 5.0, 3.0, 8.0), 0.45, 12.0],
+				[Vector3(fx, 3.0, AISLES[1]), 0.45, 12.0], [Vector3(fx, MEZZ_Y + 4.0, 0.0), 0.7, 18.0],
+				[Vector3(fx + 5.0, MEZZ_Y + 4.0, 16.0), 0.7, 18.0], [Vector3(fx + 5.0, 8.0, 22.0), 0.7, 18.0],
+				[Vector3(fx, 9.0, 26.0), 0.6, 16.0]]:
 			var o := Geo.omni(self, f[0], FILL_LIGHT, f[1], f[2])
 			o.light_specular = 0.0
 			o.light_volumetric_fog_energy = 0.0
@@ -845,17 +838,17 @@ func _hall_lights() -> void:
 			Vector3(DECK_DOOR.x - 1.5, MEZZ_Y, DECK_DOOR.z + 2.6), ZONE_LIGHT, 4.5, 15.0, 55.0)
 	door_light.light_volumetric_fog_energy = 0.3
 	z.add_light(door_light)
-	# two spots up in the dark over the glass side left on over where the airliner came to rest: its nose and its wing
-	# in the light
-	for s: Array in [[Vector3(8.0, LoungeShaft.LAMP_Y, 38.5), _wreck_point(Vector3(0, 2.0, 24.0))],
-			[Vector3(26.0, LoungeShaft.LAMP_Y, 38.5), _wreck_point(Vector3(-12.0, 3.0, 4.0))]]:
-		var sp := Geo.spot(self, s[0], s[1], ZONE_LIGHT, 8.0, 38.0, 32.0)
+	# two spots up in the dark over the glass side left on over where the airliner came to rest: its nose and its hull
+	# where it broke in, in the light (each from a little north-east of it)
+	for target: Vector3 in [_wreck_point(Vector3(0, 2.0, 24.0)), _wreck_point(Vector3(0, 3.0, 19.0))]:
+		var from := Vector3(target.x + 3.5, LoungeShaft.LAMP_Y, target.z - 4.0)
+		var sp := Geo.spot(self, from, target, ZONE_LIGHT, 8.0, 38.0, 32.0)
 		sp.light_volumetric_fog_energy = 0.0        # no glow: looking up along them the middle stays black
 		z.add_light(sp)
 	LoungeShaft.lights(self, z)
 	for sx: float in [-6.0, 0.0, 6.0]:
 		z.add_panel(Vector3(sx, STRIP_H - 0.08, -5.5), Vector2(0.5, 2.4), sx == 0.0, 1.4, 10.0)
-	for h: Vector3 in [Vector3(4, 7, 7), Vector3(30, 7, 7), Vector3(4, 8, 30), Vector3(30, 8, 30)]:
+	for h: Vector3 in [Vector3(-12, 7, 4), Vector3(2, 7, 4), Vector3(-12, 8, 20), Vector3(2, 8, 20)]:
 		z.add_hum(h, -19.0)
 	z.add_hum(Vector3(0, 3.2, -5.5), -20.0)
 
@@ -1010,7 +1003,7 @@ static func build_kiosk() -> Node3D:
 	return k
 
 
-## Two pairs of stopped escalators from the 2F's edge down into the atrium, toward the airliner (Escalator, rising
+## A pair of stopped escalators from the 2F's edge down into the atrium, toward the airliner (Escalator, rising
 ## north): in each pair an up and a down side by side, the up one belted off at its foot (the clutter on its outer side).
 func _escalator() -> void:
 	for u: Array in escalator_units():
@@ -1968,7 +1961,7 @@ func _wreck() -> void:
 			if body is StaticBody3D:
 				body.collision_layer = Geo.LAYER_WORLD
 				body.collision_mask = 0
-	var fill := Geo.spot(wreck, Vector3(30.0, 21.0, HALL_S + 1.5), Vector3(30.0, 2.0, 68.0), Color(0.6, 0.7, 0.92), 7.0, 40.0, 40.0)
+	var fill := Geo.spot(wreck, Vector3(WRECK_AT.x + 8.0, 21.0, HALL_S + 1.5), Vector3(WRECK_AT.x + 8.0, 2.0, HALL_S + 16.0), Color(0.6, 0.7, 0.92), 7.0, 40.0, 40.0)
 	fill.light_volumetric_fog_energy = 0.2
 	fill.light_specular = 0.3
 	outside_lights.append(fill)
@@ -2190,9 +2183,9 @@ func _build_facility_systems() -> void:
 	fids.short_name = "FIDS-01"
 	fids.zone = "hall"
 	add_child(fids)
-	fids.position = Vector3(0.0, MEZZ_Y + 3.6, -2.07)
+	fids.position = Vector3(-13.0, MEZZ_Y + 3.6, -2.07)     # between units n1 and n2 (Shops)
 	fids.build(4.4, 2.05, true)
-	fids.control_box.position = Vector3(-5.95, MEZZ_Y + 1.45, -2.23) - fids.position
+	fids.control_box.position = Vector3(-15.45, MEZZ_Y + 1.45, -2.23) - fids.position
 	facilities["fids"] = fids
 	# arrivals board hung from the ceiling over the 2F's edge west of the escalators, turned to the atrium: seen from
 	# the lounge floor and from the 2F, and not in the way of the view from the staff doors
@@ -2200,8 +2193,8 @@ func _build_facility_systems() -> void:
 	arrivals.id = "fids_arr"
 	arrivals.zone = "hall"
 	add_child(arrivals)
-	arrivals.position = Vector3(-3.0, 7.6, ATRIUM.position.y + 0.45)     # west of the escalators, out of the view from the staff doors
-	arrivals.rotation.y = deg_to_rad(20.0)
+	arrivals.position = Vector3(ATRIUM.position.x + 0.45, 7.6, 7.0)     # over the west gallery's edge, out of the view from the staff doors
+	arrivals.rotation.y = deg_to_rad(70.0)
 	arrivals.build(4.4, 2.05, false)
 	arrivals.screen.title = "도착  ARRIVALS"
 	arrivals.screen.icon = load("res://assets/textures/level/icon_arrivals.png")
@@ -2295,7 +2288,7 @@ func _build_facility_systems() -> void:
 	emergency_light_root = Node3D.new()
 	add_child(emergency_light_root)
 	emergency_light_root.visible = false
-	for p in [Vector3(-17, 2.4, HALL_S - 1.5), Vector3(-2, 3, 6), Vector3(26, 3, 9), Vector3(10, 3, 30), Vector3(-24, 3, -50), Vector3(-42, 2.5, -50)]:
+	for p in [Vector3(-17, 2.4, HALL_S - 1.5), Vector3(-2, 3, 6), Vector3(4, 3, 4), Vector3(0, 3, 20), Vector3(-24, 3, -50), Vector3(-42, 2.5, -50)]:
 		var el := Geo.omni(emergency_light_root, p, Color(0.2, 1.0, 0.35), 0.6, 9.0)
 		el.light_volumetric_fog_energy = 1.5
 
@@ -2371,7 +2364,7 @@ func reveal_gate0() -> void:
 ## fades with its zone's lights so a dark hall does not keep shining.
 func _build_probes() -> void:
 	var defs := {
-		"hall": [Vector3(12, HALL_ROOF * 0.5, (HALL_S - 2.5) * 0.5), Vector3(64, HALL_ROOF, HALL_S + 2.5)],
+		"hall": [Vector3((HALL_E - 20.0) * 0.5, HALL_ROOF * 0.5, (HALL_S - 2.5) * 0.5), Vector3(HALL_E + 20.0, HALL_ROOF, HALL_S + 2.5)],
 		"security": [Vector3(0, SEC_H * 0.5, -17.9), Vector3(20, SEC_H, 18.8)],
 		"corridor": [Vector3(0, 2.25, -51.6), Vector3(20, 4.5, 48.7)],
 		"baggage": [Vector3(-23, 1.8, -51.8), Vector3(26, 3.6, 24.4)],

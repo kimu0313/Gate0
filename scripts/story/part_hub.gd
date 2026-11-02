@@ -125,13 +125,13 @@ func _came_back(b: String) -> void:
 func _announce() -> void:
 	await d.wait(1.0)
 	if _returns == 1:
-		await d.pa_at(Vector3(12.0, 8.0, 12.0), ["pa_v3_000_ready_ko"],
+		await d.pa_at(Vector3(0.0, 8.0, 6.0), ["pa_v3_000_ready_ko"],
 			["서해항공 Flight 000편이 출발 준비를 마쳤습니다. 아직 탑승하지 않으신 승객께서는, 0번 탑승구로 오시기 바랍니다."], 0.6)
 	elif _returns == 2:
-		await d.pa_at(Vector3(12.0, 8.0, 12.0), ["pa_v3_000_wait_ko"],
+		await d.pa_at(Vector3(0.0, 8.0, 6.0), ["pa_v3_000_wait_ko"],
 			["Flight 000편은, 승객 한 분을 기다리고 있습니다. 승객님, 0번 탑승구로 오시기 바랍니다."], 0.6)
 	elif _returns == 3:
-		Snd.play_at("cart_rattle_2", Vector3(30.0, 1.0, 40.0), 2.0, 0.85, 22.0, 120.0)
+		Snd.play_at("cart_rattle_2", Vector3(2.0, 1.0, 24.0), 2.0, 0.85, 22.0, 120.0)
 	# whichever way is still open sounds again, so you know where it is
 	for k: String in ["a", "c", "b"]:
 		if not Game.flag("done_" + k):
@@ -184,12 +184,12 @@ func _trace(b: String) -> void:
 	match b:
 		"a":
 			# the cabin's pale green haze, spreading across the floor from its door
-			t._smoke(AABB(Vector3(-20.0, 0.0, 16.0), Vector3(18.0, 1.5, 24.0)), 91, 0.4, Color(0.84, 0.92, 0.82), Color(0.2, 0.26, 0.2))
+			t._smoke(AABB(Vector3(-20.0, 0.0, 6.0), Vector3(14.0, 1.5, 21.0)), 91, 0.4, Color(0.84, 0.92, 0.82), Color(0.2, 0.26, 0.2))
 		"b":
 			# the same door, here and there on the walls, opening on nothing
-			for xf: Transform3D in [Transform3D(Basis(Vector3.UP, -PI / 2), Vector3(43.78, 0, 12.0)),
-					Transform3D(Basis(Vector3.UP, -PI / 2), Vector3(43.78, 0, 28.0)),
-					Transform3D(Basis(), Vector3(26.0, 0, -2.28)), Transform3D(Basis(Vector3.UP, PI / 2), Vector3(-19.78, 0, 15.0))]:
+			for xf: Transform3D in [Transform3D(Basis(Vector3.UP, -PI / 2), Vector3(Terminal.HALL_E - 0.22, 0, 5.8)),
+					Transform3D(Basis(Vector3.UP, -PI / 2), Vector3(Terminal.HALL_E - 0.22, 0, 25.9)),
+					Transform3D(Basis(), Vector3(-11.0, 0, -2.28)), Transform3D(Basis(Vector3.UP, PI / 2), Vector3(-19.78, 0, 24.0))]:
 				var door := ServiceHall.double_door(t, xf)
 				(door.use as Interactable).enabled = false
 				(door.use as Interactable).collision_layer = 0
@@ -198,7 +198,7 @@ func _trace(b: String) -> void:
 			# bags nobody came for, across the floor and up the stopped escalators
 			for i in 16:
 				var bag := Props.suitcase(t, Color.from_hsv(rng.randf(), rng.randf_range(0.1, 0.4), rng.randf_range(0.18, 0.45)))
-				bag.position = Vector3(rng.randf_range(-8.0, 40.0), 0.0, rng.randf_range(6.0, 30.0))
+				bag.position = Vector3(rng.randf_range(-14.0, 6.0), 0.0, rng.randf_range(4.0, 26.0))
 				bag.rotation.y = rng.randf() * TAU
 
 

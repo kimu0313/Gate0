@@ -41,6 +41,10 @@ const FOG_MAX := 4.0         # the depth fog's density at the join
 const HAZE := Color(1.45, 1.75, 1.47)  # the haze's glow at full light (brighter than the hall's): the white-out's colour
 const LAMP := Color(1.0, 0.97, 0.9)    # the cabins' ceiling lights (the reference's cream cabin; the green is the haze's)
 const LAMP_GAIN := 1.7
+## The cabin is dark down its aisle: its ceiling lights are off and only the reading light over each seat row is on,
+## this strong (user, of the lit cabin: "통로 불은 다 끄고 어둡게, 의자 위에 불만 켜줘"); the stub keeps its lights.
+## PartFog's one lamp over the seat with the boarding pass is far brighter and warmer than these, so it still shows.
+const READING := 1.6
 const LEAF := Color(0.84, 0.85, 0.84)
 const LOOP_Z := 19.9         # the long aisle: on past here (world z, short of where the white-out starts) and you are...
 const LOOP_STEP := 4.0       # ...this far back: whole rows, windows and lights, so nothing jumps
@@ -118,7 +122,8 @@ func _build(t: Terminal) -> void:
 	var spec := {"sec": Airliner.NARROW, "cz0": Z_FWD, "cz1": Z_AFT, "fwd_end": "plain", "door_z": Z_DOOR,
 			"door_side": -1.0, "lining_x": LINING, "doors": [Z_DOOR], "seat_z0": Z_SEATS, "seat_z1": Z_DOOR - 1.0,
 			"bins": Vector2(Z_FWD, Z_DOOR - 0.85), "light_z0": Airliner.CAB_Z0 + 1.1, "light_tint": LAMP,
-			"light_gain": LAMP_GAIN, "seat_pitch": 0.8, "light_pitch": 2.0, "joint_pitch": 2.0, "psu_x": 0.74}
+			"light_gain": LAMP_GAIN, "seat_pitch": 0.8, "light_pitch": 2.0, "joint_pitch": 2.0, "psu_x": 0.74,
+			"aisle_lights": false, "reading_light": READING}
 	Airliner.build_cabin(self, cabin_xf(), zone, spec, "Cabin")
 	# the stub: the same section from the hall's north wall to its cut end, no seats
 	Airliner.build_cabin(self, stub_xf(), zone, {"sec": Airliner.NARROW, "cz0": Z_FWD, "cz1": Z_STUB, "fwd_end": "open",
@@ -250,7 +255,7 @@ func _haze() -> void:
 	var cz1 := cabin_z(Z_FWD)
 	var jz := join_z()
 	_fog(AABB(Vector3(AXIS_X - 1.72, 0.0, cz0), Vector3(3.44, 2.25, cz1 - cz0)),
-			func(z: float) -> float: return 0.03 + 2.6 * exp(minf(z - jz, 0.6) / 2.2), 3.4)
+			func(z: float) -> float: return 0.012 + 2.6 * exp(minf(z - jz, 0.6) / 1.5), 3.4)   # thin (dark) down the aisle
 	var sz0 := JOIN_HALL + Z_JOIN - Z_STUB
 	var sz1 := JOIN_HALL + 2.9
 	_fog(AABB(Vector3(STUB_X - 1.6, 0.0, sz0), Vector3(3.2, 2.25, sz1 - sz0)),

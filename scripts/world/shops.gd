@@ -19,12 +19,12 @@ const TALL_H := 4.6          # the big unit's (n2)
 const TALL_FRONT_H := 4.0
 const TALL_PIER := 0.6
 
-## wall "n" = the 2F's north wall (z -2.5; a..b along x), "w" / "e" = the west (x -20) / east (x 8) wall (a..b along
+## wall "n" = the 2F's north wall (z -2.5; a..b along x), "w" / "e" = the west (x -20) / east (x 17) wall (a..b along
 ## z); the unit runs `depth` back from it; `tall` = the big unit's height and opening.
 const UNITS := [
 	{"id": "n1", "wall": "n", "a": -19.4, "b": -15.6, "depth": 6.0},
 	{"id": "n2", "wall": "n", "a": -10.5, "b": -3.6, "depth": 10.0, "tall": true},
-	{"id": "n3", "wall": "n", "a": 0.4, "b": 7.6, "depth": 6.0},
+	{"id": "n3", "wall": "n", "a": 0.4, "b": 9.6, "depth": 6.0},
 	{"id": "w1", "wall": "w", "a": 0.6, "b": 5.6, "depth": 4.5},
 	{"id": "w2", "wall": "w", "a": 20.0, "b": 24.5, "depth": 3.5},
 	{"id": "e1", "wall": "e", "a": 1.0, "b": 9.0, "depth": 6.5},

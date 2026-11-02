@@ -11,7 +11,7 @@ func _ready() -> void:
 	var t: Terminal = world.terminal
 	for zn in t.zones:
 		t.set_zone_light(zn, true, true)
-		t.zones[zn].night_dim = 0.62          # the story's night (prologue 02:17)
+		t.zones[zn].night_dim = Chapter1.HUB_DIM.get(zn, 0.62)   # the story's night (ch1's, prologue 02:17)
 	var args := OS.get_cmdline_user_args()
 	if args.has("--airhall"):
 		world.player.teleport(Transform3D(Basis(Vector3.UP, deg_to_rad(160.0)), t.spot("airhall_start")))

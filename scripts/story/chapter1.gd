@@ -27,6 +27,9 @@ const CARD_DRAWER := "c3"                # the guard's desk, bottom drawer
 const HINT_GAP_MS := 6000                # the locked passage door's thought comes again at most this often
 const BALL_NEAR := 4.5                   # in the corridor: how close you come before the red ball is off
 const FIGURE_GONE := 12.0                # ...and to the figure at its far end before it is gone
+## How much of their light the lounge and its 2F units have at night (the rest of the terminal's zones run at 0.62;
+## user: "내부 조금 더 어둡게").
+const HUB_DIM := {"hall": 0.48, "shops": 0.48, "airhall": 0.62}
 
 var _portal: PortalView
 var _through := false
@@ -128,7 +131,7 @@ func _hub_lights() -> void:
 	var t := d.terminal
 	for zn: String in ["hall", "shops", "airhall"]:
 		t.set_zone_light(zn, true, true)
-		(t.zones[zn] as LightZone).night_dim = 0.62
+		(t.zones[zn] as LightZone).night_dim = HUB_DIM[zn]
 
 
 func run() -> void:
@@ -163,8 +166,8 @@ func caught() -> void:
 
 
 ## The office as you come back to it: not the room you left. The clock has gone to 0:00, every monitor is snow, a row
-## of airport seats stands in the middle of the floor, bags have been left round it, something is written across the
-## floor. (The key card is where it always was.)
+## of airport seats stands in the middle of the floor, bags have been left round it. (The key card is where it always
+## was. The red FLIGHT 000 / GATE 0 written across the floor is gone — user: "바닥에 이 빨간글씨 삭제해라".)
 func _warp_office() -> void:
 	var t := d.terminal
 	var rect: Rect2 = Terminal.ZONE_RECTS.secoffice
@@ -186,10 +189,6 @@ func _warp_office() -> void:
 		bag.position = Vector3(-17.9 + i * 1.3, 0.0, -13.4 - (i % 2) * 0.5)
 		bag.rotation.y = i * 1.4
 		_warp_nodes.append(bag)
-	var writing := Geo.label(t, "FLIGHT 000\nGATE 0", Vector3(-15.2, 0.004, -15.4), 0.0, 120, Color(0.45, 0.04, 0.03), 0.0048, false, "hand")
-	writing.rotation.x = -PI / 2                      # across the floor in front of you
-	writing.set_meta("no_fit", true)
-	_warp_nodes.append(writing)
 
 
 ## The first shot again: the office as it was at 02:17.

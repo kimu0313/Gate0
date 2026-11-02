@@ -19,7 +19,7 @@ const ROUTES := [
 ]
 const FIRST_ROUND := 13.0
 const ROUND_EVERY := 24.0
-const LOUNGE_BELT := Vector3(6.5, 0.0, -2.3)      # where the belt comes out of the lounge's north wall, running south
+const LOUNGE_BELT := Vector3(14.5, 0.0, -2.3)     # where the belt comes out of the lounge's north wall, running south
 const BELT_LEN := 6.0
 
 var stalker: TearStalker

@@ -107,6 +107,8 @@ var bins := Vector2(SEAT_Z0 - 0.62, CAB_Z1)
 var light_z0 := CAB_Z0 + 1.1
 var light_tint := Color(0, 0, 0, 0)   # the lights' colour (none: the zone's panels') and how strong they are
 var light_gain := 1.0
+var aisle_lights := true      # the light boxes over the aisle lit (false: dark fittings, no light from them, no fills)
+var reading_light := 0.0      # a reading light over every seat row in its service panel, this strong (0: none)
 
 
 ## The airliner at `xf` (its frame, see the class notes) under `parent`; the cabin's lights go on `zone`. With
@@ -950,12 +952,16 @@ func _service_panels() -> void:
 	strip.box(Transform3D(), Vector3(1.2, 0.012, 0.3))
 	var bits := Mesher.new()
 	bits.smooth = false
+	var lamps := Mesher.new()                 # the three reading lights (lit when the cabin has them on)
+	lamps.smooth = false
 	for i in 3:
-		bits.box(Transform3D(Basis(), Vector3(-0.36 + i * 0.16, -0.008, 0.04)), Vector3(0.07, 0.008, 0.07))
+		lamps.box(Transform3D(Basis(), Vector3(-0.36 + i * 0.16, -0.008, 0.04)), Vector3(0.07, 0.008, 0.07))
 	bits.box(Transform3D(Basis(), Vector3(0.3, -0.008, 0.0)), Vector3(0.34, 0.008, 0.16))
 	var pm := ArrayMesh.new()
+	var grey := Mats.std(Color(0.34, 0.33, 0.3), 0.5)
 	strip.into(pm, Mats.std(Color(0.82, 0.78, 0.68), 0.5))
-	bits.into(pm, Mats.std(Color(0.34, 0.33, 0.3), 0.5))
+	bits.into(pm, grey)
+	lamps.into(pm, Mats.emissive(Color(1.0, 0.9, 0.72), 2.5) if reading_light > 0.0 else grey)
 	var xfs: Array[Transform3D] = []
 	var bottom: float = float((sec.bins[0][0] as Vector2).y)
 	for z: float in seat_rows():
@@ -966,35 +972,48 @@ func _service_panels() -> void:
 
 ## Square light boxes down the ceiling over the wide aisle (the zone's panel material, so they go with its lights)
 ## and small ones over the narrow aisle; an area light under every other big one and a few dim fills, all on the
-## cabin's own layer.
+## cabin's own layer. With `aisle_lights` off the boxes are dark fittings and none of that light is there; with a
+## `reading_light` every seat row has its reading light on, shining down on the seats from its service panel.
 func _ceiling_lights(zone: LightZone) -> void:
 	var lights: Array[Light3D] = []
 	var col: Color = light_tint if light_tint.a > 0.0 else zone.panel_mat.emission
 	var lamp: Vector3 = sec.lamp
 	var ch: float = sec.ceil_h
+	var box_mat: Material = zone.panel_mat if aisle_lights else Mats.std(Color(0.42, 0.42, 0.4), 0.35)
 	var k := 0
 	var z := light_z0
 	while z < cz1 - 0.6:
 		if z > cz0 + 0.4:
-			var box := Geo.box(cabin, Vector3(lamp.x, FLOOR_Y + ch - 0.012, z), Vector3(lamp.y, 0.03, lamp.z), zone.panel_mat, false)
+			var box := Geo.box(cabin, Vector3(lamp.x, FLOOR_Y + ch - 0.012, z), Vector3(lamp.y, 0.03, lamp.z), box_mat, false)
 			box.name = "CabinLight"
 			if z + 1.2 < cz1 - 0.3 and not is_nan(sec.lamp2):
-				Geo.box(cabin, Vector3(sec.lamp2, FLOOR_Y + ch - 0.012, z + 1.2), Vector3(0.26, 0.03, 0.26), zone.panel_mat, false)
-			if k % 2 == 0:
+				Geo.box(cabin, Vector3(sec.lamp2, FLOOR_Y + ch - 0.012, z + 1.2), Vector3(0.26, 0.03, 0.26), box_mat, false)
+			if k % 2 == 0 and aisle_lights:
 				var l := Geo.area_light(cabin, Vector3(lamp.x, FLOOR_Y + ch - 0.04, z), Vector2(lamp.y, lamp.z), col,
 						2.4 * light_gain, 5.5)
 				lights.append(l)
 		k += 1
 		z += light_pitch
+	if reading_light > 0.0 and not is_nan(psu_x):
+		var bottom: float = float((sec.bins[0][0] as Vector2).y)
+		for rz: float in seat_rows():
+			var at := Vector3(psu_x - 0.2, FLOOR_Y + bottom - 0.03, rz + 0.04)
+			var s := Geo.spot(cabin, at, at, col,
+					reading_light, 2.8, 30.0)
+			s.rotation = Vector3(-PI / 2, 0, 0)
+			s.spot_attenuation = 0.8
+			s.light_specular = 0.2
+			s.light_volumetric_fog_energy = 0.5
+			lights.append(s)
 	z = cz0 + 2.5
-	while z < cz1:
+	while z < cz1 and aisle_lights:
 		var f := Geo.omni(cabin, Vector3(sec.fill_x, FLOOR_Y + 1.6, z), col, 0.32 * light_gain, 7.0)
 		f.light_specular = 0.0
 		f.light_volumetric_fog_energy = 0.0
 		lights.append(f)
 		z += 7.0
 	# and one at the back, on the last rows' backs
-	if aft_end == "bulkhead":
+	if aft_end == "bulkhead" and aisle_lights:
 		var aft := Geo.omni(cabin, Vector3(sec.aft_x, FLOOR_Y + minf(1.9, ch - 0.3), cz1 - 0.4), col, 0.5 * light_gain, 5.0)
 		aft.light_specular = 0.0
 		aft.light_volumetric_fog_energy = 0.0

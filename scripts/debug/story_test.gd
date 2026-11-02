@@ -774,13 +774,13 @@ func _after_lounge(part: Chapter1) -> void:
 	await _final(part)
 
 
-## The lounge's walking lanes (since it was cut down to 28 x 32 m): the north aisle under the 2F's edge, a south lane
+## The lounge's walking lanes (since it was cut down to 37 x 32 m): the north aisle under the 2F's edge, a south lane
 ## past the ends of the escalators' side rails (1.2 m out past the foot) and short of the down unit's side of their
 ## out-of-service clutter, north of the seats the nose threw (the cabin's door is at its west end), the lane between
 ## the north seat blocks (it runs on through the strip's opening), and the 2F's north gallery.
 const NORTH_AISLE := 3.8
 const SOUTH_LANE := 13.6
-const MID_LANE := 0.35
+const MID_LANE := 1.25
 const GALLERY_Z := 0.0
 
 
@@ -802,7 +802,7 @@ func _lounge_route(to: Vector3) -> void:
 	var q := _p.global_position
 	var pts: Array = []
 	if q.z > 16.0:
-		pts += [_at(7.4, q.z), _at(7.4, SOUTH_LANE)]
+		pts += [_at(Terminal.HALL_E - 1.7, q.z), _at(Terminal.HALL_E - 1.7, SOUTH_LANE)]
 	elif q.z > 9.0:
 		pts += [_at(q.x, SOUTH_LANE)]
 	elif q.z < -2.5:

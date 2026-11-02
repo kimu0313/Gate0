@@ -131,7 +131,7 @@ func _announce() -> void:
 		await d.pa_at(Vector3(0.0, 8.0, 6.0), ["pa_v3_000_wait_ko"],
 			["Flight 000편은, 승객 한 분을 기다리고 있습니다. 승객님, 0번 탑승구로 오시기 바랍니다."], 0.6)
 	elif _returns == 3:
-		Snd.play_at("cart_rattle_2", Vector3(2.0, 1.0, 24.0), 2.0, 0.85, 22.0, 120.0)
+		Snd.play_at("cart_rattle_2", Vector3(8.0, 1.0, 24.0), 2.0, 0.85, 22.0, 120.0)
 	# whichever way is still open sounds again, so you know where it is
 	for k: String in ["a", "c", "b"]:
 		if not Game.flag("done_" + k):
@@ -198,7 +198,7 @@ func _trace(b: String) -> void:
 			# bags nobody came for, across the floor and up the stopped escalators
 			for i in 16:
 				var bag := Props.suitcase(t, Color.from_hsv(rng.randf(), rng.randf_range(0.1, 0.4), rng.randf_range(0.18, 0.45)))
-				bag.position = Vector3(rng.randf_range(-14.0, 6.0), 0.0, rng.randf_range(4.0, 26.0))
+				bag.position = Vector3(rng.randf_range(-14.0, 15.0), 0.0, rng.randf_range(4.0, 26.0))
 				bag.rotation.y = rng.randf() * TAU
 
 

@@ -1,7 +1,7 @@
 extends Node
 ## `res://scenes/menu.tscn -- --skip-boot --looptest --storytest loop` (headless OK): the whole game once, end to end,
-## through the real scenes — main menu → 새 게임 → the prologue played by the story bot → the title's "계속하려면 아무 키나
-## 누르세요" (a key press) → the main story played by the bot, to the end → back on the main menu. Lives on the scene
+## through the real scenes — main menu → 새 게임 → the game (Shift1: the letter, the corridors, the office, the
+## supervisor's handover) played by the story bot → back to the main menu (as the pause menu does). Lives on the scene
 ## tree's root so it survives every scene change. Exit 0 = the loop closed; 1 = stuck somewhere (the step is printed).
 ## With --storytest the player's save is never written or deleted.
 
@@ -52,37 +52,20 @@ func _process(_delta: float) -> void:
 				if not _music_ok("launch title"):
 					_end(1, "no title music at launch")
 					return
-				_step = "prologue"
+				_step = "game"
 				scene.call("_on_new")
-		"prologue":
+		"game":
 			if is_menu and (scene.get("_confirm") as Control).visible:
 				_log("a save exists: confirming 새 게임")
 				(scene.get("_confirm_rows")[0] as SignRow).pressed.emit()
-			if is_game and Game.chapter == "prologue":
-				_log("prologue running (the story bot plays it)")
-				_step = "title"
-		"title":
-			if is_menu and bool(scene.get("_after_prologue")) and bool(scene.get("_press_ready")):
-				var rows: Array = scene.get("_rows")
-				_log("title after the prologue: prompt shown, %d menu rows" % rows.size())
-				if not rows.is_empty():
-					_end(1, "the title after the prologue still shows menu rows")
-					return
-				if not _music_ok("title after the prologue"):
-					_end(1, "no title music after the prologue")
-					return
-				var key := InputEventKey.new()
-				key.physical_keycode = KEY_ENTER
-				key.keycode = KEY_ENTER
-				key.pressed = true
-				Input.parse_input_event(key)
-				_step = "ch1"
-		"ch1":
-			if is_game and Game.chapter == "ch1":
-				_log("chapter 1 running (the story bot plays it)")
+			if is_game and Game.chapter == "shift1":
+				_log("the game running (the story bot plays it)")
 				_step = "back"
 		"back":
-			if is_menu and scene.get("_state") == "menu" and not bool(scene.get("_after_prologue")):
+			if is_menu and scene.get("_state") == "menu":
 				var rows: Array = scene.get("_rows")
-				_end(0 if rows.size() >= 4 else 1, "back on the main menu after the ending (%d rows)" % rows.size())
+				if not _music_ok("title after the game"):
+					_end(1, "no title music back on the title")
+					return
+				_end(0 if rows.size() >= 4 else 1, "back on the main menu after the game (%d rows)" % rows.size())
 				set_process(false)

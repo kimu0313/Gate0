@@ -1,7 +1,7 @@
 class_name StoryDirector
 extends Node
-## Runs the part of the story being played (Game.chapter): the prologue's scenes (Prologue) or the main story
-## (Chapter1). Holds the world and gives the part scripts their vocabulary: objectives (text only — no markers), a
+## Runs the part of the story being played (Game.chapter): the game, Shift1 (the old Prologue and Chapter1 are out of
+## the game — user — and only start from the debug flags). Holds the world and gives the part scripts their vocabulary: objectives (text only — no markers), a
 ## sound that leads the way to the next thing to do (guide), radio calls, the PA from a speaker, waits and cutscene
 ## holds, and being caught. The inspector has no lines of their own and sounds get no captions.
 
@@ -13,6 +13,7 @@ var ui: GameUI
 var part: StoryScript
 var dead := false
 var tablet_allowed := true
+var tab_opens := "tablet"       # what [Tab] opens: "tablet", "guide" (the guidelines folder, GameUI.open_guide) or "none"
 var objective_text := ""
 var pa_clip := ""                # the pa_at clip on air ("" between them)
 var _pa: AudioStreamPlayer3D
@@ -25,6 +26,11 @@ var _guide_focus := 0.0          # 0..1, eased: how squarely you are looking tow
 ## Extra gain on the guide set by the part (Prologue: faint behind the shut office door, slowly louder, clear once it
 ## opens). guide() resets it to 0.
 var guide_gain_db := 0.0
+## Where the guide is heard from: its path is laid out in the world, and this maps it (Prologue: while you are still
+## in the office its path in the staff passage is heard beyond the office's west door, the way out through its portal).
+## Identity: as laid out.
+var guide_xform := Transform3D()
+var _guide_pos := Vector3.ZERO
 ## The guide is this much louder while you look toward it (user: looking the figure's way, it should be louder).
 const GUIDE_FOCUS_DB := 6.0
 
@@ -37,9 +43,11 @@ func setup(w: Node3D) -> void:
 	ui = w.ui
 	match Game.chapter:
 		"ch1":
-			part = Chapter1.new()
+			part = Chapter1.new()                      # (out of the game: debug flags only)
+		"prologue":
+			part = Prologue.new()                      # (out of the game: debug flags only)
 		_:
-			part = Prologue.new()
+			part = Shift1.new()
 	part.name = "Part_" + Game.chapter
 	part.d = self
 	add_child(part)
@@ -77,7 +85,8 @@ func guide(sound: String, path: Array, db := 0.0, unit := 6.0, speed := 4.0) -> 
 	_guide_db = db
 	_guide_focus = 0.0
 	guide_gain_db = 0.0
-	_guide.global_position = _guide_path[0][0]
+	_guide_pos = _guide_path[0][0]
+	_guide.global_position = guide_xform * _guide_pos
 	_guide.play()
 
 
@@ -98,7 +107,8 @@ func guide_stop(fade := 0.8) -> void:
 func _process(delta: float) -> void:
 	if _guide == null or player == null:
 		return
-	var q := Vector2(player.global_position.x, player.global_position.z)
+	var me := guide_xform.affine_inverse() * player.global_position     # (where you stand, on the path's side)
+	var q := Vector2(me.x, me.z)
 	while _guide_path.size() > 1:
 		# on to the next point once you are within reach of this one, or have gone by it (somewhat nearer to the
 		# next than this one is, not far off to the side)
@@ -109,7 +119,8 @@ func _process(delta: float) -> void:
 		if q.distance_to(at) > reach and not gone_by:
 			break
 		_guide_path.pop_front()
-	_guide.global_position = _guide.global_position.move_toward(_guide_path[0][0], _guide_speed * delta)
+	_guide_pos = _guide_pos.move_toward(_guide_path[0][0], _guide_speed * delta)
+	_guide.global_position = guide_xform * _guide_pos
 	# louder while you look its way (eased, so turning the head does not click)
 	var look := smoothstep(0.3, 0.92, player.facing_dot(_guide.global_position))
 	_guide_focus = move_toward(_guide_focus, look, delta * 2.5)

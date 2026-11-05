@@ -26,6 +26,7 @@ var head: Node3D
 var camera: Camera3D
 var flashlight: SpotLight3D
 var flashlight_on := false
+var flashlight_owned := true    # false until the story hands you one ([F] does nothing; Shift1: a drawer in the office)
 var eyes := 0.0                 # 0 open .. 1 closed
 var eyes_script := -1.0         # >= 0: a scripted moment holds the eyelids there (coming round, a blink)
 var eyes_closed_time := 0.0     # continuous seconds with eyes fully closed
@@ -217,7 +218,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not controls_enabled or cutscene:
 		return
 	if event.is_action_pressed("flashlight"):
-		toggle_flashlight()
+		if flashlight_owned:
+			toggle_flashlight()
 	elif event.is_action_pressed("interact") and not camera_mode:
 		if current_interactable and is_instance_valid(current_interactable):
 			current_interactable.interact()

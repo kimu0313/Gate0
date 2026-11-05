@@ -36,7 +36,7 @@ func _ready() -> void:
 	cam.size = r[3] - r[1]
 	cam.near = 1.0
 	cam.far = 80.0
-	cam.position = Vector3((r[0] + r[2]) * 0.5, 40.0, (r[1] + r[3]) * 0.5)
+	cam.position = Vector3((r[0] + r[2]) * 0.5, cut + 37.6, (r[1] + r[3]) * 0.5)    # over the cut (places far below too)
 	cam.rotation = Vector3(-PI / 2, 0, 0)     # looking down, north (-Z) at the top of the image
 	cam.make_current()
 	await get_tree().create_timer(1.0).timeout
@@ -48,7 +48,7 @@ func _ready() -> void:
 	cam.fov = 40.0
 	cam.near = 0.05
 	cam.far = 300.0
-	var centre := Vector3((r[0] + r[2]) * 0.5, 0, (r[1] + r[3]) * 0.5)
+	var centre := Vector3((r[0] + r[2]) * 0.5, cut - 2.4, (r[1] + r[3]) * 0.5)
 	cam.position = centre + Vector3(-34, 58, 42)
 	cam.look_at(centre + Vector3(0, 0, -2), Vector3.UP)
 	await get_tree().create_timer(1.0).timeout

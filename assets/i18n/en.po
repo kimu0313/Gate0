@@ -5286,3 +5286,156 @@ msgstr "Passenger · FLIGHT 000"
 
 msgid "탑승 수속 완료. GATE 0으로 이동해 주십시오."
 msgstr "Check-in complete. Please proceed to Gate 0."
+
+msgid "엘리베이터 부르기"
+msgstr "Call elevator"
+
+msgid "1층 누르기"
+msgstr "Press 1"
+
+msgid "4층 누르기"
+msgstr "Press 4"
+
+msgid "문 닫기"
+msgstr "Close door"
+
+msgid "엘리베이터"
+msgstr "Elevator"
+
+msgid "비상계단"
+msgstr "Emergency Stairs"
+
+msgid "1층으로 내려가기"
+msgstr "Go down to the 1st floor"
+
+msgid "대화하기"
+msgstr "Talk"
+
+msgid "귀하의 합격을 진심으로 축하드립니다."
+msgstr "Congratulations on your successful application."
+
+msgid "귀하는 A국제공항 야간 시설관리팀 계약직 채용에 최종 합격하셨습니다."
+msgstr "You have been selected for the night-shift Facilities Team contract position at A International Airport."
+
+msgid "근무 시작에 앞서 필요한 절차를 진행하기 위해\nA국제공항 내부에 위치한 [b]시설관리팀 관리실로 방문해[/b] 주시기 바랍니다."
+msgstr "Before you begin, please [b]come to the Facilities Team office[/b]\ninside A International Airport to complete the necessary procedures."
+
+msgid "앞으로 귀하와 함께하게 되기를 기대합니다."
+msgstr "We look forward to working with you."
+
+msgid "A국제공항 채용 담당 부서"
+msgstr "A International Airport Recruitment Office"
+
+msgid "시설관리팀 관리실 찾기"
+msgstr "Find the Facilities Team office"
+
+msgid "시설 관리자와 대화하기"
+msgstr "Talk to the facilities manager"
+
+msgid "관리자"
+msgstr "Manager"
+
+msgid "...일찍 오셨네요. 이번에 새로 오신 분 맞죠?"
+msgstr "...You're early. You're the new hire, right?"
+
+msgid "네, 확인했습니다. 일단 간단하게 업무 설명부터 드릴게요. 오래 걸리진 않을 겁니다."
+msgstr "Right, that checks out. Let me walk you through the job first. It won't take long."
+
+msgid "기본적으로 야간 시설관리 업무는 공항 내부를 순회하면서 시설 상태를 확인하는 일입니다. 조명이나 설비에 문제가 없는지 살펴보고, 특이사항이 있으면 보고해 주시면 됩니다."
+msgstr "Night facilities duty is basically making rounds inside the airport and checking on the facilities. Make sure the lighting and equipment are working, and report anything out of the ordinary."
+
+msgid "아, 그리고 근무하시기 전에 알아두셔야 할 게 하나 있는데요."
+msgstr "Oh, and there's one thing you should know before you start."
+
+msgid "..."
+msgstr "..."
+
+msgid "뭐라고 설명해야 할지... 직접 설명하기는 좀 곤란하네요. 어차피 근무하시다 보면 알게 될 겁니다."
+msgstr "How do I put this... It's hard to explain in person. You'll find out once you're on shift anyway."
+
+msgid "일단 지침서에 적힌 내용만 잘 따라주세요. 거기에 있는 사항들은 전부 이유가 있어서 만들어진 겁니다."
+msgstr "Just follow what's written in the guidelines. Everything in there is there for a reason."
+
+msgid "굳이 궁금해하실 필요는 없어요. 그냥 적힌 대로 하시면 됩니다."
+msgstr "There's no need to wonder about it. Just do what it says."
+
+msgid "아, 그리고 근무 중에는 외부 이용객과 마주칠 일이 있을 수도 있습니다. 그런 경우에는 평소처럼 응대하시면 됩니다. 불필요한 이야기는 하지 마시고요."
+msgstr "Oh, and you may run into outside visitors during your shift. If you do, just deal with them as you normally would. Don't say anything you don't need to."
+
+msgid "필요한 물품은 이 곳 4층에 있습니다. 챙겨서 근무 하시면 되고요."
+msgstr "Everything you need is here on the 4th floor. Take it with you on your shift."
+
+msgid "무전기"
+msgstr "Radio"
+
+msgid "무전기를 받았다."
+msgstr "Received a radio."
+
+msgid "[b]사물함[/b]에 있는 작업복으로 갈아입기"
+msgstr "Change into the work clothes in the [b]locker[/b]"
+
+msgid "[b]책상위[/b]에 있는 손전등 챙기기"
+msgstr "Take the flashlight on the [b]desk[/b]"
+
+msgid "[b]자료실[/b]에 있는 지침서 챙기기"
+msgstr "Take the guidelines in the [b]records room[/b]"
+
+msgid "사물함 열기"
+msgstr "Open locker"
+
+msgid "사물함 닫기"
+msgstr "Close locker"
+
+msgid "직원복으로 갈아입었다."
+msgstr "Changed into the staff uniform."
+
+msgid "플래시 라이트 줍기"
+msgstr "Pick up flashlight"
+
+msgid "플래시 라이트를 찾았다."
+msgstr "Found a flashlight."
+
+msgid "플래시 라이트"
+msgstr "Flashlight"
+
+msgid "지침서 챙기기"
+msgstr "Take the guidelines"
+
+msgid "지침서를 찾았다."
+msgstr "Found the guidelines."
+
+msgid "지침서"
+msgstr "Guidelines"
+
+msgid "[TAB] 지침서를 열 수 있습니다."
+msgstr "[TAB] You can open the guidelines."
+
+msgid "……헉, 헉……"
+msgstr "...Huff... huff..."
+
+msgid "무전기는 관리실과 연락할 때 사용하시면 됩니다. 문제가 생기면 우선 연락부터 주세요."
+msgstr "Use the radio to reach the office. If anything goes wrong, call in first."
+
+msgid "물론... 연락이 항상 되는 건 아니지만요."
+msgstr "Of course... you can't always get through."
+
+msgid "...외부 이용객이요?"
+msgstr "...Outside visitors?"
+
+msgid "뭐, 너무 신경 쓰지는 마세요."
+msgstr "Well, don't worry about it too much."
+
+msgid "그럼 저는 이만 쉬러 가보겠습니다. 준비되시면 근무 시작하세요."
+msgstr "Well, I'll go get some rest. Start your shift when you're ready."
+
+msgid "준비되시면 근무 시작하세요."
+msgstr "Start your shift when you're ready."
+
+msgid "...드르렁"
+msgstr "...Zzz..."
+
+msgid "...드르렁... 쿠울..."
+msgstr "...Zzz... snrrk..."
+
+msgid "...음... 드르렁"
+msgstr "...Mm... zzz..."

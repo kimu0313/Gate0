@@ -22,7 +22,8 @@ func _ready() -> void:
 			continue   # switched off on purpose until the story turns it on (e.g. the jet bridge doors)
 		total += 1
 		var c: Vector3 = it.global_position
-		var floor_y := _floor_below(space, c)
+		# (a thing standing in a shelf names the floor you reach it from: straight down is the shelf's own collider)
+		var floor_y: float = float(it.get_meta("floor_y")) if it.has_meta("floor_y") else _floor_below(space, c)
 		var reached := false
 		var blockers := {}
 		for dist: float in [0.6, 0.9, 1.2, 1.6]:

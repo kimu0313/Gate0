@@ -13,7 +13,8 @@ extends Node3D
 ##            staff doors in its north wall, a pair of escalators from its edge down into the atrium; the shops
 ##            behind its three walls (Shops: eight empty units of different sizes, the biggest facing the escalators)
 ##   OFFICE   x[-20,-12.2] z[-2.5,7.6]    STORAGE x[12,22] z[-8.5,-2.5]
-##   SECURITY OFFICE (보안실) x[-20,-12.4] z[-21,-11], its door on the staff passage's west wall at z -16
+##   SECURITY OFFICE (보안실) an L: x[-22.4,-12.4] z[-26,-15] + x[-30.4,-12.4] z[-34,-26], its door on the staff
+##            passage's west wall at z -16
 ##   SECURITY x[-10,10] z[-27.3,-8.5]     CORRIDOR x[-10,10] z[-76,-27.3] (walkways on its east side)
 ##   BAGGAGE  x[-36,-10] z[-64,-39.6] + staff passage x[-12.4,-10] z[-39.6,-8.5] from the strip (open from DAY 2,
 ##            before security; the public opening from the corridor opens with the corridor)
@@ -59,9 +60,16 @@ const ESC_GAP := 1.66
 ## colour of the dim omnis that stand in for bounce light: the teal the haze turns everything.
 const ZONE_LIGHT := Color(0.84, 0.95, 1.0)
 const FILL_LIGHT := Color(0.62, 0.86, 0.92)
+## The security office's fluorescent fittings: a plain warm white (the concept art's), against the terminal's cold night.
+const SEC_LIGHT := Color(1.0, 0.85, 0.62)        # the office's tubes: warm (the dark old-office reference)
+const SEC_SHADE := Color(0.5, 0.72, 0.7)         # the faint teal fill between their pools
 const DESK_AT := Vector3(-10.5, 0, 3.5)    # the broadcast desk's middle, at the far (west) end of the north aisle
 const DECK_DOOR := Vector3(-2.0, 4.2, -2.5)   # the staff double doors in the 2F's north wall (MEZZ_Y), facing the
                                               # atrium; the service corridor comes out here in the main story
+## The lift and the stair lobby's door in the lounge's 1F east wall (z): the way down from the corridors round the
+## security office, which are on the 4th floor (_build_vertical; user: "보안실은 4층이고 공항 라운지는 1층").
+const LIFT_Z := 4.0
+const STAIR_Z := 7.0
 ## The airliner that came down on the apron and slid into the lounge (Props.aircraft frame: nose +Z): its length, the
 ## frame's origin, heading (a little west of north, 20° off square to the glass) and roll onto its right wing: its nose
 ## has broken through the facade and lies 9 m into the lounge; the wing with its engine lies out on the apron by the
@@ -79,15 +87,44 @@ const LANE_X := [-4.8, 3.25]  # X-ray tunnel centres (lane 1 west, lane 2 east),
 const LANE_Z := -18.0
 const MD_DX := 3.6
 const BELT_POS := Vector3(-25.5, 0, -59.0)
+## The security office (보안실, _build_security_office): an L (ㄱ) — its south arm along the staff passage (x -22.4..-12.4,
+## z -26..-15, both doors in it, you start at its south end) and its north arm turning west at the far end (x
+## -27.5..-12.4, z -31.8..-26), the CCTV room (SEC_CCTV) in the elbow's far corner (the rest of that corner block is
+## outside the building: sec_floor_rects); a plaster ceiling SEC_CEIL
+## up on steel beams over pilasters (SEC_BEAMS_Z across the south arm, SEC_BEAMS_X across the north one).
+const SEC_LEG := Rect2(-22.4, -26.0, 10.0, 11.0)
+const SEC_BAR := Rect2(-27.5, -31.8, 15.1, 5.8)       # (was x -30.4.., z -34..-26: cut down, user 2026-11-05)
+const SEC_CCTV := Rect2(-17.2, -28.5, 3.4, 5.9)      # a third of the corner block it once filled; the rest is outside the building
+const SEC_DESK_W := 1.5            # every desk in the office the same (user: "책상마다 크기 간격 다 같게")
+## A computer on every island desk (user: "모든 책상에 컴퓨터 다 놔줘"), set forward of the desk's middle so its tube
+## clears the screen between the facing desks and its keyboard the desk's front edge (old_pc runs 0.33 back, 0.35 forward),
+## to one side (L / R) so the partitions at the desk's ends clear it too.
+const _ISLAND_PC_L := ["pc", -0.4, 0.04]
+const _ISLAND_PC_R := ["pc", 0.4, 0.04]
+const SEC_CEIL := 3.6               # floor to ceiling (was 4.5; user: "층고만 낮춰줘" — the windows and the ceiling's fittings as they were)
+const SEC_BEAMS_Z := [-17.6, -21.8, -25.7]
+const SEC_BEAMS_X := [-22.4, -26.4]
+const SEC_ENTRY_Z := -16.25      # the west door (sec_entry: the key card door) in the south arm's west wall
+const SEC_DORM_X := -21.35       # the night-duty room's door in its south wall
 ## The floor point at the far end of the dark vestibule outside the security office's west door, the way in: the
 ## main story's boarding-bridge gate door lands here (Chapter1's portal; +X = on into the office).
-const SEC_ENTRY_PLANE := Vector3(-22.0, 0, -14.6)
+const SEC_ENTRY_PLANE := Vector3(-24.4, 0, SEC_ENTRY_Z)
+## The render layer the security office stands on (office_layers): its lights light only this layer.
+const VIS_OFFICE := 1 << 17
+## The office's big windows (user: "이쪽 벽에 큰 창문들 달아줘"): two in the south arm's west wall (centres z), one in
+## the north arm's south wall (centres x), all SEC_VIEW_SIZE with their middle at SEC_VIEW_Y — real holes in the
+## walls. What they look out on is the service corridor's maze round the office (ServiceHall, far below: sec_view),
+## and from the maze you look in through them (sec_inview). (Behind those walls here stands the aircraft hall.)
+const SEC_VIEW_W := [-19.7, -23.75]
+const SEC_VIEW_N := [-24.4]       # (a second at -28.45 went with the north arm's west end)
+const SEC_VIEW_SIZE := Vector2(3.2, 2.0)
+const SEC_VIEW_Y := 2.05
 
 ## Zone footprints (one Rect2 or an Array of them). Checked in this order by zone_at, so rooms inside the hall's
 ## rect (the office) come first.
 const ZONE_RECTS := {
 	"office": Rect2(-20, -2.5, 7.8, 10.1),
-	"secoffice": Rect2(-20, -21, 7.6, 10),
+	"secoffice": [SEC_LEG, SEC_BAR],
 	"hall": [Rect2(-20, -2.5, 37, 32), Rect2(-12.2, -8.5, 24.2, 6)],
 	"storage": Rect2(12, -8.5, 10, 6),
 	"security": Rect2(-10, -27.3, 20, 18.8),
@@ -106,7 +143,7 @@ const ZONE_NAMES := {
 	"servicehall": "관리동 복도",
 	"maint": "정비 통로", "security": "보안검색", "corridor": "탑승동 통로", "gates": "탑승 게이트",
 	"bridge0": "0번 탑승교", "outside": "외부", "jetbridge": "위치 불명", "warped": "위치 불명", "secoffice": "보안실",
-	"airhall": "항공기 전시홀", "cabin": "기내",
+	"airhall": "항공기 전시홀", "cabin": "기내", "lift": "엘리베이터", "stairs": "비상계단",
 }
 
 ## Named floor points the story scripts, the NPC and the debug bots use instead of their own coordinates.
@@ -148,6 +185,8 @@ const SPOTS := {
 	"exit_inside": Vector3(-17.0, 0.05, 27.0), "exit_look": Vector3(-17.0, 1.5, 29.5),
 	"exit_outside": Vector3(-17.0, 0.05, 31.5), "exit_out_look": Vector3(-17.0, 1.5, 35.5),
 	"lounge_start": Vector3(15.8, 0.05, 13.0),    # `--lounge`: the east end of the south aisle, looking west
+	# the night-duty room (_build_dorm): before its door in the office, and just inside it (the shift colleague's way out)
+	"dorm_front": Vector3(-21.35, 0.05, -15.7), "dorm_in": Vector3(-21.3, 0.05, -14.35),
 	"airhall_start": Vector3(-29.35, 0.05, -18.5), # `--airhall`: the aircraft hall's deck by its escalator's foot
 	"cabinway_front": Vector3(-16.5, 0.05, 13.0), # `--cabinway`: the lounge's south aisle before the cabin's door
 }
@@ -167,10 +206,34 @@ const SKETCH_SHOTS := [
 	["lounge_up_aisle", Vector3(14.0, 1.65, 13.0), 120.0, Vector2(0.5, 0.5), 75.0, 35.0],
 	["lounge_up_mid", Vector3(-3.0, 1.65, 12.0), 180.0, Vector2(0.5, 0.5), 75.0, 62.0],     # the user's look up over the middle
 	["lounge_up_2f", Vector3(-17.5, 5.85, 22.0), 120.0, Vector2(0.5, 0.5), 75.0, 50.0],
-	# the service corridor (ServiceHall at (-160, -320, 0); built for the main story: run these with `--chapter ch1`)
-	["hall_ref", Vector3(-159.8, -318.38, 1.4), 180.0, Vector2(0.5, 0.53), 60.0],
-	["hall_far", Vector3(-160.3, -318.38, 30.0), 180.0, Vector2(0.5, 0.53), 62.0],
-	["hall_back", Vector3(-160.0, -318.38, 40.0), 0.0, Vector2(0.5, 0.53), 66.0],
+	# the service corridors round the office (ServiceHall: its own coordinates = these less ServiceHall.ORIGIN (-160, -320, 0))
+	["maze_e", Vector3(-171.4, -318.4, -16.6), 180.0, Vector2(0.5, 0.52), 72.0],      # out of the passage door, down E
+	["maze_s", Vector3(-172.0, -318.4, -11.75), 90.0, Vector2(0.5, 0.52), 72.0],     # round the first corner, west along S
+	["maze_w", Vector3(-183.65, -318.4, -11.2), 0.0, Vector2(0.5, 0.52), 72.0],      # north up W, the office's windows right
+	["maze_w_win", Vector3(-184.3, -318.4, -17.6), -40.0, Vector2(0.5, 0.52), 72.0], # looking in at the office
+	["maze_n", Vector3(-183.4, -318.4, -24.9), 90.0, Vector2(0.5, 0.52), 72.0],      # west along N
+	["maze_v", Vector3(-196.1, -318.4, -24.75), 180.0, Vector2(0.5, 0.52), 66.0],    # the last run to the far doors
+	["maze_b", Vector3(-183.9, -318.4, -19.4), 90.0, Vector2(0.5, 0.52), 72.0],      # down B, the branch west off W
+	# the way down (Lift, StairCore): the lift at the run's end, the stairs' door at its north end, the stairwell (4F
+	# landing, a half landing, the 1F door), the stair lobby, the lounge's side, inside the car
+	["maze_door", Vector3(-171.6, -318.45, -16.0), -90.0, Vector2(0.5, 0.52), 64.0],      # a corridor door close up (E's 회의실)
+	["archive_door", Vector3(-171.15, -318.4, -16.5), 0.0, Vector2(0.5, 0.52), 66.0],      # E's end: the records room's door
+	["archive_in", Vector3(-171.235, -318.4, -21.95), 0.0, Vector2(0.5, 0.52), 70.0],     # in by its door, up the first aisle (the photo)
+	["archive_aisle", Vector3(-169.225, -318.4, -22.7), 4.0, Vector2(0.5, 0.52), 70.0],   # the second aisle
+	["archive_cross", Vector3(-171.6, -318.4, -22.4), -90.0, Vector2(0.5, 0.52), 74.0],   # across the row ends by the door
+	["archive_back", Vector3(-165.1, -318.4, -32.4), 165.0, Vector2(0.5, 0.52), 74.0],    # from the far corner, back toward the door
+	["maze_lift", Vector3(-196.1, -318.4, -10.5), 180.0, Vector2(0.5, 0.52), 66.0],
+	["maze_stairs", Vector3(-183.65, -318.4, -15.0), 180.0, Vector2(0.5, 0.52), 70.0],         # up the last run onto the open stair hall
+	["stair_landing", Vector3(-183.65, -318.4, -10.05), 185.0, Vector2(0.5, 0.5), 74.0, -14.0],   # on the 4F landing: the flight down, the parapet
+	["stair_4f", Vector3(-187.8, -318.4, -9.95), -160.0, Vector2(0.5, 0.5), 74.0, -38.0],
+	["stair_mid", Vector3(-185.3, -320.5, -3.97), 0.0, Vector2(0.5, 0.5), 74.0, -18.0],
+	["stair_1f", Vector3(-186.3, -331.0, -8.95), 0.0, Vector2(0.5, 0.5), 74.0, -5.0],
+	["stair_up", Vector3(-183.6, -331.0, -9.85), 180.0, Vector2(0.5, 0.5), 74.0, 32.0],
+	["lobby_in", Vector3(17.6, 1.6, 7.0), -90.0, Vector2(0.5, 0.52), 74.0],
+	["lounge_lift", Vector3(11.5, 1.6, 5.5), -90.0, Vector2(0.5, 0.52), 70.0],
+	["lift_in", Vector3(18.6, 1.6, 4.0), 90.0, Vector2(0.5, 0.52), 76.0],
+	["dorm_door", Vector3(-21.35, 1.6, -17.6), 180.0, Vector2(0.5, 0.52), 70.0],
+	["dorm_in", Vector3(-21.75, 1.5, -14.45), -105.0, Vector2(0.5, 0.52), 78.0],
 	["deck_arrive", Vector3(-2.0, 5.85, -0.9), 180.0, Vector2(0.5, 0.66), 74.0],
 	["upper_back", Vector3(-7.0, 5.85, 2.0), 0.0, Vector2(0.5, 0.55), 74.0],
 	["upper_ring", Vector3(15.0, 5.85, 28.0), 25.0, Vector2(0.5, 0.55), 74.0],
@@ -209,14 +272,27 @@ const SKETCH_SHOTS := [
 	["air_plane", Vector3(-33.0, -4.4, 2.0), 100.0, Vector2(0.5, 0.5), 50.0],     # the airliner from the deck's edge
 	["air_2f", Vector3(-28.0, 5.85, 30.5), 52.0, Vector2(0.5, 0.6), 72.0],
 	["air_deck", Vector3(-27.4, 1.65, 6.0), 130.0, Vector2(0.5, 0.56), 72.0],
-	# the security office (run with --prologue): from the start, the room toward the CCTV room, the CCTV room from its
-	# doorway and from its chair, the island from the east, the south end from the north
-	["sec_start", Vector3(-16.2, 1.6, -11.75), 0.0, Vector2(0.5, 0.52), 70.0],
-	["sec_cctv", Vector3(-15.0, 1.6, -13.6), 52.0, Vector2(0.5, 0.55), 70.0],
-	["sec_booth", Vector3(-17.9, 1.6, -16.3), 35.0, Vector2(0.5, 0.52), 74.0],
-	["sec_cctv_chair", Vector3(-18.3, 1.25, -18.55), 90.0, Vector2(0.5, 0.42), 72.0],
-	["sec_island", Vector3(-13.3, 1.6, -15.2), 60.0, Vector2(0.5, 0.55), 70.0],
-	["sec_south", Vector3(-15.4, 1.6, -19.6), 170.0, Vector2(0.5, 0.55), 72.0],
+	# the security office (run with --prologue): from the start up the south arm, the concept art's kind of view across
+	# it, the corner into the north arm, the CCTV room from outside and from its chair, back along the north arm, the
+	# south arm from its north end, the first island from the east
+	["sec_start", Vector3(-17.4, 1.6, -15.9), 0.0, Vector2(0.5, 0.52), 70.0],
+	["sec_west_door", Vector3(-18.3, 1.6, -16.3), 90.0, Vector2(0.5, 0.52), 70.0],      # the key card door (west)
+	["sec_east_door", Vector3(-16.0, 1.6, -16.0), -90.0, Vector2(0.5, 0.52), 70.0],     # the east wall (its door removed)
+	["sec_board", Vector3(-18.9, 1.65, -29.4), -90.0, Vector2(0.5, 0.52), 60.0],        # the cork notice board
+	["sec_change_lockers", Vector3(-19.6, 1.6, -29.4), 0.0, Vector2(0.5, 0.52), 64.0],        # the changing lockers (where the print and cabinet were)
+	["sec_ref", Vector3(-17.4, 1.55, -15.6), 4.0, Vector2(0.5, 0.5), 76.0, 4.0],
+	["sec_corner", Vector3(-18.6, 1.6, -25.0), 70.0, Vector2(0.5, 0.52), 72.0],
+	["sec_booth", Vector3(-19.6, 1.6, -27.0), -55.0, Vector2(0.5, 0.52), 74.0],
+	["sec_cctv_chair", Vector3(-16.4, 1.25, -24.3), -38.0, Vector2(0.5, 0.42), 72.0],
+	["sec_back", Vector3(-26.6, 1.6, -29.6), -100.0, Vector2(0.5, 0.52), 72.0],
+	["sec_south", Vector3(-17.4, 1.6, -25.2), 180.0, Vector2(0.5, 0.52), 72.0],
+	["sec_island", Vector3(-13.6, 1.6, -21.2), 70.0, Vector2(0.5, 0.55), 70.0],
+	["sec_window", Vector3(-24.8, 1.6, -30.5), 168.0, Vector2(0.5, 0.5), 72.0],      # out of the north arm's south windows
+	["sec_window_w", Vector3(-18.2, 1.6, -21.7), 92.0, Vector2(0.5, 0.5), 72.0],    # out of the south arm's west ones
+	["sec_fitting", Vector3(-17.15, 1.95, -18.35), 0.0, Vector2(0.5, 0.5), 60.0, 38.0],  # up at a light fitting over the island
+	["sec_desk", Vector3(-17.2, 1.35, -18.25), 0.0, Vector2(0.5, 0.5), 62.0, -24.0],    # a desk, its computer and partitions
+	["sec_lockers", Vector3(-25.3, 1.45, -27.1), 88.0, Vector2(0.5, 0.5), 64.0, -6.0],  # the north arm's lockers and cabinets
+	["sec_up", Vector3(-21.6, 1.6, -22.4), -35.0, Vector2(0.5, 0.5), 75.0, 48.0],       # up at the ceiling by the way into the north arm
 ]
 const SHOTS := []
 ## Walk graph for people crossing the terminal (straight segments clear of counters, pillars and carousels).
@@ -250,6 +326,9 @@ const NAV := {
 	"bag_ped": [Vector3(-33.2, 0, -55.4), ["bag_mid"]],
 }
 
+## The player went down to the lounge (true) or back up to the 4th floor's corridors (false) by the lift or the stairs.
+signal crossed(to_lounge: bool)
+
 static var current: Terminal
 
 var zones := {}            # name -> LightZone
@@ -263,14 +342,29 @@ var pickups := {}          # id -> Pickup
 var spawns := {}           # name -> Transform3D
 var triggers := {}         # name -> Area3D
 var lights_panel: LightPanel
-var sec_door: Node3D              # the security office's steel door on the staff passage (_build_security_office)
+var sec_door: Node3D              # the door on the staff passage at the office's east wall (_security_door): seen from
+                                  # the passage only — the office's side is plain wall (its door removed — user); the
+                                  # prologue comes out of it (through the west door, Prologue's portal)
 var sec_signs: Array[Node3D] = [] # its plate beside it and the SECURITY OFFICE sign over the passage
 var sec_passage: Dictionary        # the same door as {root, leaf, block, use} (rattle / swing_door)
-var sec_entry: Dictionary          # the office's west door (OfficeKit.door), locked; past it a dark vestibule
-var sec_closet: Dictionary         # the store-room door in the north wall, locked
-var sec_reader: CardReader         # by the passage door, room side; off until the story wants it
+var sec_entry: Dictionary          # the office's west door: the steel key card door (steel_door, sec_reader beside it),
+                                   # locked; past it a dark vestibule (sec_vestibule)
+var sec_locked: Array = []          # the office's doors that only rattle: west, store room, night-duty room
+var sec_root: Node3D               # the office's own node (everything on VIS_OFFICE)
+var sec_view_panes: Array[MeshInstance3D] = []   # the backings of its big windows (SEC_VIEW_*)
+var sec_view: PortalView           # what they show, the maze (_update_sec_view): live while your eye is in the office
+var sec_inview: PortalView         # the maze's side of those windows: the office, live while your eye is near them
+var service_hall: ServiceHall      # the maze of corridors round the office, far below (ServiceHall.ORIGIN)
+var lift: Lift                     # 4F (the corridors' far end) <-> 1F (the lounge's east wall)
+var stairs: StairCore              # the stair lobby's two copies and the 4F door (the stairwell itself is ServiceHall's)
+var sec_dorm: Dictionary           # the night-duty room's door in the office's south wall (opens: open_dorm)
+var dorm_bed: Node3D               # the night-duty room's bed (its local y 0.54 = the blanket's top, its head toward +X)
+var sec_locker: Dictionary         # changing locker 04 on the north arm's north wall (OfficeKit.lockers hollow): {holder, door, hang, front, use, open}; open_locker
+signal locker_toggled(open: bool)
+var sec_reader: CardReader         # by the west door (sec_entry), room side; off until the story wants it
 var sec_drawers := {}              # a1..a3 CRT desk, c1..c3 the guard's desk, f1..f4 filing, l1..l4 lateral
 var sec_vestibule_end: MeshInstance3D   # the far wall of the dark vestibule outside the west door
+var sec_vestibule: Array[MeshInstance3D] = []   # all of that vestibule's black boxes (ch1 lines them with the maze's view)
 var sec_leaf: Node3D              # its leaf, a hinge node: rotation.y > 0 swings it into the room
 var sec_block: StaticBody3D       # the shut leaf's collider
 var sec_use: Interactable         # [E] on the door from either side; the story sets its prompt and callback
@@ -308,6 +402,7 @@ func build() -> void:
 	CabinWay.build(self)
 	_build_baggage()
 	_build_security_office()
+	_build_vertical()
 	_build_security()
 	_build_corridor()
 	_build_gates()
@@ -322,6 +417,8 @@ func build() -> void:
 	for l: Light3D in find_children("*", "Light3D", true, false):
 		if l.light_cull_mask != Airliner.VIS_CABIN:
 			l.light_cull_mask &= ~Airliner.VIS_CABIN
+		if l.light_cull_mask != Geo.VIS_SEALED:      # nor into the lift cars, the stair lobbies, the night-duty room
+			l.light_cull_mask &= ~Geo.VIS_SEALED
 	var fitted := Geo.fit_labels(self, OS.get_cmdline_user_args().has("--tour"))
 	if OS.get_cmdline_user_args().has("--tour"):
 		print("fit_labels: shrank %d world labels to their signs" % fitted)
@@ -407,7 +504,7 @@ func route(from: Vector3, goal: String) -> Array:
 func _build_zones() -> void:
 	var defs := [
 		["office", "사무실", 2.6],
-		["secoffice", "보안실", 2.6],
+		["secoffice", "보안실", 5.0, SEC_LIGHT],
 		["hall", "홀", 3.4],
 		["baggage", "수하물", 3.0],
 		["security", "보안검색", 3.0],
@@ -600,7 +697,10 @@ func _build_hall() -> void:
 	Geo.wall(self, Vector2(-20, 7.6), Vector2(-20, HALL_S), MEZZ_Y - 0.1, wm, 0.4,
 			[[CabinWay.DOOR_Z - 7.6 - Airliner.DOOR_W * 0.5 - 0.02, CabinWay.DOOR_Z - 7.6 + Airliner.DOOR_W * 0.5 + 0.02,
 			Airliner.DOOR_H + 0.02]])      # the cabin's door (CabinWay: its lining runs through)
-	Geo.wall(self, Vector2(HALL_E, -2.5), Vector2(HALL_E, HALL_S), MEZZ_Y - 0.1, wm)
+	# the east wall: the lift and the stair lobby's door (the way down from the 4th floor's corridors: _build_vertical)
+	Geo.wall(self, Vector2(HALL_E, -2.5), Vector2(HALL_E, HALL_S), MEZZ_Y - 0.1, wm, 0.4,
+			[[LIFT_Z + 2.5 - Lift.OPEN_W * 0.5, LIFT_Z + 2.5 + Lift.OPEN_W * 0.5, Lift.OPEN_H],
+			[STAIR_Z + 2.5 - StairCore.DOOR_W * 0.5, STAIR_Z + 2.5 + StairCore.DOOR_W * 0.5, StairCore.DOOR_H]])
 	# north: the lounge floor's back wall, up into the 2F's slab (the 2F's north wall stands on it): the opening into
 	# the strip, then the storage room's own wall (x 12..22, on past the lounge's east end) with this one on top
 	var top := MEZZ_Y - 0.1
@@ -1293,108 +1393,37 @@ func _build_baggage() -> void:
 
 
 ## The security office (보안실), off the staff passage's west wall: where the night shift starts (the prologue opens
-## here) and the door the chase comes back to. Laid out from the user's sketch (seen from the south end), packed like
-## the old police-office reference and with a CCTV room like the Evil Within one (_cctv_room): nothing stands alone,
-## every desk and cabinet top is loaded. In the north-west corner the CCTV room behind a wired-glass partition (its
-## doorway on the south); in the middle an island of four desks pushed together (two face two over a low divider:
-## old PCs, a typewriter, phones, papers, binders, the guard's desk with the key card drawer); by the west wall south
-## of the west door a desk with an old PC and in front of it another; staff lockers on the south and east walls, a
-## bookshelf, a tall document cabinet, lateral and filing cabinets under the window (its roller blind down), a glass
-## cabinet, a key box, notice boards, a whiteboard, a wall calendar, a wall fan, a ceiling fan turning, vents, a duct,
-## a water cooler, a coat rack, the armchair, cartons and bins. Three doors you cannot go through rattle (rattle()):
-## the west door (sec_entry; past it a dark vestibule — the main story comes in that way), the store room in the north
-## wall (sec_closet) and the night-duty room in the west wall (숙직실). The passage door (sec_door, east) is the way
-## out. Drawers that open ([E], Drawer; sec_drawers): the CRT desk's, the guard's, the filing and lateral cabinets.
+## here) and the door the chase comes back to. Built after the police-station concept art the user gave (Hitman
+## Absolution's; "이렇게해줘 보안실, 이런 기역자"), about twice the size of the room it was: an L (ㄱ). Its south arm
+## (SEC_LEG) runs north along the staff passage with both doors in it; from where you start at its south end you look
+## up it as in the concept art — steel-framed windows with papers taped on them down both walls between pilasters,
+## the passage door near on your right, and at the far end the CCTV room's corner block (SEC_CCTV) with its counter
+## window and a television on a bracket at its corner (no clocks in the office any more — user); past it on the left the north arm
+## (SEC_BAR) turns west. Black-and-white checkerboard vinyl, cream plaster with a darker band at the foot, steel beams
+## under a plaster ceiling, pipes, twin-tube fluorescent fittings hung on rods (one dead), brass ceiling fans turning;
+## steel desks in pairs buried in folders and papers with old PCs, the reception counter with its glazing, beige,
+## olive and grey filing cabinets, lockers, a water cooler, the radio chargers, a coat rack, posters.
+## Its one door is the west door (sec_entry: the steel key card door; past it a dark vestibule — the prologue's way out
+## to the staff passage and ch1's way in and then out to the corridors, both through portals); it rattles until a story
+## opens it. The night-duty room's door opens (open_dorm). The east wall is plain inside; on the passage side it has a
+## door (sec_door), the one the prologue comes out of. (The store room's door in the north arm's north wall was removed — user.) Drawers that
+## open ([E], Drawer; sec_drawers): the CRT desk's (a), the guard's (c; the key card is in c3), a filing cabinet (f)
+## and two lateral cabinets (l). It all stands on VIS_OFFICE, the only render layer its lights reach (office_layers).
 func _build_security_office() -> void:
-	var r: Rect2 = ZONE_RECTS.secoffice
-	_floor(r, "floor_office")
-	_ceiling(r, 2.85)
-	var wm := Mats.get_mat("wall_office")
-	Geo.wall(self, Vector2(-20, -21), Vector2(-20, -11), 3.0, wm, 0.3, [[5.925, 6.875, 2.13], [8.775, 9.725, 2.13]])
-	Geo.wall(self, Vector2(-20, -21), Vector2(-12.4, -21), 3.0, wm, 0.3, [[6.225, 7.175, 2.13]])
-	Geo.wall(self, Vector2(-20, -11), Vector2(-12.4, -11), 3.0, wm, 0.3)
-	# the passage wall's room side, lined like the rest of the room (round the doorway)
-	for seg in [[-20.85, -16.55], [-15.45, -11.15]]:
-		Geo.box(self, Vector3(-12.56, 1.425, (seg[0] + seg[1]) * 0.5), Vector3(0.02, 2.85, seg[1] - seg[0]), wm, false)
-	Geo.box(self, Vector3(-12.56, 2.5, -16.0), Vector3(0.02, 0.7, 1.1), wm, false)
-	# light: linear fittings over the desks and the south end; the CCTV room's own fitting is dead (the screens light it)
-	var z: LightZone = zones.secoffice
-	var tube := Color(1.0, 0.96, 0.9)
-	z.add_panel(Vector3(-15.65, 2.82, -18.5), Vector2(0.22, 3.0), true, 0.9, 7.5, tube, true)
-	z.add_panel(Vector3(-17.95, 2.82, -13.3), Vector2(0.2, 2.6), true, 0.8, 7.0, tube)
-	z.add_panel(Vector3(-14.0, 2.82, -13.3), Vector2(0.2, 2.6), true, 0.8, 7.0, tube)
-	z.add_hum(Vector3(-15.8, 2.6, -15.5), -26.0)
-	Geo.box(self, Vector3(-18.3, 2.82, -18.4), Vector3(0.22, 0.06, 1.6), Mats.std(Color(0.72, 0.72, 0.7), 0.5, 0.3), false)
-	Geo.box(self, Vector3(-18.3, 2.785, -18.4), Vector3(0.12, 0.02, 1.5), Mats.std(Color(0.3, 0.3, 0.29), 0.4), false)
-	# overhead: a ceiling fan turning over the middle, a duct along the north wall with its grilles, ceiling and wall
-	# vents, a smoke detector, the team's plate hung over the island
-	OfficeKit.ceiling_fan(self, Vector3(-15.6, 0, -14.9), 2.85)
-	var duct := Mats.std(Color(0.7, 0.71, 0.72), 0.45, 0.6)
-	Geo.cyl(self, Vector3(-15.6, 2.64, -20.6), 0.12, 3.2, duct).rotation.z = PI / 2
-	for dx in [-17.2, -14.0]:
-		Geo.cyl(self, Vector3(dx, 2.76, -20.6), 0.125, 0.2, duct)
-	for gx in [-16.1, -14.7]:
-		OfficeKit.vent_grille(self, Vector3(gx, 2.64, -20.475), 0.0, Vector2(0.2, 0.13))
-	OfficeKit.vent_grille(self, Vector3(-13.4, 2.845, -19.0), 0.0, Vector2(0.5, 0.5), PI / 2)
-	OfficeKit.vent_grille(self, Vector3(-19.0, 2.845, -12.3), 0.0, Vector2(0.5, 0.5), PI / 2)
-	OfficeKit.vent_grille(self, Vector3(-17.8, 2.45, -11.155), PI, Vector2(0.55, 0.25))
-	Geo.cyl(self, Vector3(-16.6, 2.83, -13.0), 0.06, 0.03, Mats.get_mat("plastic_white"))
-	var team := Node3D.new()
-	add_child(team)
-	team.position = Vector3(-15.65, 2.48, -17.4)
-	Geo.box(team, Vector3.ZERO, Vector3(0.8, 0.2, 0.025), Mats.std(Color(0.9, 0.89, 0.84), 0.6), false)
-	for side in [0.0, PI]:
-		var l := Geo.label(team, "보안관리팀", Vector3(0, 0, 0.0135 * cos(side)), side, 48, Color(0.1, 0.12, 0.3), 0.003, false, "print")
-		Geo.fit(l, 0.68, 0.14)
-	for sx in [-0.3, 0.3]:
-		Geo.cyl(team, Vector3(sx, 0.235, 0), 0.004, 0.27, Mats.get_mat("metal"))
-	# north wall: the window (roller blind most of the way down) with the clock beside it, the tall document cabinet,
-	# lateral cabinets under the window, the filing cabinet, the store-room door
-	OfficeKit.roller_window(self, Vector3(-15.25, 1.7, -20.84), 0.0, Vector2(1.5, 1.25), 0.85)
-	var clock := Node3D.new()
-	add_child(clock)
-	clock.position = Vector3(-16.78, 2.3, -20.82)
-	Geo.cyl(clock, Vector3.ZERO, 0.18, 0.04, Mats.get_mat("plastic_white")).rotation.x = PI / 2
-	Geo.label(clock, "2:17", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true, "lcd")
-	OfficeKit.steel_cabinet(self, Vector3(-16.68, 0, -20.6), 0.0, Vector3(1.1, 1.8, 0.45),
-			["보안문서 85–90", "출입 기록", "근무 일지", "CCTV 녹화 대장"])
-	OfficeKit.carton(self, Vector3(-16.95, 1.8, -20.6), Vector3(0.4, 0.22, 0.34), 0.06)
-	OfficeKit.bundle(self, Vector3(-16.45, 1.8, -20.62), 0.1)
-	OfficeKit.bundle(self, Vector3(-16.43, 1.88, -20.6), -0.15)
-	OfficeKit.carton(self, Vector3(-17.0, 0, -20.12), Vector3(0.38, 0.3, 0.32), 0.1)
-	OfficeKit.carton(self, Vector3(-16.98, 0.3, -20.12), Vector3(0.34, 0.24, 0.3), -0.2)
-	Geo.blocker(self, Vector3(-17.0, 0.27, -20.12), Vector3(0.4, 0.54, 0.36))
-	var lat: Array = []
-	lat.append_array(OfficeKit.lateral_cabinet(self, Vector3(-15.6, 0, -20.61), 0.0))
-	lat.append_array(OfficeKit.lateral_cabinet(self, Vector3(-14.775, 0, -20.61), 0.0, 0.65))
-	OfficeKit.binders(self, Vector3(-16.0, 0.74, -20.55), 0.0, 6, 31)
-	OfficeKit.trays(self, Vector3(-15.35, 0.74, -20.6), 0.0, 2)
-	OfficeKit.paper_stack(self, Vector3(-14.9, 0.74, -20.6), 9, 0.1)
-	OfficeKit.radio_base(self, Vector3(-14.65, 0.74, -20.5), 0.0)
-	sec_closet = OfficeKit.door(self, Vector3(-13.3, 0, -21.0), -PI / 2)
-	LevelKit.plate(self, "plate_storage", Vector3(-13.3, 2.42, -20.84), 0.0, Vector2(0.45, 0.3), 0.0)
-	# west wall: the CCTV room (north of the west door), the west door, a notice board, the CRT desk, the night-duty
-	# room's door at the south end
-	sec_entry = OfficeKit.door(self, Vector3(-20.0, 0, -14.6), 0.0)
-	LevelKit.plate(self, "plate_staffonly", Vector3(-19.84, 2.42, -14.6), 90.0, Vector2(0.42, 0.28), 0.0)
-	var dorm := OfficeKit.door(self, Vector3(-20.0, 0, -11.75), 0.0, "숙직실")
-	OfficeKit.notice_board(self, Vector3(-19.85, 1.55, -15.6), PI / 2, Vector2(0.42, 0.52), 23)
-	Geo.cyl(self, Vector3(-19.72, 0.3, -15.55), 0.075, 0.5, Mats.std(Color(0.75, 0.08, 0.06), 0.35, 0.2))
-	Geo.box(self, Vector3(-19.72, 0.6, -15.55), Vector3(0.05, 0.08, 0.05), Mats.get_mat("metal_dark"), false)
-	OfficeKit.notice_board(self, Vector3(-19.85, 1.68, -13.2), PI / 2, Vector2(1.2, 0.72), 17)
-	_cctv_room()
-	# the desks: the CRT desk on the west wall, one in front of it, the island of four in the middle
-	var desk := Vector3(1.5, OfficeKit.DESK_H, 0.75)
-	var sets := {
-		"a": OfficeKit.desk(self, Vector3(-19.43, 0, -13.2), PI / 2, Vector3(1.6, OfficeKit.DESK_H, 0.75), -1.0),
-		"c": OfficeKit.desk(self, Vector3(-14.9, 0, -17.775), PI, desk, -1.0),
-		"f": OfficeKit.filing_cabinet(self, Vector3(-14.2, 0, -20.53), 0.0),
-		"l": lat,
-	}
-	OfficeKit.desk(self, Vector3(-17.3, 0, -13.25), 0.0, Vector3(1.4, OfficeKit.DESK_H, 0.7), 1.0, false)
-	OfficeKit.desk(self, Vector3(-16.4, 0, -17.025), 0.0, desk, -1.0, false)
-	OfficeKit.desk(self, Vector3(-14.9, 0, -17.025), 0.0, desk, 1.0, false)
-	OfficeKit.desk(self, Vector3(-16.4, 0, -17.775), PI, desk, 1.0, false)
+	sec_root = Node3D.new()
+	sec_root.name = "SecurityOffice"
+	add_child(sec_root)
+	var o := sec_root
+	_sec_shell(o)
+	_sec_ceiling(o)
+	# a little smoke hanging in the air, so the light under the fittings shows faintly (user: "약간의 스모크도")
+	for r: Rect2 in sec_floor_rects():
+		_smoke(AABB(Vector3(r.position.x, 0.0, r.position.y), Vector3(r.size.x, SEC_CEIL, r.size.y)), 31, 0.062, Color(0.8, 0.78, 0.72)).height_falloff = 0.0
+	_cctv_room(o)
+	var sets := {}
+	_sec_south(o, sets)
+	_sec_desks(o, sets)
+	_sec_walls(o, sets)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2170
 	for k: String in sets:
@@ -1403,163 +1432,746 @@ func _build_security_office() -> void:
 			var dr: Drawer = arr[i]
 			sec_drawers["%s%d" % [k, i + 1]] = dr
 			OfficeKit.clutter(dr.inside, rng, dr.size.x, dr.size.z)
-	var top := Vector2(desk.x, desk.z)
-	OfficeKit.dress(self, Vector3(-19.43, 0, -13.2), PI / 2, Vector2(1.6, 0.75), [["blotter", -0.1, 0.15], ["pc", 0.3, -0.25],
-			["phone_beige", -0.6, -0.3, 0.3], ["pile", -0.7, 0.45, 0.2], ["trays", 0.85, -0.35], ["pens", -0.25, -0.65],
-			["mug", 0.85, 0.55]], 3)
-	OfficeKit.dress(self, Vector3(-17.3, 0, -13.25), 0.0, Vector2(1.4, 0.7), [["blotter", 0.0, 0.2], ["pc_form", -0.4, -0.2],
-			["binders", 0.2, -0.62], ["phone", 0.75, 0.2, -0.3], ["pile", 0.3, 0.45, 0.15], ["ashtray", -0.85, 0.55],
-			["pens", -0.85, -0.2]], 5)
-	OfficeKit.dress(self, Vector3(-16.4, 0, -17.025), 0.0, top, [["blotter", 0.15, 0.2], ["typewriter", 0.1, 0.0],
-			["bundle", 0.7, -0.45, 0.15], ["bundle", 0.68, -0.45, -0.1, 0.08], ["phone", -0.75, -0.35, 0.4],
-			["pile", 0.7, 0.4, -0.2], ["ashtray", -0.4, 0.55], ["pens", -0.85, 0.15]], 7)
-	OfficeKit.dress(self, Vector3(-14.9, 0, -17.025), 0.0, top, [["blotter", 0.1, 0.2], ["pc", -0.3, -0.25],
-			["phone_beige", 0.2, -0.45, -0.2], ["trays", 0.55, -0.4], ["pens", 0.85, 0.25], ["pile", 0.3, 0.45, 0.15],
-			["mug", -0.85, 0.45]], 9)
-	OfficeKit.dress(self, Vector3(-16.4, 0, -17.775), PI, top, [["blotter", 0.0, 0.2], ["books", -0.55, -0.35, 0.2],
-			["binders", -0.2, -0.62], ["phone_beige", 0.7, -0.3, -0.3], ["fan", -0.8, 0.45, 0.5], ["mug", 0.45, 0.5],
-			["pile", 0.1, 0.35, -0.15]], 11)
-	OfficeKit.dress(self, Vector3(-14.9, 0, -17.775), PI, top, [["blotter", 0.05, 0.2], ["lamp", 0.75, -0.5, -0.5],
-			["radio", -0.5, -0.35], ["phone", 0.25, -0.4, 0.15], ["ledger", -0.05, 0.4, 0.08], ["pile", 0.6, 0.35, 0.3],
-			["mug", -0.82, 0.5], ["bundle", -0.15, -0.5, 0.1]], 13)
-	# the island's low divider, notes pinned on it
-	Geo.box(self, Vector3(-15.65, OfficeKit.DESK_H + 0.15, -17.4), Vector3(3.0, 0.3, 0.02), Mats.std(Color(0.42, 0.44, 0.42), 0.6), false)
-	for i in 6:
-		var note := Geo.box(self, Vector3(-16.9 + i * 0.5, OfficeKit.DESK_H + 0.2 + 0.03 * (i % 2), -17.4 + (0.0115 if i % 2 == 0 else -0.0115)),
-				Vector3(0.1, 0.12, 0.001), Mats.std(Color(0.95, 0.9, 0.6), 0.9) if i % 3 == 0 else Mats.get_mat("paper"), false)
-		note.rotation.z = (i % 3 - 1) * 0.08
-	for c in [[Vector3(-18.65, 0, -13.55), -PI / 2], [Vector3(-14.9, 0, -16.25), PI - 0.2], [Vector3(-15.3, 0, -18.62), -0.25]]:
-		if TripoProps.exists("security", "SEC_OfficeChair"):
-			TripoProps.spawn(self, "security", "SEC_OfficeChair", c[0], c[1], true)
-		else:
-			Geo.box(self, c[0] + Vector3(0, 0.45, 0), Vector3(0.5, 0.08, 0.5), Mats.get_mat("seat"))
-	OfficeKit.steel_chair(self, Vector3(-17.4, 0, -12.5), PI)
-	OfficeKit.steel_chair(self, Vector3(-16.25, 0, -16.2), PI + 0.15)
-	OfficeKit.steel_chair(self, Vector3(-16.55, 0, -18.6), 0.1)
-	# east wall: the bookshelf and the staff lockers (a wall fan over them) north of the reader, the key box and the
-	# extinguisher by the passage door, the radio chargers over a low cabinet with the calendar above, the glass cabinet
-	OfficeKit.bookshelf(self, Vector3(-12.74, 0, -19.27), -PI / 2)
-	OfficeKit.lockers(self, Vector3(-12.8, 0, -18.07), -PI / 2, 3, ["김민호", "이재훈", "박상철"], 1, 1)
-	OfficeKit.carton(self, Vector3(-12.85, 1.8, -18.3), Vector3(0.4, 0.26, 0.36), 0.1)
-	OfficeKit.fan(self, Vector3(-12.86, 2.35, -17.7), -PI / 2)
-	OfficeKit.key_box(self, Vector3(-12.55, 1.55, -14.85), -PI / 2)
-	Geo.cyl(self, Vector3(-12.68, 0.3, -15.2), 0.075, 0.5, Mats.std(Color(0.75, 0.08, 0.06), 0.35, 0.2))
-	Geo.box(self, Vector3(-12.68, 0.6, -15.2), Vector3(0.05, 0.08, 0.05), Mats.get_mat("metal_dark"), false)
-	OfficeKit.low_cabinet(self, Vector3(-12.76, 0, -13.2), -PI / 2, Vector3(1.3, 0.85, 0.42))
-	OfficeKit.mug(self, Vector3(-12.78, 0.85, -12.75))
-	OfficeKit.paper_stack(self, Vector3(-12.78, 0.85, -13.55), 5, 0.3)
-	Geo.box(self, Vector3(-12.74, 1.0, -13.2), Vector3(0.34, 0.04, 1.3), Mats.get_mat("steel_frame"), false)
-	for i in 4:
-		var rz := -13.65 + i * 0.3
-		Geo.box(self, Vector3(-12.72, 1.06, rz), Vector3(0.14, 0.08, 0.16), Mats.get_mat("plastic_dark"), false)
-		Geo.box(self, Vector3(-12.72, 1.2, rz), Vector3(0.035, 0.2, 0.06), Mats.get_mat("plastic_grey"), false)
-		Geo.cyl(self, Vector3(-12.72, 1.38, rz + 0.02), 0.006, 0.16, Mats.get_mat("plastic_dark"))
-		Geo.box(self, Vector3(-12.647, 1.06, rz + 0.05), Vector3(0.004, 0.015, 0.015), Mats.get_mat("lamp_green"), false)
-	OfficeKit.wall_calendar(self, Vector3(-12.555, 1.88, -13.2), -PI / 2)
-	OfficeKit.glass_cabinet(self, Vector3(-12.76, 0, -11.72), -PI / 2)
-	sec_reader = CardReader.create(self, Vector3(-12.575, 1.2, -16.85), -PI / 2)
+	sec_reader = CardReader.create(o, Vector3(SEC_LEG.position.x + 0.165, 1.2, SEC_ENTRY_Z + 0.83), PI / 2)   # latch side
 	sec_reader.interactable.enabled = false
-	# south wall: lockers, the whiteboard, a notice board over the table of cartons, the water cooler; the coat rack,
-	# the armchair, bins
-	OfficeKit.lockers(self, Vector3(-17.8, 0, -11.4), PI, 5, ["최영식", "한동수", "", "오세진", "윤기철"], 3, 4)
-	OfficeKit.carton(self, Vector3(-18.4, 1.8, -11.42), Vector3(0.44, 0.3, 0.4), -0.1)
-	OfficeKit.carton(self, Vector3(-17.5, 1.8, -11.4), Vector3(0.36, 0.22, 0.34), 0.2)
-	var wb := Node3D.new()
-	add_child(wb)
-	wb.position = Vector3(-15.75, 1.55, -11.165)
-	wb.rotation.y = PI
-	Geo.box(wb, Vector3.ZERO, Vector3(1.6, 1.0, 0.03), Mats.get_mat("plastic_white"), false)
-	Geo.box(wb, Vector3(0, -0.52, 0.03), Vector3(1.5, 0.03, 0.06), Mats.get_mat("metal"), false)
-	Geo.fit(Geo.label(wb, "야간 점검  02:00 – 05:00\n수하물 구역 — 출입 통제\n직원 통로 소등 유지\n이상 시 즉시 무전 보고", Vector3(-0.08, 0.04, 0.02),
-			0.0, 30, Color(0.1, 0.2, 0.6), 0.0035, false, "hand"), 1.4).rotation.z = 0.02
-	OfficeKit.notice_board(self, Vector3(-14.2, 1.62, -11.15), PI, Vector2(1.0, 0.68), 11)
-	Geo.box(self, Vector3(-14.2, 0.72, -11.5), Vector3(1.1, 0.04, 0.58), Mats.get_mat("wood"), false)
-	for sx in [-1.0, 1.0]:
-		Geo.box(self, Vector3(-14.2 + sx * 0.52, 0.35, -11.5), Vector3(0.04, 0.7, 0.54), Mats.get_mat("metal_dark"), false)
-	Geo.blocker(self, Vector3(-14.2, 0.37, -11.5), Vector3(1.1, 0.74, 0.58))
-	OfficeKit.carton(self, Vector3(-14.4, 0.74, -11.5), Vector3(0.44, 0.3, 0.36), -0.1)
-	OfficeKit.carton(self, Vector3(-13.85, 0.74, -11.45), Vector3(0.3, 0.22, 0.3), 0.2)
-	OfficeKit.carton(self, Vector3(-14.35, 1.04, -11.48), Vector3(0.32, 0.18, 0.3), 0.3)
-	OfficeKit.carton(self, Vector3(-14.3, 0, -11.5), Vector3(0.5, 0.36, 0.4), 0.05)
-	OfficeKit.water_cooler(self, Vector3(-13.35, 0, -11.42), PI)
-	OfficeKit.trash_can(self, Vector3(-15.3, 0, -11.38))
-	OfficeKit.trash_can(self, Vector3(-17.05, 0, -16.35), Color(0.55, 0.56, 0.55))
-	OfficeKit.coat_rack(self, Vector3(-14.85, 0, -12.2), 0.4)
-	# the floor between the start and the desks: the AV cart turned to the room, a pile of cartons by the south desk
-	OfficeKit.av_cart(self, Vector3(-14.35, 0, -13.5), -0.8, 6.0)
-	OfficeKit.carton(self, Vector3(-16.3, 0, -13.1), Vector3(0.42, 0.34, 0.38), 0.2)
-	OfficeKit.carton(self, Vector3(-16.28, 0.34, -13.12), Vector3(0.36, 0.26, 0.32), -0.15)
-	OfficeKit.bundle(self, Vector3(-16.3, 0.6, -13.1), 0.4)
-	Geo.blocker(self, Vector3(-16.3, 0.34, -13.1), Vector3(0.45, 0.68, 0.42))
-	OfficeKit.armchair(self, Vector3(-13.65, 0, -12.75), -2.4)
+	_security_door()
 	# outside the west door: a short dark vestibule (black, no light), its far wall where the way in arrives
 	var black := Mats.get_mat("black")
-	Geo.box(self, Vector3(-21.25, -0.05, -14.6), Vector3(2.3, 0.1, 2.9), black)
-	Geo.box(self, Vector3(-21.25, 2.55, -14.6), Vector3(2.3, 0.1, 2.9), black, false)
+	var vx := SEC_LEG.position.x - 1.25
+	sec_vestibule.append(Geo.box(self, Vector3(vx, -0.05, SEC_ENTRY_Z), Vector3(2.3, 0.1, 2.9), black))
+	sec_vestibule.append(Geo.box(self, Vector3(vx, 2.55, SEC_ENTRY_Z), Vector3(2.3, 0.1, 2.9), black, false))
 	for sz in [-1.0, 1.0]:
-		Geo.box(self, Vector3(-21.25, 1.3, -14.6 + sz * 1.4), Vector3(2.3, 2.6, 0.1), black)
-	sec_vestibule_end = Geo.box(self, Vector3(-22.35, 1.3, -14.6), Vector3(0.1, 2.6, 2.9), black)
-	_security_door()
-	for dd: Dictionary in [sec_entry, sec_closet, dorm]:
+		sec_vestibule.append(Geo.box(self, Vector3(vx, 1.3, SEC_ENTRY_Z + sz * 1.4), Vector3(2.3, 2.6, 0.1), black))
+	sec_vestibule_end = Geo.box(self, Vector3(SEC_LEG.position.x - 2.35, 1.3, SEC_ENTRY_Z), Vector3(0.1, 2.6, 2.9), black)
+	sec_vestibule.append(sec_vestibule_end)
+	for dd: Dictionary in sec_locked:
 		var d := dd
 		(d.use as Interactable).callback = func(): rattle(d)
+	office_layers(o)
+	office_layers(zones.secoffice)
+	# the window backings show sec_view to your eye only: off the office's layer, so the maze's view in through the
+	# same windows (sec_inview, which sees only that layer) looks straight through them
+	for p in sec_view_panes:
+		p.layers = Geo.VIS_PORTAL_HIDDEN
+	_build_dorm()
+	# what the big windows look out on: the maze of corridors round the office, far below, its lights always on
+	service_hall = ServiceHall.new()
+	add_child(service_hall)
+	service_hall.build()
+	service_hall.zone.set_on(true, true)
 
 
-## The CCTV room (CCTV 관제실) in the security office's north-west corner, behind a wired-glass partition with its
-## doorway on the south (the Evil Within reference): an L of console along the west and north walls — built-in CRTs,
-## control panels, a reel deck, open under the worktop where the operator sits — under a bank of two rows of CRT
-## monitors (cameras, static, dead ones), a rack of VCRs, a folding chair, a side table with an ashtray and a keyboard,
-## cartons, cables over the floor, its fitting dead: the screens' green glow lights it.
-func _cctv_room() -> void:
-	OfficeKit.partition(self, Vector2(-17.3, -20.85), Vector2(-17.3, -15.96), 2.85)
-	OfficeKit.partition(self, Vector2(-19.85, -16.0), Vector2(-17.34, -16.0), 2.85, [[1.25, 2.15]])
-	OfficeKit.tag(self, Vector3(-18.15, 2.48, -15.958), 0.0, "CCTV 관제실", Vector2(0.62, 0.16))
-	OfficeKit.tag(self, Vector3(-19.05, 1.45, -15.955), 0.0, "관계자 외 출입금지", Vector2(0.34, 0.08), Color(0.95, 0.85, 0.8))
-	for p in [Vector3(-19.4, 1.7, -15.954), Vector3(-17.55, 1.35, -15.954), Vector3(-17.256, 1.6, -18.2)]:
-		var sheet := Geo.box(self, p, Vector3(0.21, 0.29, 0.001) if p.x < -17.3 else Vector3(0.001, 0.29, 0.21), Mats.get_mat("paper"), false)
-		sheet.rotation.z = 0.04
-	# the console: the west run in three (closed, open under the operator, closed) and the north run
-	var cells := [[-20.05, 1.6, ["panel", "snow", "crt"], false], [-18.55, 1.4, ["crt", "crt"], true], [-17.325, 1.05, ["off", "panel"], false]]
-	for i in cells.size():
-		var c: Array = cells[i]
-		OfficeKit.console(self, Vector3(-19.85, 0, c[0]), PI / 2, c[1], c[2], 41 + i, c[3])
-	OfficeKit.console(self, Vector3(-18.26, 0, -20.85), 0.0, 1.62, ["off", "deck", "panel"], 47)
-	Geo.box(self, Vector3(-19.29, 1.07, -20.68), Vector3(0.44, 0.58, 0.34), Mats.std(Color(0.2, 0.22, 0.22), 0.55, 0.45), false)
-	OfficeKit.phone(self, Vector3(-19.3, 1.36, -20.66), 0.6, true)
-	# on the worktop: the log, a keyboard, a mug, papers, an ashtray
-	OfficeKit.paper_stack(self, Vector3(-19.3, 0.778, -18.95), 5, 0.3)
-	Geo.box(self, Vector3(-19.24, 0.79, -18.45), Vector3(0.15, 0.022, 0.44), Mats.get_mat("plastic_dark"), false, 0.08)
-	OfficeKit.mug(self, Vector3(-19.28, 0.778, -17.95))
-	OfficeKit.bundle(self, Vector3(-19.3, 0.778, -17.3), 0.2)
-	OfficeKit.paper_stack(self, Vector3(-18.0, 0.778, -20.3), 6, 0.2)
-	OfficeKit.ashtray(self, Vector3(-17.7, 0.778, -20.32))
-	# the bank of monitors over it, top row first
-	OfficeKit.crt_bank(self, Vector3(-19.85, 0, -18.825), PI / 2, 4.05,
-			["crt", "snow", "crt", "off", "crt", "crt", "snow", "crt", "off", "crt", "crt", "crt", "snow", "crt", "off", "crt"], 3)
-	OfficeKit.crt_bank(self, Vector3(-18.42, 0, -20.85), 0.0, 1.94, ["crt", "snow", "off", "crt", "crt", "crt", "snow", "off"], 4)
-	OfficeKit.vcr_rack(self, Vector3(-17.58, 0, -19.4), -PI / 2)
-	OfficeKit.folding_chair(self, Vector3(-18.25, 0, -18.55), -PI / 2 + 0.25)
-	# the side table by the doorway: ashtray, a keyboard, papers
-	var tbl := Mats.std(Color(0.3, 0.31, 0.3), 0.4, 0.6)
-	Geo.box(self, Vector3(-17.58, 0.7, -17.55), Vector3(0.36, 0.03, 0.42), Mats.std(Color(0.5, 0.5, 0.48), 0.5, 0.4), false)
+## The way between the 4th floor — the security office and the corridors round it (ServiceHall, built far below) —
+## and the lounge's 1st floor (user: "출구 문을 엘리베이터로 바꿔줘", "계단으로 이동하는 공간도 필요해", "보안실은
+## 4층이고 공항 라운지는 1층"): the lift's car and the stair lobby are each built twice, behind the corridors' walls
+## and behind the lounge's east wall (Lift, StairCore), and linked; either one carries you over while it is shut
+## (crossed). On the lounge side: the lift by the north aisle's east end, the stairs' door beside it, a sign over both.
+func _build_vertical() -> void:
+	var lift_l := Lift.car(self, Transform3D(Basis(Vector3.UP, -PI / 2), Vector3(HALL_E - 0.2, 0, LIFT_Z)), 0.4, 1, 4)
+	var lobby_l := StairCore.lobby(self, Transform3D(Basis(Vector3.UP, -PI / 2), Vector3(HALL_E + 0.2, 0, STAIR_Z)), true, false, 0.4)
+	lift = Lift.link(self, service_hall.lift_car, lift_l, 4, 1, 0)
+	stairs = StairCore.link(self, service_hall.stair_lobby, lobby_l, service_hall.stair_door)
+	lift.carried.connect(func(to: int): crossed.emit(to == 1))
+	stairs.carried.connect(func(to: int): crossed.emit(to == 1))
+	var face := HALL_E - 0.2
+	# a light washing the wall with the two doors, so they read from across the lounge
+	var wash := Geo.spot(self, Vector3(face - 1.5, MEZZ_Y - SLAB - 0.1, (LIFT_Z + STAIR_Z) * 0.5),
+			Vector3(face, 0.9, (LIFT_Z + STAIR_Z) * 0.5), ZONE_LIGHT, 2.6, 7.0, 64.0)
+	wash.light_volumetric_fog_energy = 0.2
+	zones.hall.add_light(wash)
+	LevelKit.wall_sign(self, Vector3(face, 3.2, (LIFT_Z + STAIR_Z) * 0.5), -90.0, "엘리베이터 · 비상계단  ELEVATOR · STAIRS", Vector2(3.6, 0.5))
+	var s := Node3D.new()
+	add_child(s)
+	s.position = Vector3(face - 0.03, StairCore.DOOR_H + 0.38, STAIR_Z)
+	s.rotation.y = -PI / 2
+	Geo.box(s, Vector3.ZERO, Vector3(0.8, 0.24, 0.05), Mats.std(Color(0.12, 0.13, 0.13), 0.5), false)
+	Geo.box(s, Vector3(0, 0, 0.026), Vector3(0.74, 0.19, 0.004), Mats.emissive(Color(0.15, 0.85, 0.45), 1.1, Color(0.05, 0.4, 0.2)), false)
+	Geo.fit(Geo.label(s, "비상계단  STAIRS", Vector3(0, 0, 0.03), 0.0, 48, Color(1, 1, 1), 0.003), 0.66, 0.15).set_meta("no_fit", true)
+
+
+## The night-duty room behind the office's south wall (user: "사무실 안에 숙직실 있잖아, 거기 작은 숙직 공간 임의로
+## 만들어줘" — the colleague on the shift before yours tells you the rules, goes in there and is gone): a small room,
+## 3.5 x 1.8 m between the office and the corridor along its south side, no other door, no window. Yellow vinyl floor
+## (장판), papered walls, a low ceiling with its lamp off; a steel-frame bed made up with a grey wool blanket against the
+## east wall, a low cabinet with a small television, kettle and cup noodles, a mini fridge with a little lamp on it (the
+## only light: on), a tall steel locker, coat hooks with a jacket and a cap, slippers by the door, a calendar (its clock was
+## removed — user). On Geo.VIS_SEALED with its own lamp (the office's lights do not reach through its walls). Its door: sec_dorm,
+## open_dorm.
+func _build_dorm() -> void:
+	var r := Node3D.new()
+	r.name = "NightDutyRoom"
+	add_child(r)
+	var x0 := SEC_LEG.position.x + 0.15        # -22.25
+	var x1 := -18.75
+	var z0 := SEC_LEG.end.y + 0.15              # -14.85: the office wall's back face
+	var z1 := -13.05                            # the corridor's wall along it (ServiceHall's S)
+	var ht := 2.6
+	var cx := (x0 + x1) * 0.5
+	var cz := (z0 + z1) * 0.5
+	var paper := Mats.std(Color(0.74, 0.71, 0.62), 0.9)
+	var vinyl := Mats.std(Color(0.66, 0.47, 0.22), 0.32)
+	var ceil_m := Mats.std(Color(0.78, 0.77, 0.72), 0.9)
+	Geo.box(r, Vector3(cx, -0.05, cz), Vector3(x1 - x0, 0.1, z1 - z0), vinyl)
+	Geo.box(r, Vector3(cx, ht + 0.05, cz), Vector3(x1 - x0 + 0.4, 0.1, z1 - z0 + 0.4), ceil_m, false)
+	Geo.box(r, Vector3(x0 - 0.15, ht * 0.5, cz), Vector3(0.3, ht, z1 - z0), paper)
+	Geo.box(r, Vector3(x1 + 0.1, ht * 0.5, cz), Vector3(0.2, ht, z1 - z0), paper)
+	Geo.box(r, Vector3(cx, ht * 0.5, z1 + 0.1), Vector3(x1 - x0 + 0.5, ht, 0.2), paper)
+	# the office wall's back face lined (round the door)
+	var dl := SEC_DORM_X - 0.475 - 0.03
+	var dr := SEC_DORM_X + 0.475 + 0.03
+	Geo.box(r, Vector3((x0 + dl) * 0.5, ht * 0.5, z0 + 0.006), Vector3(dl - x0, ht, 0.012), paper, false)
+	Geo.box(r, Vector3((dr + x1) * 0.5, ht * 0.5, z0 + 0.006), Vector3(x1 - dr, ht, 0.012), paper, false)
+	Geo.box(r, Vector3(SEC_DORM_X, (2.19 + ht) * 0.5, z0 + 0.006), Vector3(dr - dl, ht - 2.19, 0.012), paper, false)
+	# skirting all round
+	var skirt := Mats.std(Color(0.36, 0.25, 0.15), 0.5)
+	Geo.box(r, Vector3(x0 + 0.006, 0.04, cz), Vector3(0.012, 0.08, z1 - z0), skirt, false)
+	Geo.box(r, Vector3(x1 - 0.006, 0.04, cz), Vector3(0.012, 0.08, z1 - z0), skirt, false)
+	Geo.box(r, Vector3(cx, 0.04, z1 - 0.006), Vector3(x1 - x0, 0.08, 0.012), skirt, false)
+	# the ceiling lamp (off)
+	Geo.cyl(r, Vector3(cx + 0.4, ht - 0.03, cz), 0.2, 0.06, Mats.std(Color(0.86, 0.85, 0.8), 0.4))
+	# the bed, made up, against the east wall (its head there)
+	var bed := Node3D.new()
+	r.add_child(bed)
+	bed.position = Vector3(x1 - 0.98, 0, z1 - 0.47)
+	dorm_bed = bed
+	var frame := Mats.std(Color(0.22, 0.27, 0.25), 0.45, 0.4)
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
-			Geo.cyl(self, Vector3(-17.58 + sx * 0.15, 0.35, -17.55 + sz * 0.18), 0.012, 0.7, tbl)
-	Geo.blocker(self, Vector3(-17.58, 0.36, -17.55), Vector3(0.36, 0.72, 0.42))
-	OfficeKit.ashtray(self, Vector3(-17.6, 0.715, -17.68))
-	Geo.box(self, Vector3(-17.55, 0.727, -17.42), Vector3(0.14, 0.022, 0.36), Mats.get_mat("plastic_dark"), false, 0.1)
-	OfficeKit.paper_stack(self, Vector3(-17.6, 0.715, -17.6), 4, 0.6)
-	# cartons in the corner and under the console, cables over the floor
-	OfficeKit.carton(self, Vector3(-19.45, 0, -16.42), Vector3(0.5, 0.4, 0.4), 0.1)
-	OfficeKit.carton(self, Vector3(-19.42, 0.4, -16.45), Vector3(0.4, 0.28, 0.34), -0.2)
-	OfficeKit.carton(self, Vector3(-18.95, 0, -16.4), Vector3(0.36, 0.3, 0.32), 0.3)
-	Geo.blocker(self, Vector3(-19.2, 0.34, -16.42), Vector3(0.95, 0.68, 0.45))
-	OfficeKit.carton(self, Vector3(-19.5, 0, -18.9), Vector3(0.4, 0.32, 0.35), 0.2)
-	OfficeKit.carton(self, Vector3(-19.45, 0, -18.25), Vector3(0.34, 0.26, 0.3), -0.3)
+			Geo.box(bed, Vector3(sx * 0.95, 0.2, sz * 0.43), Vector3(0.04, 0.4, 0.04), frame, false)
+		Geo.box(bed, Vector3(sx * 0.95, 0.38 + (0.25 if sx > 0 else 0.0), 0), Vector3(0.03, 0.03, 0.86), frame, false)
+	Geo.box(bed, Vector3(0.95, 0.5, 0), Vector3(0.04, 0.5, 0.04), frame, false)
+	for sz in [-1.0, 1.0]:
+		Geo.box(bed, Vector3(0, 0.33, sz * 0.43), Vector3(1.9, 0.04, 0.03), frame, false)
+	Geo.box(bed, Vector3(0, 0.42, 0), Vector3(1.88, 0.14, 0.84), Mats.std(Color(0.55, 0.6, 0.66), 0.85), false)
+	var wool := Mats.std(Color(0.47, 0.44, 0.37), 0.95)
+	var blanket := Geo.box(bed, Vector3(-0.22, 0.515, 0.0), Vector3(1.4, 0.05, 0.9), wool, false)
+	blanket.rotation.y = 0.03
+	var fold := Geo.box(bed, Vector3(0.42, 0.53, 0.02), Vector3(0.3, 0.09, 0.9), wool, false)
+	fold.rotation.z = 0.12
+	var pillow := Geo.box(bed, Vector3(0.74, 0.54, 0.0), Vector3(0.32, 0.1, 0.5), Mats.std(Color(0.84, 0.83, 0.78), 0.9), false)
+	pillow.rotation.y = -0.06
+	Geo.blocker(bed, Vector3(0, 0.3, 0), Vector3(1.96, 0.6, 0.9))
+	# a low cabinet on the south wall west of the bed: a small television, kettle, cup noodles, an ashtray
+	var cab := Node3D.new()
+	r.add_child(cab)
+	cab.position = Vector3(-21.25, 0, z1 - 0.23)
+	var wood := Mats.std(Color(0.36, 0.25, 0.16), 0.55)
+	Geo.box(cab, Vector3(0, 0.27, 0), Vector3(0.85, 0.54, 0.44), wood)
+	Geo.box(cab, Vector3(0, 0.27, -0.222), Vector3(0.8, 0.002, 0.004), Mats.std(Color(0.1, 0.07, 0.05), 0.6), false)
+	for sx in [-1.0, 1.0]:
+		Geo.box(cab, Vector3(sx * 0.06, 0.4, -0.226), Vector3(0.05, 0.015, 0.012), Mats.get_mat("metal"), false)
+	OfficeKit.crt(cab, Vector3(-0.15, 0.54, 0.0), PI)
+	Geo.cyl(cab, Vector3(0.26, 0.65, -0.02), 0.07, 0.22, Mats.std(Color(0.8, 0.8, 0.78), 0.35))
+	Geo.box(cab, Vector3(0.26, 0.77, -0.02), Vector3(0.05, 0.03, 0.17), Mats.get_mat("plastic_dark"), false)
+	for i in 2:
+		Geo.cyl(cab, Vector3(0.14 - i * 0.02, 0.6 + i * 0.1, 0.12), 0.05, 0.1, Mats.std(Color(0.85, 0.3, 0.12) if i == 0 else Color(0.9, 0.88, 0.8), 0.6))
+	Geo.cyl(cab, Vector3(0.33, 0.555, 0.12), 0.06, 0.03, Mats.std(Color(0.5, 0.52, 0.55), 0.3, 0.6))
+	# along the office wall east of the door: a mini fridge with the lamp on it, a tall locker
+	var fr := Node3D.new()
+	r.add_child(fr)
+	fr.position = Vector3(-19.82, 0, z0 + 0.23)
+	Geo.box(fr, Vector3(0, 0.42, 0), Vector3(0.5, 0.84, 0.44), Mats.std(Color(0.82, 0.8, 0.74), 0.4))
+	Geo.box(fr, Vector3(0.16, 0.5, 0.222), Vector3(0.02, 0.18, 0.012), Mats.get_mat("plastic_dark"), false)
+	var lamp := Node3D.new()
+	fr.add_child(lamp)
+	lamp.position = Vector3(-0.08, 0.84, 0.0)
+	var brass := Mats.std(Color(0.55, 0.42, 0.2), 0.35, 0.7)
+	Geo.cyl(lamp, Vector3(0, 0.015, 0), 0.07, 0.03, brass)
+	Geo.cyl(lamp, Vector3(0, 0.17, 0), 0.012, 0.3, brass)
+	Geo.cyl(lamp, Vector3(0, 0.34, 0), 0.1, 0.13, Mats.emissive(Color(1.0, 0.8, 0.52), 0.9, Color(0.86, 0.78, 0.6)))
+	var warm := Geo.omni(lamp, Vector3(0, 0.3, 0.12), Color(1.0, 0.76, 0.48), 0.85, 3.6)
+	warm.light_volumetric_fog_energy = 0.0
+	var fill := Geo.omni(r, Vector3(cx, 2.2, cz), Color(0.62, 0.72, 0.78), 0.12, 4.0)
+	fill.light_volumetric_fog_energy = 0.0
+	fill.light_specular = 0.0
+	OfficeKit.lockers(r, Vector3(-19.05, 0, z0 + 0.25), 0.0, 1, ["숙직"])
+	Geo.blocker(fr, Vector3(0, 0.42, 0), Vector3(0.5, 0.84, 0.44))
+	Geo.blocker(r, Vector3(-19.05, 0.9, z0 + 0.25), Vector3(0.42, 1.8, 0.5))
+	# coat hooks with a jacket and a cap on the west wall, slippers by the door
+	var hooks := Node3D.new()
+	r.add_child(hooks)
+	hooks.position = Vector3(x0 + 0.02, 1.72, -13.9)
+	hooks.rotation.y = PI / 2
+	Geo.box(hooks, Vector3.ZERO, Vector3(0.6, 0.06, 0.02), wood, false)
+	var navy := Mats.std(Color(0.1, 0.12, 0.18), 0.9)
+	var jacket := Geo.box(hooks, Vector3(-0.12, -0.38, 0.06), Vector3(0.44, 0.72, 0.07), navy, false)
+	jacket.rotation.z = 0.04
+	Geo.cyl(hooks, Vector3(0.2, -0.05, 0.07), 0.09, 0.07, navy).rotation.x = PI / 2
+	for i in 2:
+		var sl := Geo.box(r, Vector3(-21.95 + i * 0.13, 0.015, -14.25), Vector3(0.1, 0.03, 0.26), Mats.std(Color(0.2, 0.35, 0.55), 0.7), false)
+		sl.rotation.y = 0.15 - i * 0.2
+	# the calendar (no clock — user)
+	OfficeKit.wall_calendar(r, Vector3(x0 + 0.002, 1.5, -14.55), PI / 2)
+	Lift._reverb(r, Vector3(cx, ht * 0.5, cz), Vector3(x1 - x0, ht, z1 - z0), "RevTight", 0.24)
+	Geo.seal(r)
+
+
+## Opens (or shuts) changing locker 04 on the north arm's north wall (sec_locker): its door swings out on its hinge with a tinny creak / a
+## small steel slam; locker_toggled tells the story.
+func open_locker(open: bool) -> void:
+	sec_locker.open = open
+	(sec_locker.use as Interactable).prompt = "사물함 닫기" if open else "사물함 열기"
+	var door: Node3D = sec_locker.door
+	var tw := door.create_tween()
+	tw.tween_property(door, "rotation:y", -1.9 if open else 0.0, 0.55 if open else 0.35) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT if open else Tween.EASE_IN)
+	var at := door.global_position + Vector3(0, 1.0, 0)
+	if open:
+		Snd.play_at("drawer_open_2", at, -10.0, 0.72, 4.0)
+		Snd.play_at("lock_click", at, -14.0, 1.25, 3.0)
+	else:
+		tw.tween_callback(func(): Snd.play_at("door_slam", at, -20.0, 1.7, 4.0))
+	locker_toggled.emit(open)
+
+
+## Opens (or shuts) the night-duty room's door, into the room, over `time` s. The door is the player's to open and
+## shut ([E]) and the story's: the shift colleague goes in there and is not seen again.
+func open_dorm(open: bool, time := 0.7) -> void:
+	var leaf: Node3D = sec_dorm.leaf
+	if not open:
+		# not on whoever stands in the doorway
+		var p := get_tree().get_first_node_in_group("player") as Node3D
+		if p:
+			var q := (sec_dorm.root as Node3D).global_transform.affine_inverse() * p.global_position
+			if absf(q.x) < 0.5 and absf(q.z) < 0.85:
+				return
+	sec_dorm.open = open
+	(sec_dorm.use as Interactable).prompt = "문 닫기" if open else "문 열기"
+	(sec_dorm.block as StaticBody3D).collision_layer = 0 if open else Geo.LAYER_WORLD
+	var at := (sec_dorm.root as Node3D).global_position + Vector3(0, 1.0, 0)
+	Snd.play_at("amb_creak_1" if open else "door_slam", at, -8.0 if open else -12.0, 1.1, 4.0)
+	var tw := leaf.create_tween()
+	tw.tween_property(leaf, "rotation:y", deg_to_rad(-86.0) if open else 0.0, time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT if open else Tween.EASE_IN)
+
+
+## Puts `node` and everything under it on the security office's render layer (VIS_OFFICE), the only one the office's
+## own lights reach: nothing here casts shadows, so without it they would light the dark staff passage and the
+## baggage hall through the walls. Anything the story adds to the office later goes through here too.
+static func office_layers(node: Node) -> void:
+	var all: Array = [node]
+	all.append_array(node.find_children("*", "VisualInstance3D", true, false))
+	for n in all:
+		if n is Light3D:
+			(n as Light3D).light_cull_mask = VIS_OFFICE
+			(n as Light3D).layers |= VIS_OFFICE      # a camera that sees only the office (sec_inview) keeps its lights
+		elif n is VisualInstance3D:
+			(n as VisualInstance3D).layers = VIS_OFFICE
+
+
+## What has a floor and a ceiling: the office (the L as it was) and the CCTV room in it. The corner block the CCTV room
+## once filled, outside its own north and east walls, is outside the building now.
+static func sec_floor_rects() -> Array[Rect2]:
+	var cw := SEC_CCTV.position.x               # the CCTV room's west face (the office's wall up to the north wall)
+	var cs := SEC_CCTV.end.y                    # its south face (the office's wall out to the east wall)
+	return [Rect2(SEC_LEG.position.x, cs, SEC_LEG.size.x, SEC_LEG.end.y - cs),
+		Rect2(SEC_LEG.position.x, SEC_LEG.position.y, SEC_CCTV.end.x - SEC_LEG.position.x, cs - SEC_LEG.position.y),
+		Rect2(SEC_BAR.position.x, SEC_BAR.position.y, cw - SEC_BAR.position.x, SEC_BAR.size.y),
+		Rect2(cw, SEC_CCTV.position.y, SEC_CCTV.size.x, SEC_BAR.end.y - SEC_CCTV.position.y)]
+
+
+## Floor, walls, pilasters and doors. The east wall is the staff passage's (3 m, _build_baggage): it goes on up to the
+## ceiling over it and is lined on the room side round the passage door.
+func _sec_shell(o: Node3D) -> void:
+	var wm := Mats.get_mat("plaster_wall")
+	for r: Rect2 in sec_floor_rects():
+		var c := r.get_center()
+		Geo.box(o, Vector3(c.x, -0.05, c.y), Vector3(r.size.x, 0.1, r.size.y), Mats.get_mat("floor_office_stone"))
+	var h := SEC_CEIL + 0.2
+	var west := SEC_LEG.position.x
+	var north := SEC_BAR.position.y
+	var bx := SEC_BAR.position.x
+	var ls := SEC_LEG.position.y
+	var south := SEC_LEG.end.y
+	Geo.wall(o, Vector2(west, south), Vector2(-12.4, south), h, wm, 0.3, [[SEC_DORM_X - west - 0.475, SEC_DORM_X - west + 0.475, 2.13]])
+	# the west wall and the north arm's south wall are holed for the big windows (head and sill, SEC_VIEW_*), each
+	# with a blocker in its plane
+	var hw := SEC_VIEW_SIZE.x * 0.5
+	var head := SEC_VIEW_Y + SEC_VIEW_SIZE.y * 0.5
+	var sill := SEC_VIEW_Y - SEC_VIEW_SIZE.y * 0.5
+	var cuts_w := [[SEC_ENTRY_Z - ls - 0.55, SEC_ENTRY_Z - ls + 0.55, 2.2]]      # the steel key card door's opening
+	for z: float in SEC_VIEW_W:
+		cuts_w.append([z - ls - hw, z - ls + hw, head, sill])
+		Geo.blocker(o, Vector3(west, SEC_VIEW_Y, z), Vector3(0.3, SEC_VIEW_SIZE.y, SEC_VIEW_SIZE.x))
+	Geo.wall(o, Vector2(west, ls), Vector2(west, south), h, wm, 0.3, cuts_w)
+	var cuts_n := []
+	for x: float in SEC_VIEW_N:
+		cuts_n.append([x - bx - hw, x - bx + hw, head, sill])
+		Geo.blocker(o, Vector3(x, SEC_VIEW_Y, ls), Vector3(SEC_VIEW_SIZE.x, SEC_VIEW_SIZE.y, 0.3))
+	Geo.wall(o, Vector2(bx, ls), Vector2(west, ls), h, wm, 0.3, cuts_n)
+	Geo.wall(o, Vector2(bx, north), Vector2(bx, ls), h, wm, 0.3)     # (its archive door was removed — user: "문서고 문 없애")
+	Geo.wall(o, Vector2(bx, north), Vector2(SEC_CCTV.position.x + 0.2, north), h, wm, 0.3)   # (its store-room door removed — user)
+	# (where the store room's door was hung a framed aircraft print — taken down for the lockers, user: "액자 치우고")
+	Geo.wall(o, Vector2(-12.4, north), Vector2(-12.4, south), h - 3.0, wm, 0.3, [], 3.0)
+	# the room side lined in one piece: no door in it (the 관계자 외 출입금지 door was removed — user: "사무실 내부에
+	# 자제창고랑 관계자 출입금지 문 없애줘"); the passage's door stays on its far side (_security_door), and a collider
+	# in the lining keeps you (and the [E] ray) out of its opening
+	Geo.box(o, Vector3(-12.555, SEC_CEIL * 0.5, (SEC_CCTV.end.y + south - 0.15) * 0.5), Vector3(0.02, SEC_CEIL, south - 0.15 - SEC_CCTV.end.y), wm, false)
+	Geo.blocker(o, Vector3(-12.555, 1.1, -16.0), Vector3(0.02, 2.2, 1.1))
+	# pilasters under the beams, down both walls of the south arm and on the north arm's walls
+	for zz: float in SEC_BEAMS_Z:
+		_pilaster(o, Vector3(west + 0.3, 0, zz), true)
+		if zz > SEC_CCTV.end.y:
+			_pilaster(o, Vector3(-12.55 - 0.15, 0, zz), true)
+	for x: float in SEC_BEAMS_X:
+		_pilaster(o, Vector3(x, 0, north + 0.3), false)
+	_pilaster(o, Vector3(SEC_BEAMS_X[1], 0, ls - 0.3), false)
+	# the west door is the steel key card door (it and the '관계자 외 출입금지' door swapped places — user: "카드 키
+	# 대고 나갈 수 있는 문을 관계자 외 출입금지 문 위치로"); turned so it opens into the room (rotation.y > 0)
+	sec_entry = steel_door(o, Vector3(west, 0, SEC_ENTRY_Z), PI)
+	# the night-duty room's door opens (its room is _build_dorm; a threshold under it on the office's layer)
+	sec_dorm = OfficeKit.door(o, Vector3(SEC_DORM_X, 0, south), PI / 2, "숙직실")
+	sec_dorm.open = false
+	(sec_dorm.use as Interactable).callback = func(): open_dorm(not sec_dorm.open)
+	Geo.box(o, Vector3(SEC_DORM_X, -0.0175, south + 0.075), Vector3(0.95, 0.045, 0.15), Mats.std(Color(0.3, 0.22, 0.14), 0.6))
+	sec_locked = [sec_entry]
+
+
+## A framed print on a wall face (facing +Z after `rot_y`, `at` on the face): a thin black frame, a white mat, the
+## picture `tex` once across `size` (m).
+func _framed_print(o: Node3D, at: Vector3, rot_y: float, tex: String, size: Vector2) -> void:
+	var h := Node3D.new()
+	o.add_child(h)
+	h.position = at
+	h.rotation.y = rot_y
+	var mat_w := 0.05
+	var fw := 0.025
+	var outer := size + Vector2(mat_w + fw, mat_w + fw) * 2.0
+	var black := Mats.std(Color(0.05, 0.05, 0.05), 0.4)
+	Geo.box(h, Vector3(0, 0, 0.004), Vector3(outer.x - fw * 2.0, outer.y - fw * 2.0, 0.008), Mats.std(Color(0.9, 0.89, 0.85), 0.85), false)
+	for sx in [-1.0, 1.0]:
+		Geo.box(h, Vector3(sx * (outer.x - fw) * 0.5, 0, 0.012), Vector3(fw, outer.y, 0.024), black, false)
+		Geo.box(h, Vector3(0, sx * (outer.y - fw) * 0.5, 0.012), Vector3(outer.x, fw, 0.024), black, false)
+	var q := QuadMesh.new()
+	q.size = size
+	var pic := MeshInstance3D.new()
+	pic.mesh = q
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(tex)
+	m.roughness = 0.6
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	pic.material_override = m
+	h.add_child(pic)
+	pic.position = Vector3(0, 0, 0.0085)
+	# a sheet of glass over it, catching the light a little
+	var glass := Mats.std(Color(1, 1, 1, 0.06), 0.05)
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	Geo.box(h, Vector3(0, 0, 0.016), Vector3(outer.x - fw * 2.0, outer.y - fw * 2.0, 0.002), glass, false)
+
+
+## A plaster pilaster against a wall (0.6 wide, standing 0.3 proud of it) with a base and a plain capital under the
+## beam; `along_z`: on a wall running along Z.
+func _pilaster(o: Node3D, at: Vector3, along_z: bool) -> void:
+	var wm := Mats.get_mat("plaster_wall")
+	var s := Vector3(0.3, SEC_CEIL, 0.6) if along_z else Vector3(0.6, SEC_CEIL, 0.3)
+	Geo.box(o, at + Vector3(0, SEC_CEIL * 0.5, 0), s, wm)
+	var grow := Vector3(0.06, 0, 0.12) if along_z else Vector3(0.12, 0, 0.06)
+	Geo.box(o, at + Vector3(0, SEC_CEIL - 0.45, 0), s * Vector3(1, 0, 1) + grow + Vector3(0, 0.1, 0), wm, false)
+	Geo.box(o, at + Vector3(0, 0.06, 0), s * Vector3(1, 0, 1) + grow * 0.5 + Vector3(0, 0.12, 0), Mats.get_mat("metal_dark"), false)
+
+
+## The plaster ceiling and its steel beams, the pipes along it, the fluorescent fittings hung on rods (the zone's
+## panels with no housing of their own; one dead), the brass ceiling fans.
+func _sec_ceiling(o: Node3D) -> void:
+	var y := SEC_CEIL
+	for r: Rect2 in sec_floor_rects():
+		var c := r.get_center()
+		Geo.box(o, Vector3(c.x, y + 0.15, c.y), Vector3(r.size.x, 0.3, r.size.y), Mats.get_mat("plaster_ceiling"), false)
+	var west := SEC_LEG.position.x
+	var north := SEC_BAR.position.y
+	for zz: float in SEC_BEAMS_Z:
+		var be := -12.4 if zz > SEC_CCTV.end.y else SEC_CCTV.end.x      # the one over the CCTV room ends at its east wall
+		_ibeam(o, Vector3((west + be) * 0.5, y, zz), be - west, true)
+	for x: float in SEC_BEAMS_X:
+		_ibeam(o, Vector3(x, y, SEC_BAR.get_center().y), SEC_BAR.size.y, false)
+	_ibeam(o, Vector3((west + SEC_CCTV.position.x) * 0.5, y - 0.005, -29.0), SEC_CCTV.position.x - west, true)
+	# pipes along the south arm's east side, and along its west side on into the north arm along its north wall — that
+	# run between the big windows' heads and the beams' bottom flanges, so it never crosses a window
+	var pipe := Mats.std(Color(0.42, 0.4, 0.36), 0.45, 0.6)
+	var conduit := Mats.std(Color(0.3, 0.32, 0.3), 0.5, 0.5)
+	var py := (SEC_VIEW_Y + SEC_VIEW_SIZE.y * 0.5 + y - 0.3825) * 0.5
+	_duct_run(o, Vector3(-13.05, y - 0.54, SEC_LEG.end.y - 0.3), Vector3(-13.05, y - 0.54, SEC_CCTV.end.y - 0.05), 0.065, pipe)
+	_duct_run(o, Vector3(-13.3, y - 0.53, SEC_LEG.end.y - 0.3), Vector3(-13.3, y - 0.53, SEC_CCTV.end.y - 0.05), 0.04, conduit)
+	_duct_run(o, Vector3(west + 0.6, py, SEC_LEG.end.y - 0.3), Vector3(west + 0.6, py, north + 0.6), 0.05, pipe)
+	Geo.sphere(o, Vector3(west + 0.6, py, north + 0.6), 0.055, pipe)
+	_duct_run(o, Vector3(west + 0.6, py, north + 0.6), Vector3(SEC_BAR.position.x + 0.3, py, north + 0.6), 0.05, pipe)
+	# the fittings: [x, z, along x, energy (0 = dead)]
+	var z: LightZone = zones.secoffice
+	# (over each desk island, the south arm's and the north arm's: a row of three along it, one over each block —
+	# user: "자리위에 조명도 추가해주고")
+	for p: Array in [[-19.9, -16.4, false, 2.4], [-14.9, -16.4, false, 2.4],
+			[-18.65, -19.6, true, 2.4], [-17.15, -19.6, true, 2.4], [-15.65, -19.6, true, 2.4], [-19.9, -23.75, false, 2.4], [-14.9, -23.75, false, 2.4],     # (-19.9 was dead; lit — user: "여기에 천장조명 하나 달자")
+			[-19.1, -27.4, false, 2.0], [-19.1, -30.3, false, 1.8], [-24.975, -28.8, true, 2.0], [-23.475, -28.8, true, 2.0],
+			[-21.725, -28.8, true, 2.0]]:        # (a little east of its desk: its chain clears the pipe overhead)
+		_sec_fitting(o, z, Vector3(p[0], y - 0.72, p[1]), p[2], p[3])        # the tubes' level (the trough hangs 7 cm lower)
+	z.add_hum(Vector3(-17.4, y - 0.9, -18.0), -24.0)
+	z.add_hum(Vector3(-23.5, y - 0.9, -28.8), -26.0)
+	for f: Vector2 in [Vector2(-17.4, -16.4), Vector2(-17.15, -21.0), Vector2(-18.6, -23.6), Vector2(-24.0, -27.0), Vector2(-26.1, -30.85)]:
+		OfficeKit.ceiling_fan(o, Vector3(f.x, 0, f.y), y, true, 0.75)
+
+
+## A steel I-beam under the ceiling, `length` along X (`along_x`) or Z, centred on `c` (its top at c.y).
+func _ibeam(o: Node3D, c: Vector3, length: float, along_x: bool) -> void:
+	var m := Mats.std(Color(0.22, 0.24, 0.22), 0.55, 0.45)
+	var l := Vector3(length, 0, 0) if along_x else Vector3(0, 0, length)
+	var w := Vector3(0, 0, 1) if along_x else Vector3(1, 0, 0)
+	Geo.box(o, c + Vector3(0, -0.2, 0), l + Vector3(0, 0.36, 0) + w * 0.016, m, false)
+	for fy in [-0.03, -0.37]:
+		Geo.box(o, c + Vector3(0, fy, 0), l + Vector3(0, 0.025, 0) + w * 0.19, m, false)
+
+
+## One of the office's light fittings, its tubes at `at` (lengthwise along X or Z): the old industrial twin-tube kind
+## (OfficeKit.tube_fitting — user, with photos of one: "조명 이런 형태로 바꿔줘"), its tubes and slots lit by the zone's
+## panel material, or dead and grey. Its light keeps close to it (user, with a dark old-office reference: "어두운데 불이
+## 켜져있고, 그 조명 주변만 밝은 연출"): a shadowed spot under the trough throws a warm pool on the floor and desks, a
+## short area light lights what stands just round it, a small light inside the trough lights the reflector, an up-light
+## the ceiling round the fitting (a soft glow in the haze), and only a faint fill reaches the dark between the pools.
+func _sec_fitting(o: Node3D, z: LightZone, at: Vector3, along_x: bool, energy: float) -> void:
+	var len := 1.3
+	var ps := Vector2(len - 0.1, 0.12) if along_x else Vector2(0.12, len - 0.1)
+	if energy <= 0.0:
+		OfficeKit.tube_fitting(o, at, along_x, SEC_CEIL, Mats.std(Color(0.55, 0.56, 0.54), 0.3), Mats.get_mat("black"))
+		return
+	OfficeKit.tube_fitting(o, at, along_x, SEC_CEIL, z.panel_mat, z.panel_mat)
+	var inner := Geo.omni(z, at + Vector3(0, 0.03, 0), SEC_LIGHT, energy * 0.35, 0.36)
+	inner.light_specular = 0.5
+	inner.light_volumetric_fog_energy = 0.0
+	z.add_light(inner)
+	if energy > 0.0:
+		var area := Geo.area_light(z, at + Vector3(0, -0.03, 0), ps, SEC_LIGHT, energy * 0.6, 3.2)
+		area.light_volumetric_fog_energy = 0.2
+		z.add_light(area)
+		var pool := Geo.spot(z, at + Vector3(0, -0.09, 0), at + Vector3(0, -0.09, 0), SEC_LIGHT, energy * 3.9, 6.0, 46.0, true)
+		pool.rotation.x = -PI / 2
+		pool.spot_attenuation = 1.3
+		pool.spot_angle_attenuation = 1.9
+		pool.shadow_blur = 2.2
+		pool.light_specular = 0.45
+		pool.light_volumetric_fog_energy = 0.5
+		z.add_light(pool)
+		var up := Geo.omni(z, at + Vector3(0, 0.35, 0), SEC_LIGHT, energy * 0.24, 2.4)
+		up.light_specular = 0.0
+		up.light_volumetric_fog_energy = 0.35
+		z.add_light(up)
+		var fill := Geo.omni(z, at + Vector3(0, -0.8, 0), SEC_SHADE, energy * 0.42, 6.5)      # cool, like the bounce in the dark (a little up — user: "아주 살짝만 밝았으면")
+		fill.light_specular = 0.0
+		fill.light_volumetric_fog_energy = 0.0
+		z.add_light(fill)
+
+
+## A straight horizontal run of pipe from `a` to `b` (along X or Z): flanged every couple of metres, hung on rods.
+static func _duct_run(parent: Node3D, a: Vector3, b: Vector3, r: float, mat: Material) -> void:
+	var d := b - a
+	var l := d.length()
+	var along_x := absf(d.x) > absf(d.z)
+	var run := Geo.cyl(parent, (a + b) * 0.5, r, l, mat, false, 12)
+	if along_x:
+		run.rotation.z = PI / 2
+	else:
+		run.rotation.x = PI / 2
+	var n := int(l / 2.2)
+	for k in range(1, n + 1):
+		var p := a + d * (float(k) / (n + 1))
+		var f := Geo.cyl(parent, p, r + 0.015, 0.04, mat, false, 12)
+		if along_x:
+			f.rotation.z = PI / 2
+		else:
+			f.rotation.x = PI / 2
+		Geo.cyl(parent, Vector3(p.x, (p.y + r + SEC_CEIL) * 0.5, p.z), 0.006, SEC_CEIL - p.y - r, Mats.get_mat("metal_dark"), false, 6)
+
+
+## An office chair (the Tripo one, else a plain seat) facing +Z at rot 0.
+func _sec_chair(o: Node3D, pos: Vector3, rot_y: float) -> void:
+	if TripoProps.exists("security", "SEC_OfficeChair"):
+		TripoProps.spawn(o, "security", "SEC_OfficeChair", pos, rot_y, true)
+	else:
+		Geo.box(o, pos + Vector3(0, 0.45, 0), Vector3(0.5, 0.08, 0.5), Mats.get_mat("seat"))
+
+
+## A pair of steel desks pushed together face to face across `at` (along X), a low screen between them; returns the
+## south desk's drawers when `live`.
+func _sec_pair(o: Node3D, at: Vector3, south: Array, north_items: Array, seed_n: int, live := false) -> Array[Drawer]:
+	var dk := Vector3(SEC_DESK_W, OfficeKit.DESK_H, 0.75)
+	var dr := OfficeKit.desk(o, at + Vector3(0, 0, 0.375), 0.0, dk, -1.0, live, "steel")
+	OfficeKit.desk(o, at + Vector3(0, 0, -0.375), PI, dk, 1.0, false, "steel")
+	OfficeKit.dress(o, at + Vector3(0, 0, 0.375), 0.0, Vector2(dk.x, dk.z), south, seed_n)
+	OfficeKit.dress(o, at + Vector3(0, 0, -0.375), PI, Vector2(dk.x, dk.z), north_items, seed_n + 1)
+	return dr
+
+
+## An island of pairs of desks pushed together along X round `c`, every desk the same size and the pairs evenly
+## spaced (user: "책상마다 크기 간격 다 같게 하고 칸막이도 해줘"): `items` = [[south items, north items], …] per pair
+## west to east, `seeds` and `live` per pair, `chairs` = per pair whether its [south, north] seat has a chair ("chair"
+## or ""), the one office chair (_sec_chair) centred on its desk at the same distance. Partitions make every seat
+## a cubby. Returns each pair's south-desk drawers.
+func _sec_island(o: Node3D, c: Vector3, items: Array, seeds: Array, live: Array, chairs: Array) -> Array:
+	var out := []
+	var n := items.size()
+	var x0 := c.x - SEC_DESK_W * n * 0.5
+	var turn := [0.15, -0.2, 0.1, -0.1]
+	for i in n:
+		var at := Vector3(x0 + SEC_DESK_W * (i + 0.5), 0, c.z)
+		out.append(_sec_pair(o, at, items[i][0], items[i][1], seeds[i], live[i]))
+		for s in 2:
+			var kind: String = chairs[i][s]
+			var p := at + Vector3(0, 0, 1.15 if s == 0 else -1.15)
+			var r: float = (PI + turn[i % 4]) if s == 0 else -turn[(i + 1) % 4]
+			if kind != "":
+				_sec_chair(o, p, r)
+	_desk_screens(o, x0, x0 + SEC_DESK_W * n, c.z, n)
+	return out
+
+
+## Office partitions on a desk island from x0 to x1 along z zc (the pairs 1.5 m deep): a fabric screen down the
+## middle between the facing desks and one across the island at every join and at both ends, in steel frames,
+## standing 0.48 m over the desk tops.
+func _desk_screens(o: Node3D, x0: float, x1: float, zc: float, n: int) -> void:
+	var fabric := Mats.std(Color(0.34, 0.36, 0.35), 0.95)
+	var frame := Mats.std(Color(0.2, 0.21, 0.21), 0.5, 0.5)
+	var top := OfficeKit.DESK_H
+	var h := 0.48
+	var t := 0.04
+	Geo.box(o, Vector3((x0 + x1) * 0.5, top + h * 0.5, zc), Vector3(x1 - x0, h, t), fabric, false)
+	Geo.box(o, Vector3((x0 + x1) * 0.5, top + h + 0.012, zc), Vector3(x1 - x0 + 0.02, 0.024, t + 0.014), frame, false)
+	for k in n + 1:
+		var x := x0 + (x1 - x0) * k / n
+		if k == 0:
+			x -= t * 0.5 + 0.004
+		elif k == n:
+			x += t * 0.5 + 0.004
+		Geo.box(o, Vector3(x, top + h * 0.5, zc), Vector3(t, h, 1.5), fabric, false)
+		Geo.box(o, Vector3(x, top + h + 0.012, zc), Vector3(t + 0.014, 0.024, 1.52), frame, false)
+		for sz in [-1.0, 1.0]:
+			Geo.box(o, Vector3(x, top + h * 0.5, zc + sz * 0.75), Vector3(t + 0.014, h, 0.024), frame, false)
+
+
+## The south end, where you start (cut down to just before the desks — user: "여기 책상없는 공간 잘라. 줄여"): along the
+## south wall the night-duty room's door, the CRT desk (a), a filing cabinet with a fan on it, a plant, the water
+## cooler and the guard's small CCTV stack, the key box and the extinguisher by the passage door; posters, the
+## calendar. (Every chair in the office is the one office chair, at a desk — user: "의자 디자인 하나로 통일하고 책상 앞에만")
+func _sec_south(o: Node3D, sets: Dictionary) -> void:
+	var south := SEC_LEG.end.y - 0.15            # the south wall's room face
+	var beige := Color(0.62, 0.58, 0.46)
+	sets["a"] = OfficeKit.desk(o, Vector3(-19.75, 0, south - 0.375), PI, Vector3(SEC_DESK_W, OfficeKit.DESK_H, 0.75), 1.0, true, "steel")
+	OfficeKit.dress(o, Vector3(-19.75, 0, south - 0.375), PI, Vector2(SEC_DESK_W, 0.75), [["blotter", -0.1, 0.15],
+			["pc", 0.35, 0.0], ["phone_beige", -0.6, -0.3, 0.3], ["folders", -0.7, 0.35, 0.2], ["trays", 0.85, -0.35],
+			["pens", -0.25, -0.65], ["mug", 0.85, 0.55], ["lamp", -0.3, -0.5, 0.4]], 3)
+	_sec_chair(o, Vector3(-19.45, 0, south - 0.9), 0.15)          # pushed in, clear of the way in from the west door
+	OfficeKit.filing_cabinet(o, Vector3(-18.6, 0, south - 0.31), PI, 4, beige, false)
+	OfficeKit.fan(o, Vector3(-18.6, 1.32, south - 0.35), PI + 0.5, false)
+	OfficeKit.mug(o, Vector3(-18.45, 1.32, south - 0.55))
+	OfficeKit.wall_calendar(o, Vector3(-16.3, 1.75, south + 0.002), PI)
+	OfficeKit.potted_plant(o, Vector3(-16.4, 0, south - 0.18), 1.0, 5)
+	OfficeKit.water_cooler(o, Vector3(-15.75, 0, south - 0.17), PI)
+	# the guard's small CCTV stack on a cabinet against the south wall, a notice board over it
+	OfficeKit.low_cabinet(o, Vector3(-14.4, 0, south - 0.21), PI, Vector3(1.3, 0.85, 0.42))
+	OfficeKit.crt_bank(o, Vector3(-14.4, 0, south), PI, 1.2, ["crt", "snow", "crt", "crt"], 9, 0.91, 1.83)
+	OfficeKit.notice_board(o, Vector3(-14.4, 2.4, south), PI, Vector2(1.1, 0.7), 11)
+	# by the passage door (kept clear of its leaf): the key box, the extinguisher; the no-smoking sign over the door
+	OfficeKit.key_box(o, Vector3(-13.15, 1.6, south), PI)
+	Geo.cyl(o, Vector3(-12.95, 0.3, south - 0.12), 0.075, 0.5, Mats.std(Color(0.75, 0.08, 0.06), 0.35, 0.2))
+	Geo.box(o, Vector3(-12.95, 0.6, south - 0.12), Vector3(0.05, 0.08, 0.05), Mats.get_mat("metal_dark"), false)
+	var ns := Node3D.new()
+	o.add_child(ns)
+	ns.position = Vector3(-12.553, 2.48, -16.0)
+	ns.rotation.y = -PI / 2
+	Geo.box(ns, Vector3.ZERO, Vector3(0.62, 0.15, 0.01), Mats.std(Color(0.92, 0.91, 0.86), 0.6), false)
+	Geo.fit(Geo.label(ns, "금연  NO SMOKING", Vector3(0, 0, 0.006), 0.0, 40, Color(0.7, 0.08, 0.06), 0.0026, false, "print"), 0.54, 0.11)
+
+
+## The desks: two pairs of steel desks across the south arm (the guard's, c, nearest the doors), the reception counter
+## by the west wall with its desk behind, and in the north arm two more pairs and a book trolley.
+func _sec_desks(o: Node3D, sets: Dictionary) -> void:
+	# the south arm's island of three pairs pushed together (user: "책상 하나 더 추가해서 3개 연결해서 붙여줘"), the
+	# guard's (c, the key card in c3) at its west end
+	sets["c"] = _sec_island(o, Vector3(-17.15, 0, -19.6), [
+			[[_ISLAND_PC_L, ["phone_beige", 0.45, 0.45, -0.2], ["folders", 0.55, -0.35, 0.1], ["pens", 0.85, 0.3], ["mug", 0.88, -0.1]],
+			[_ISLAND_PC_R, ["typewriter", -0.6, 0.0]]],
+			[[_ISLAND_PC_L, ["lamp", 0.75, -0.45, 0.3], ["pile", 0.4, 0.45, 0.15], ["mug", 0.9, 0.5]],
+			[_ISLAND_PC_R, ["folders", -0.55, -0.35, -0.15], ["phone_beige", -0.78, 0.4, 0.2]]],
+			[[_ISLAND_PC_R, ["folders", -0.5, -0.35, 0.15], ["folders", -0.5, -0.35, -0.1, 0.18], ["ashtray", -0.85, 0.45],
+				["pile", -0.35, 0.45, -0.2]],
+			[_ISLAND_PC_L, ["photos", 0.5, 0.4], ["lamp", 0.75, -0.5, -0.4]]]],
+			[9, 17, 13], [true, false, false], [["chair", "chair"], ["chair", "chair"], ["chair", "chair"]])[0]
+	# the reception counter, glazed, across the room (user: "칸막이 가로로 돌려줘"): it runs west from the CCTV room's
+	# corner, its front flush with that room's south face, so the two make one front line facing the doors; the way
+	# on into the north arm is past its west end. The clerk's desk is pushed against its back. 3 m: three panels, five
+	# glazed bays (one of each shorter than at first — user: "여기서 한칸 짧게해줘").
+	var cz := SEC_CCTV.end.y - 0.25
+	var cx := SEC_CCTV.position.x - 1.5
+	OfficeKit.counter_screen(o, Vector3(cx, 0, cz), 0.0, 3.0, 5, 3)
+	var dz := cz - 0.25 - 0.375
+	OfficeKit.desk(o, Vector3(cx + 0.4, 0, dz), PI, Vector3(SEC_DESK_W, OfficeKit.DESK_H, 0.75), 1.0, false, "steel")
+	OfficeKit.dress(o, Vector3(cx + 0.4, 0, dz), PI, Vector2(SEC_DESK_W, 0.75), [["pc_form", 0.3, 0.0],
+			["folders", -0.6, -0.3], ["phone", -0.2, 0.45, 0.2], ["radio", 0.9, -0.2]], 27)
+	_sec_chair(o, Vector3(cx + 0.55, 0, dz - 0.8), 0.25)
+	# the north arm: a book trolley, two pairs of desks (the whiteboard on a stand that stood here was removed — user:
+	# "이거 없애")
+	OfficeKit.trolley(o, Vector3(-19.0, 0, -29.6), 1.4, 5)
+	# the north arm's island of three (user: "여기도 … 3개 연결해서 붙여줘"), in the elbow by the CCTV room
+	_sec_island(o, Vector3(-23.475, 0, -28.8), [
+			[[["pc_off", -0.4, 0.04], ["folders", 0.55, -0.35], ["ashtray", 0.85, 0.45]],
+			[_ISLAND_PC_R, ["folders", -0.5, -0.35, 0.3], ["phone_beige", -0.75, 0.35]]],
+			[[_ISLAND_PC_R, ["folders", -0.5, -0.3, -0.15], ["pile", -0.6, 0.45, 0.2], ["mug", -0.25, 0.5]],
+			[["pc_form", -0.4, 0.04], ["lamp", 0.75, -0.45, -0.3], ["photos", 0.4, 0.4]]],
+			[[_ISLAND_PC_L, ["folders", 0.5, -0.3, 0.2], ["pile", 0.55, 0.45], ["mug", 0.88, 0.5]],
+			[_ISLAND_PC_R, ["typewriter", -0.55, 0.0]]]],
+			[33, 35, 31], [false, false, false], [["chair", "chair"], ["chair", "chair"], ["chair", "chair"]])
+
+
+## Along the walls: the windows between the pilasters with cabinets under them (the lateral cabinets, l, and the
+## filing cabinet f), lockers, bookshelves, document and glass cabinets (no posters — user: "벽에 붙은 수배지랑 바닥에 굴러다니는
+## 종이 치워줘").
+func _sec_walls(o: Node3D, sets: Dictionary) -> void:
+	var west := SEC_LEG.position.x + 0.15
+	var east := -12.565
+	var north := SEC_BAR.position.y + 0.15
+	var south_bar := SEC_LEG.position.y - 0.15
+	var beige := Color(0.62, 0.58, 0.46)
+	var olive := Color(0.34, 0.36, 0.28)
+	var grey := Color(0.46, 0.47, 0.45)
+	# the south arm's west wall: two big windows onto the maze outside (sec_view), the lateral cabinets (l) and a low
+	# cabinet under the first
+	for i in 2:
+		sec_view_panes.append(OfficeKit.steel_window(o, Vector3(west + 0.005, SEC_VIEW_Y, SEC_VIEW_W[i]), PI / 2, SEC_VIEW_SIZE, 4, 3, 61 + i, true, true, i))
+	var lat: Array = []
+	lat.append_array(OfficeKit.lateral_cabinet(o, Vector3(west + 0.23, 0, -18.65), PI / 2))
+	lat.append_array(OfficeKit.lateral_cabinet(o, Vector3(west + 0.23, 0, -19.6), PI / 2, 0.65))
+	sets["l"] = lat
+	OfficeKit.binders(o, Vector3(west + 0.23, 0.74, -19.0), PI / 2, 6, 31)
+	OfficeKit.trays(o, Vector3(west + 0.25, 0.74, -19.6), PI / 2, 2)
+	# the radio chargers on a low cabinet under the window
+	OfficeKit.low_cabinet(o, Vector3(west + 0.21, 0, -20.75), PI / 2, Vector3(1.0, 0.85, 0.42))
+	Geo.box(o, Vector3(west + 0.19, 1.0, -20.75), Vector3(0.34, 0.04, 0.8), Mats.get_mat("steel_frame"), false)
+	for i in 3:
+		var rz := -21.0 + i * 0.25
+		Geo.box(o, Vector3(west + 0.17, 1.06, rz), Vector3(0.14, 0.08, 0.16), Mats.get_mat("plastic_dark"), false)
+		Geo.box(o, Vector3(west + 0.17, 1.2, rz), Vector3(0.035, 0.2, 0.06), Mats.get_mat("plastic_grey"), false)
+		Geo.cyl(o, Vector3(west + 0.17, 1.38, rz + 0.02), 0.006, 0.16, Mats.get_mat("plastic_dark"))
+		Geo.box(o, Vector3(west + 0.097, 1.06, rz + 0.05), Vector3(0.004, 0.015, 0.015), Mats.get_mat("lamp_green"), false)
+	# the south arm's east wall: a window with filing cabinets under it (f), then lockers, a bookshelf, a cabinet
+	OfficeKit.steel_window(o, Vector3(east - 0.005, 2.1, -19.7), -PI / 2, Vector2(3.2, 1.2), 4, 2, 63, false, false, 2)
+	sets["f"] = OfficeKit.filing_cabinet(o, Vector3(east - 0.31, 0, -18.35), -PI / 2, 4, olive)
+	var tints := [beige, grey, beige, olive]
+	for i in 4:
+		OfficeKit.filing_cabinet(o, Vector3(east - 0.31, 0, -18.85 - i * 0.5), -PI / 2, 4, tints[i], false)
+	OfficeKit.folders(o, Vector3(east - 0.3, 1.32, -19.3), -0.1, 7, RandomNumberGenerator.new())
+	OfficeKit.fan(o, Vector3(east - 0.32, 1.32, -20.2), -PI / 2 - 0.5, false)
+	# the north arm's north wall: a window over a run of filing cabinets; a bookshelf, then the changing lockers
+	# (the arm's west end came in — user: "여기 공간 너무 빈다. 줄여줘" — and took the second window and run)
+	OfficeKit.steel_window(o, Vector3(-24.4, 2.1, north + 0.005), 0.0, Vector2(3.0, 1.2), 4, 2, 64, false, false, 2)
+	var run := [beige, olive, grey, beige, beige]
+	for i in 5:
+		OfficeKit.filing_cabinet(o, Vector3(-25.55 + i * 0.5, 0, north + 0.31), 0.0, 4, run[i], false)
+	OfficeKit.carton(o, Vector3(-25.45, 1.32, north + 0.3), Vector3(0.42, 0.28, 0.38), 0.2)
+	OfficeKit.folders(o, Vector3(-24.8, 1.32, north + 0.3), 0.15, 10, RandomNumberGenerator.new())
+	OfficeKit.radio_base(o, Vector3(-23.9, 1.32, north + 0.32), 0.0)
+	OfficeKit.bookshelf(o, Vector3(-21.6, 0, north + 0.19), 0.0, Vector3(1.0, 2.0, 0.38), 14)
+	# from the bookshelf to the coat rack, the staff's changing lockers (user: "액자 치우고 저 보관소도 치우고 옷 갈아
+	# 입을 수 있는 사물함으로 채워줘"): seven, 01–07; 04 in the middle (its card 신규) opens, the uniform is in it
+	sec_locker = OfficeKit.lockers(o, Vector3(-19.6, 0, north + 0.26), 0.0, 7,
+		["김동현", "", "이재석", "신규", "최민호", "", "박정우"], -1, 1, 3, 3)      # 04's card red (user: "이름표가 빨간색")
+	sec_locker["open"] = false
+	var ld: Node3D = sec_locker.door
+	var luse := Interactable.create(ld, Vector3(float(sec_locker.door_w) * 0.5, 1.0, 0.05), Vector3(float(sec_locker.door_w), 1.6, 0.1),
+		"사물함 열기", func(): open_locker(not sec_locker.open))
+	luse.press_sound = ""
+	sec_locker["use"] = luse
+	# the north arm's south wall: a big window onto the maze outside (sec_view — user: "이쪽 벽에 큰 창문들 달아줘
+	# 밖에 보이게"; one since the arm's west end came in) with a low cabinet under it; a coat rack in the corner
+	var wx_bar := SEC_VIEW_N
+	for i in wx_bar.size():
+		sec_view_panes.append(OfficeKit.steel_window(o, Vector3(wx_bar[i], SEC_VIEW_Y, south_bar - 0.005), PI, SEC_VIEW_SIZE, 4, 3, 67 + i, true, true, 0))
+		OfficeKit.low_cabinet(o, Vector3(wx_bar[i], 0, south_bar - 0.21), PI, Vector3(1.5, 0.85, 0.42))
+	OfficeKit.folders(o, Vector3(-24.0, 0.85, south_bar - 0.22), 0.2, 8, RandomNumberGenerator.new())
+	OfficeKit.potted_plant(o, Vector3(-24.9, 0.85, south_bar - 0.2), 0.6, 8)
+	OfficeKit.coat_rack(o, Vector3(-17.65, 0, -30.85), 0.9)
+	# the west end wall: lockers, a document cabinet and a bookshelf
+	var wend := SEC_BAR.position.x + 0.15
+	OfficeKit.lockers(o, Vector3(wend + 0.25, 0, -27.25), PI / 2, 4, ["", "정태호", "", "임수빈"], 2, 9)
+	OfficeKit.steel_cabinet(o, Vector3(wend + 0.225, 0, -28.8), PI / 2, Vector3(1.1, 1.8, 0.45), ["보안문서 85–90", "출입 기록", "근무 일지"])
+	OfficeKit.bookshelf(o, Vector3(wend + 0.19, 0, -29.9), PI / 2, Vector3(1.0, 2.0, 0.38), 15)
+
+
+## The CCTV room (CCTV 관제실, SEC_CCTV) against the office's south face and west face, which are as they were when it
+## filled the whole corner block (x -17.2..-12.4, z -34..-22.6): plaster walls to the ceiling, a counter window in the
+## south face with the clock and the room's name over it and a television on a bracket at its corner, a big window and
+## the doorway in the west face. The room itself is a third of that block (user: "cctv관제실 사이즈 3분의1로", "밖에서
+## 줄여야해, 사무실 크기 그대로"): its north and east walls stand in from the old outer walls and the rest of the block
+## is outside the building (no floor or ceiling there, sec_floor_rects). Inside, under the fitting over the counter
+## window: an L of console along its north and east walls — built-in CRTs, control panels, open under the worktop where
+## the operators sit — under banks of CRT monitors (cameras, static, dead ones), a rack of VCRs, chairs, cartons,
+## cables, the screens' green glow.
+func _cctv_room(o: Node3D) -> void:
+	var wm := Mats.get_mat("plaster_wall")
+	var x0 := SEC_CCTV.position.x                   # its west face (outside)
+	var z1 := SEC_CCTV.end.y                        # its south face (outside)
+	var t := 0.2
+	var y := SEC_CEIL
+	# the south face: the counter window (wc ± 0.9, y 1.0..2.1)
+	var sz := z1 - t * 0.5
+	var wc := x0 + 2.2
+	for seg in [[x0, wc - 0.9], [wc + 0.9, -12.4]]:
+		Geo.box(o, Vector3((seg[0] + seg[1]) * 0.5, y * 0.5, sz), Vector3(seg[1] - seg[0], y, t), wm)
+	Geo.box(o, Vector3(wc, 0.5, sz), Vector3(1.8, 1.0, t), wm)
+	Geo.box(o, Vector3(wc, (2.1 + y) * 0.5, sz), Vector3(1.8, y - 2.1, t), wm)
+	Geo.box(o, Vector3(wc, 1.02, sz), Vector3(2.0, 0.05, 0.62), Mats.std(Color(0.32, 0.27, 0.2), 0.45), false)
+	var plate := Node3D.new()
+	o.add_child(plate)
+	plate.position = Vector3(wc, 2.36, z1 + 0.008)
+	Geo.box(plate, Vector3.ZERO, Vector3(1.3, 0.22, 0.012), Mats.std(Color(0.93, 0.92, 0.87), 0.6), false)
+	Geo.fit(Geo.label(plate, "CCTV 관제실 · 접수", Vector3(0, 0, 0.007), 0.0, 48, Color(0.12, 0.14, 0.3), 0.003, false, "print"), 1.16, 0.16)
+	# (no clock over it — user: "시계도 없었으면 좋겠어")
+	OfficeKit.tv_bracket(o, Vector3(x0 + 0.3, 2.7, z1 + 0.012), -PI / 4 + 0.2, 7.0)
+	# the west face, the office's wall all the way up to the north wall as before: the window z -27.0..-23.6 (y
+	# 1.0..2.45) onto the clerk's desk; the doorway just north of it (past the room's north wall the wall is plain, a
+	# notice board and posters on it)
+	var wx := x0 + t * 0.5
+	var wz := -25.3
+	var dz := -27.75
+	for seg in [[SEC_BAR.position.y, dz - 0.5], [dz + 0.5, wz - 1.7], [wz + 1.7, z1]]:
+		Geo.box(o, Vector3(wx, y * 0.5, (seg[0] + seg[1]) * 0.5), Vector3(t, y, seg[1] - seg[0]), wm)
+	Geo.box(o, Vector3(wx, (2.15 + y) * 0.5, dz), Vector3(t, y - 2.15, 1.0), wm)
+	Geo.box(o, Vector3(wx, 0.5, wz), Vector3(t, 1.0, 3.4), wm)
+	Geo.box(o, Vector3(wx, (2.45 + y) * 0.5, wz), Vector3(t, y - 2.45, 3.4), wm)
+	OfficeKit.steel_window(o, Vector3(x0 - 0.002, 1.725, wz), -PI / 2, Vector2(3.4, 1.45), 4, 2, 66, true, false, 2)
+	for sx in [-1.0, 1.0]:
+		Geo.box(o, Vector3(wx, 1.07, dz + sx * 0.52), Vector3(t + 0.04, 2.14, 0.05), OfficeKit.frame_steel(), false)
+	Geo.box(o, Vector3(wx, 2.16, dz), Vector3(t + 0.04, 0.05, 1.09), OfficeKit.frame_steel(), false)
+	OfficeKit.tag(o, Vector3(x0 - 0.002, 2.4, dz), -PI / 2, "관계자 외 출입금지", Vector2(0.5, 0.1), Color(0.95, 0.85, 0.8))
+	OfficeKit.notice_board(o, Vector3(x0 - 0.012, 1.7, -29.4), -PI / 2, Vector2(1.3, 0.8), 37)
+	# its own north and east walls: past them is outside the building
+	var x1 := SEC_CCTV.end.x
+	var z0 := SEC_CCTV.position.y
+	Geo.box(o, Vector3((x0 + x1) * 0.5, y * 0.5, z0 + t * 0.5), Vector3(x1 - x0, y, t), wm)
+	Geo.box(o, Vector3(x1 - t * 0.5, y * 0.5, (z0 + z1) * 0.5), Vector3(t, y, z1 - z0), wm)
+	# inside (3 x 5.5 m), under the fitting over the counter window: a console along the north wall
+	# clear of the doorway and two along the east wall, the monitor banks over them, the VCRs, the receptionist's desk
+	# under the counter window
+	var ix := x0 + t                                # the west wall's inner face
+	var e := x1 - t                                 # the east wall's
+	var n := z0 + t                                 # the north wall's
+	OfficeKit.console(o, Vector3(ix + 1.975, 0, n), 0.0, 1.95, ["crt", "panel", "crt"], 49, true)
+	OfficeKit.crt_bank(o, Vector3((ix + 1.0 + e - 0.46) * 0.5, 0, n), 0.0, (e - 0.46) - (ix + 1.0),
+			["crt", "snow", "off", "crt", "crt", "snow"], 4, 1.55, 2.6)
+	OfficeKit.console(o, Vector3(e, 0, n + 1.48), -PI / 2, 1.4, ["panel", "snow", "crt"], 41)
+	OfficeKit.console(o, Vector3(e, 0, n + 2.78), -PI / 2, 1.2, ["crt", "crt"], 42, true)
+	OfficeKit.crt_bank(o, Vector3(e, 0, n + 1.69), -PI / 2, 3.38,
+			["crt", "snow", "crt", "off", "crt", "crt", "snow", "crt", "off", "crt", "crt", "crt", "snow", "crt"], 3, 1.55, 2.6)
+	OfficeKit.vcr_rack(o, Vector3(e - 0.225, 0, -24.4), -PI / 2, 5)
+	OfficeKit.desk(o, Vector3(wc, 0, z1 - t - 0.375), PI, Vector3(SEC_DESK_W, OfficeKit.DESK_H, 0.75), 1.0, false, "steel")
+	OfficeKit.dress(o, Vector3(wc, 0, z1 - t - 0.375), PI, Vector2(SEC_DESK_W, 0.75), [["pc_form", 0.4, 0.0],
+			["folders", -0.55, -0.3], ["phone_beige", -0.15, 0.4, 0.3], ["mug", -0.85, 0.5]], 51)
+	_sec_chair(o, Vector3(wc, 0, z1 - t - 1.25), 0.0)
+	OfficeKit.filing_cabinet(o, Vector3(ix + 0.31, 0, z1 - t - 0.31), PI, 4, Color(0.62, 0.58, 0.46), false)
+	_sec_chair(o, Vector3(ix + 1.9, 0, n + 1.35), PI + 0.2)
+	_sec_chair(o, Vector3(ix + 1.75, 0, n + 2.8), PI / 2 + 0.2)
+	OfficeKit.carton(o, Vector3(ix + 0.28, 0, -25.9), Vector3(0.5, 0.4, 0.4), 0.1)
+	OfficeKit.carton(o, Vector3(ix + 0.31, 0.4, -25.93), Vector3(0.4, 0.28, 0.34), -0.2)
+	Geo.blocker(o, Vector3(ix + 0.28, 0.34, -25.9), Vector3(0.55, 0.68, 0.45))
 	var cable := Mats.std(Color(0.05, 0.05, 0.055), 0.6)
-	for cb in [[Vector3(-18.9, 0.006, -18.0), 1.3, 0.5], [Vector3(-18.7, 0.006, -17.2), 1.1, -0.35], [Vector3(-18.4, 0.006, -19.4), 1.2, 1.2]]:
-		Geo.box(self, cb[0], Vector3(cb[1], 0.012, 0.012), cable, false, cb[2])
-	var glow := Geo.omni(self, Vector3(-18.6, 1.7, -18.7), Color(0.5, 0.82, 0.74), 0.75, 4.5)
+	for cb in [[Vector3(ix + 1.4, 0.006, -27.0), 0.9, 0.5], [Vector3(ix + 2.3, 0.006, -25.9), 0.8, -0.35]]:
+		Geo.box(o, cb[0], Vector3(cb[1], 0.012, 0.012), cable, false, cb[2])
+	var glow := Geo.omni(o, Vector3(ix + 1.7, 1.7, -26.0), Color(0.5, 0.82, 0.74), 0.8, 4.0)
 	glow.light_specular = 0.3
 	glow.light_volumetric_fog_energy = 0.2
 
@@ -1568,7 +2180,12 @@ func _cctv_room() -> void:
 ## pull handle in the room, hung on the south jamb; it opens into the room. Shut and dead to [E] until the story
 ## gives it a prompt and a callback.
 func _security_door() -> void:
-	sec_passage = steel_door(self, Vector3(-12.4, 0.0, -16.0))     # on the wall's centre line; local +X = the passage
+	# a panel door in the passage's wall, seen from the passage only: its frame and leaf stay inside the wall (the
+	# office's side is lined over it), its [E] on the passage side; turned so it would open toward the office
+	sec_passage = OfficeKit.door(sec_root, Vector3(-12.37, 0.0, -16.0), PI, "", 0.24)   # its frame 2 cm proud on the passage side
+	var u := sec_passage.use as Interactable
+	u.position.x = -0.2                                  # (local -X is the passage)
+	((u.get_child(0) as CollisionShape3D).shape as BoxShape3D).size = Vector3(0.3, 2.0, 0.9)
 	sec_door = sec_passage.root
 	sec_door.name = "SecurityDoor"
 	sec_leaf = sec_passage.leaf
@@ -2393,6 +3010,7 @@ func _build_probes() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_sec_view()
 	if air_haze:
 		var hz: LightZone = zones.airhall
 		air_haze.emission = AirHall.HAZE_GLOW * (hz.panel_mat.emission_energy_multiplier / hz.panel_energy)
@@ -2404,13 +3022,56 @@ func _process(delta: float) -> void:
 			p.intensity = move_toward(p.intensity, want, delta * 2.0)
 
 
+## The security office's big windows both ways. From the office (sec_view_panes) a PortalView renders the maze round
+## it as if your eye stood at the same spot in the maze (ServiceHall.ORIGIN off: the maze is laid out in the office's
+## own coordinates), at half resolution — live only while your eye is in the office. From the maze (its window panes)
+## sec_inview renders the office from your spot taken back by the same offset, seeing nothing but the office's own
+## layer (VIS_OFFICE: its walls, holed for the windows, hide everything round it) — live only while your eye is in
+## the maze where those windows can be seen. Either is plain black when not live. Made the first frame there is a
+## camera to look from.
+func _update_sec_view() -> void:
+	if sec_view_panes.is_empty() or service_hall == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	if sec_view == null:
+		var env: Environment = null
+		for we: WorldEnvironment in get_tree().root.find_children("*", "WorldEnvironment", true, false):
+			env = we.environment
+			break
+		var src := Transform3D(Basis(), Vector3(SEC_LEG.position.x, 0, SEC_LEG.position.y))
+		var dst := Transform3D(Basis(), src.origin + ServiceHall.ORIGIN)
+		sec_view = PortalView.create(self, src, dst, cam, env)
+		sec_view.res_scale = 0.5
+		var m := sec_view.surface_material()
+		for p in sec_view_panes:
+			p.material_override = m
+		sec_inview = PortalView.create(self, dst, src, cam, env)
+		sec_inview.res_scale = 0.6
+		sec_inview.set_cull_mask(VIS_OFFICE)
+		sec_inview.set_volumetric_fog(false)           # the maze's haze stays in the maze, the aircraft hall's out of it
+		var mi := sec_inview.surface_material()
+		for p in service_hall.office_panes:
+			p.material_override = mi
+	sec_view.eye = cam
+	sec_inview.eye = cam
+	var q := cam.global_position
+	var inside := q.y > -1.0 and q.y < SEC_CEIL + 1.0 and zone_at(q) == "secoffice"
+	if inside != sec_view.is_processing():
+		sec_view.set_active(inside)
+	var looking_in := service_hall.sees_office(q)
+	if looking_in != sec_inview.is_processing():
+		sec_inview.set_active(looking_in)
+
+
 ## Reverb zones: every 3D sound (doors, machines, the colleague's voice) sends into the hall or room reverb of
 ## the zone it is played in, so the big halls ring and the small rooms stay dry. Rooms inside a hall win (priority).
 func _build_reverb() -> void:
 	var defs := {
 		"hall": ["RevHall", 0.32, HALL_H], "security": ["RevMid", 0.28, SEC_H], "corridor": ["RevLong", 0.32, COR_H],
 		"baggage": ["RevMid", 0.28, BAG_H], "gates": ["RevLong", 0.3, 5.5],
-		"office": ["RevRoom", 0.22, 3.2], "storage": ["RevRoom", 0.24, 3.2], "maint": ["RevRoom", 0.26, 3.0],
+		"office": ["RevRoom", 0.22, 3.2], "secoffice": ["RevMid", 0.24, SEC_CEIL], "storage": ["RevRoom", 0.24, 3.2], "maint": ["RevRoom", 0.26, 3.0],
 		"bridge0": ["RevTight", 0.3, 2.8],
 	}
 	for zn in defs:

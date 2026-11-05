@@ -9,6 +9,20 @@ const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4
 const LAYER_AUDIO := 512        # reverb zones (Terminal) found by every AudioStreamPlayer3D's area_mask
 const VIS_PORTAL_HIDDEN := 1 << 19   # render layer 20: seen by your eye, not by a PortalView (what stands behind its doorway)
+## Render layer 17: small closed rooms lit only by their own lamps — the lift cars and the stair lobbies, built twice
+## (one on each floor they join) and swapped while shut, so nothing from outside may light either copy (Terminal
+## takes it out of every other light), and the night-duty room. seal() puts a node and its lights on it.
+const VIS_SEALED := 1 << 16
+
+
+static func seal(node: Node) -> void:
+	var all: Array = [node]
+	all.append_array(node.find_children("*", "VisualInstance3D", true, false))
+	for n in all:
+		if n is Light3D:
+			(n as Light3D).light_cull_mask = VIS_SEALED
+		elif n is VisualInstance3D:
+			(n as VisualInstance3D).layers = VIS_SEALED
 
 static var sign_font: Font      # wayfinding signs: DIN-style Bahnschrift, Hangul from Malgun Gothic Bold
 static var led_font: Font       # LED / LCD displays: Bahnschrift with wider tracking
@@ -408,7 +422,8 @@ static func spot(parent: Node, pos: Vector3, target: Vector3, color: Color, ener
 
 
 ## Axis-aligned wall from a to b (on the XZ plane) with optional openings.
-## openings: Array of [from_offset, to_offset, opening_top] measured along the wall from `a`.
+## openings: Array of [from_offset, to_offset, opening_top] measured along the wall from `a`; a 4th value, the sill
+## height, makes it a window (the wall stays under it).
 static func wall(parent: Node, a: Vector2, b: Vector2, height: float, mat: Material, thickness := 0.4,
 		openings: Array = [], base_y := 0.0) -> void:
 	var along_x := absf(b.x - a.x) > absf(b.y - a.y)
@@ -425,6 +440,8 @@ static func wall(parent: Node, a: Vector2, b: Vector2, height: float, mat: Mater
 			_wall_piece(parent, a, along_x, dir, cursor, s, base_y, base_y + height, thickness, mat)
 		if top < height - 0.01:
 			_wall_piece(parent, a, along_x, dir, s, e, base_y + top, base_y + height, thickness, mat)
+		if o.size() > 3 and float(o[3]) > 0.01:       # a window: [from, to, head, sill] keeps the wall under its sill
+			_wall_piece(parent, a, along_x, dir, s, e, base_y, base_y + float(o[3]), thickness, mat)
 		cursor = e
 	if cursor < length - 0.01:
 		_wall_piece(parent, a, along_x, dir, cursor, length, base_y, base_y + height, thickness, mat)

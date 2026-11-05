@@ -23,7 +23,7 @@ func _ready() -> void:
 		# the terminal's zones start switched off: light them the way the story's night does (prologue 02:17)
 		for zn in level.zones:
 			level.set_zone_light(zn, true, true)
-			level.zones[zn].night_dim = Chapter1.HUB_DIM.get(zn, 0.62)
+			level.zones[zn].night_dim = 1.0 if zn == "secoffice" else Chapter1.HUB_DIM.get(zn, 0.62)   # the office is lit as in ch1
 		await get_tree().create_timer(1.0).timeout
 	for n in get_tree().root.find_children("*", "CanvasLayer", true, false):
 		(n as CanvasLayer).visible = false

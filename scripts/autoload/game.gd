@@ -12,7 +12,9 @@ const SCENE_MENU := "res://scenes/menu.tscn"
 const SCENE_GAME := "res://scenes/game.tscn"
 
 ## Parts of the story in play order. Only the main story ("ch1" on) is saved; the prologue always plays from its start.
-const CHAPTERS := ["prologue", "ch1"]
+## The parts of the story a save or `--chapter` can name: "shift1" is the game (Shift1); the prologue and the old
+## chapter 1 are out of the game (user: "현재 게임루프 다 빼줘") and only start from the debug flags.
+const CHAPTERS := ["shift1", "prologue", "ch1"]
 const START_CLOCK := 2 * 60 + 17   # SCENE 01: AM 02:17
 
 # --- settings -----------------------------------------------------------------
@@ -60,7 +62,7 @@ const REBINDABLE := [["move_forward", "앞으로 이동"], ["move_back", "뒤로
 	["tablet", "태블릿"]]
 
 # --- session state ---------------------------------------------------------------
-var chapter := "prologue"
+var chapter := "shift1"
 var checkpoint := ""          # where the chapter picks up again after you are caught ("" = its start)
 var inventory: Array = []     # item ids you carry ("key_gate" …), Events.inventory_changed
 var flags := {}               # story flags
@@ -108,7 +110,7 @@ func _debug_args() -> void:
 
 
 func reset_session() -> void:
-	chapter = "prologue"
+	chapter = "shift1"
 	checkpoint = ""
 	inventory = []
 	flags = {}
@@ -271,11 +273,10 @@ func set_checkpoint(name_text: String) -> void:
 
 
 # --- scene flow ------------------------------------------------------------------------
-## 새 게임: the story from the very beginning — the prologue (the old save is dropped; the prologue's end saves the
-## main story's start).
+## 새 게임: the game from its start — the letter, then the corridors at the lift (Shift1; the old save is dropped).
 func start_new_game() -> void:
 	_drop_save()
-	start_prologue()
+	start_chapter("shift1")
 
 
 func _drop_save() -> void:

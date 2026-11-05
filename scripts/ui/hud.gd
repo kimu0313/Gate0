@@ -60,10 +60,13 @@ var _keys_icon: UiIcon
 var _keys_caption: Label
 var _clock_override := ""        # "--:--" where time has stopped
 var _items: HBoxContainer        # what you carry (bottom right)
+var _flash_hint: Control         # the [F] 손전등 key hint (hidden while you have no flashlight: set_flashlight_hint)
 
 ## Names and icons of the things you can carry (Game.inventory).
-const ITEMS := {"key_gate": ["열쇠", "key"], "keycard": ["키 카드", "card"], "boarding_pass": ["탑승권", "card"],
+const ITEMS := {"key_gate": ["열쇠", "key"], "keycard": ["키 카드", "card"], "radio": ["무전기", "radio"], "flashlight": ["플래시 라이트", "lamp"], "guide": ["지침서", "records"], "boarding_pass": ["탑승권", "card"],
 	"id_card": ["신원 카드", "card"], "bag_tag": ["수하물표", "card"]}
+## The key that uses a carried thing, shown on its tile.
+const ITEM_KEYS := {"guide": "tablet", "flashlight": "flashlight"}
 
 
 func _ready() -> void:
@@ -119,6 +122,12 @@ func refresh_items() -> void:
 		ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(ic)
 		h.add_child(UiKit.label(it[0], 20, UiKit.TEXT, "sans", 700))
+		# the key that uses it, on its tile (user: "지침서를 얻으면 tab을 눌러 열 수 있고, 플래시를 얻으면 f를 눌러 킬 수
+		# 있어. 이것도 ui로 안내해줘")
+		if ITEM_KEYS.has(id):
+			var cap := UiKit.keycap(Game.key_label(ITEM_KEYS[id]), UiKit.MIN_TEXT, false)
+			cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			h.add_child(cap)
 		_items.add_child(tile)
 		if i >= had:
 			tile.modulate = Color(2.0, 2.0, 2.0, 0.0)
@@ -184,6 +193,7 @@ func _build_objective(root: Control) -> void:
 	var meta := PanelContainer.new()
 	meta.add_theme_stylebox_override("panel", UiKit.boxm(Color(0.035, 0.043, 0.055, 0.62), Vector4(14, 6, 16, 7)))
 	meta.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	meta.visible = false                     # no clock on screen (user, 2026-11-05: "왼쪽위에 시간ui지워")
 	_obj_root.add_child(meta)
 	var mh := HBoxContainer.new()
 	mh.add_theme_constant_override("separation", 12)
@@ -199,6 +209,142 @@ func _build_objective(root: Control) -> void:
 	_phase_chip = UiKit.label("", UiKit.MIN_TEXT, UiKit.INK_0, "display", 700)
 	_phase_box.add_child(_phase_chip)
 	_refresh_phase_chip()
+	_build_tasks()
+
+
+## The to-do list, top left (user: "왼쪽 상단에 지금 해야 할 목록이 ui로 뜨는데 … 체크 표시 되면서 사라지게"; then
+## "to do 오늘할일 지워. 그냥 할 일만 써놔"): just the lines, no heading, a box beside each. task_show(text) adds a line,
+## task_done(text) ticks that one, dims it, and a moment later it goes; the panel goes with the last line.
+var _task_box: PanelContainer
+var _task_list: VBoxContainer
+var _tasks: Array[Dictionary] = []     # {key, row, tick, icon, text, done}
+var _task_tw: Tween
+
+
+func _build_tasks() -> void:
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 10)
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_obj_root.add_child(gap)
+	_task_box = PanelContainer.new()
+	_task_box.add_theme_stylebox_override("panel", UiKit.boxm(Color(0.035, 0.043, 0.055, 0.7), Vector4(16, 12, 20, 12)))
+	_task_box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_task_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_obj_root.add_child(_task_box)
+	_task_list = VBoxContainer.new()
+	_task_list.add_theme_constant_override("separation", 10)
+	_task_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_task_box.add_child(_task_list)
+	_task_box.visible = false
+
+
+## Adds `text` to the to-do list (the panel fades in if it was empty).
+func task_show(text: String) -> void:
+	if _task_find(text) >= 0:
+		return
+	for t2 in _tasks.duplicate():           # ticked lines still on their way out go now
+		if t2.done:
+			_tasks.erase(t2)
+			(t2.row as Node).queue_free()
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_task_list.add_child(row)
+	var tick := PanelContainer.new()
+	tick.custom_minimum_size = Vector2(24, 24)
+	tick.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tick.add_theme_stylebox_override("panel", UiKit.box(Color(0, 0, 0, 0), UiKit.TEXT, 3, 2, 0))
+	tick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(tick)
+	var cc := CenterContainer.new()
+	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tick.add_child(cc)
+	var icon := UiIcon.make("check", 20, UiKit.INK_0)
+	icon.visible = false
+	cc.add_child(icon)
+	# a part in [b] … [/b] shows yellow (user: "각 사물함, 책상위, 자료실 단어를 노란색으로 강조해줘")
+	var label := UiKit.rich(text, 20, UiKit.TEXT, "sans")
+	label.add_theme_font_override("normal_font", UiKit.font("sans", 700))
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.text = label.text.replace("[b]", "[color=#ffc21a]").replace("[/b]", "[/color]")
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+	_tasks.append({"key": text, "row": row, "tick": tick, "icon": icon, "text": label, "done": false})
+	if not _task_box.visible or (_task_tw and _task_tw.is_valid()):
+		if _task_tw and _task_tw.is_valid():
+			_task_tw.kill()
+		if not _task_box.visible:
+			_task_box.modulate.a = 0.0
+		_task_box.visible = true
+		_task_tw = _task_box.create_tween()
+		_task_tw.tween_property(_task_box, "modulate:a", 1.0, 0.5)
+	else:
+		row.modulate.a = 0.0
+		row.create_tween().tween_property(row, "modulate:a", 1.0, 0.5)
+
+
+## `text` is done: its box fills and ticks, the line dims, and a moment later it goes (with the panel, if it was the
+## last one).
+func task_done(text: String) -> void:
+	var i := _task_find(text)
+	if i < 0 or _tasks[i].done:
+		return
+	var task: Dictionary = _tasks[i]
+	task.done = true
+	(task.tick as PanelContainer).add_theme_stylebox_override("panel", UiKit.box(UiKit.CLEAR, UiKit.CLEAR, 3, 2, 0))
+	var icon: UiIcon = task.icon
+	icon.visible = true
+	icon.scale = Vector2(0.4, 0.4)
+	icon.pivot_offset = Vector2(10, 10)
+	icon.create_tween().tween_property(icon, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	(task.text as Control).modulate = Color(1, 1, 1, 0.5)         # the line dims, its yellow word with it
+	Snd.play("ui_notify", -8.0, 1.2)
+	var row: HBoxContainer = task.row
+	var tw := row.create_tween()
+	tw.tween_interval(1.75)
+	tw.tween_callback(func(): _task_drop(task))
+
+
+## The visible lines' text (U+2060 joiners taken out) and whether each is ticked — for the story test.
+func task_lines() -> Array[String]:
+	var out: Array[String] = []
+	for task in _tasks:
+		out.append(("[x] " if task.done else "[ ] ") + (task.text as RichTextLabel).get_parsed_text().replace(String.chr(0x2060), ""))
+	return out
+
+
+func _task_find(text: String) -> int:
+	for i in _tasks.size():
+		if _tasks[i].key == text:
+			return i
+	return -1
+
+
+func _task_drop(task: Dictionary) -> void:
+	var row: HBoxContainer = task.row
+	if not is_instance_valid(row):
+		return
+	var others := _tasks.filter(func(t2: Dictionary): return t2 != task and not t2.done)
+	if others.is_empty():
+		# the last open line: the whole panel fades out, then every line goes
+		if _task_tw and _task_tw.is_valid():
+			_task_tw.kill()
+		_task_tw = _task_box.create_tween()
+		_task_tw.tween_property(_task_box, "modulate:a", 0.0, 0.8)
+		_task_tw.tween_callback(func():
+			for t2 in _tasks.duplicate():
+				if t2.done:
+					_tasks.erase(t2)
+					(t2.row as Node).queue_free()
+			_task_box.visible = _tasks.size() > 0
+			_task_box.modulate.a = 1.0)
+	else:
+		var tw := row.create_tween()
+		tw.tween_property(row, "modulate:a", 0.0, 0.6)
+		tw.tween_callback(func():
+			_tasks.erase(task)
+			row.queue_free())
 
 
 ## DAY 1 is the tutorial: the current order's place gets a green diamond, on screen or pinned to the screen edge
@@ -459,6 +605,8 @@ func _build_controls(root: Control) -> void:
 		for it in group:
 			var item := HBoxContainer.new()
 			item.add_theme_constant_override("separation", 8)
+			if it[0] == "flashlight":
+				_flash_hint = item
 			var cap := UiKit.keycap(Game.key_label(it[0]), UiKit.MIN_TEXT, false)
 			cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			_key_caps.append([cap, it[0]])
@@ -647,6 +795,20 @@ func refresh_keys() -> void:
 	for kc in _key_caps:
 		var l := (kc[0] as Control).get_child(0) as Label
 		l.text = Game.key_label(kc[1])
+
+
+## Hides the controls guide (bottom left) now (Shift1: no key guide on screen at the start — user: "맨 처음에 왼쪽아래
+## ui로 키보드 뭐 눌러야 하는지 알려주는거 없애줘").
+func hide_key_hints() -> void:
+	_keys_t = 0.0
+	_keys.visible = false
+	_keys.modulate.a = 0.0
+
+
+## Shows or hides the [F] 손전등 key hint (Shift1 hides it until you have found a flashlight).
+func set_flashlight_hint(on: bool) -> void:
+	if _flash_hint:
+		_flash_hint.visible = on
 
 
 func show_key_hints(seconds := 30.0) -> void:

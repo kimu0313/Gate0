@@ -1,255 +1,283 @@
 class_name ServiceHall
 extends Node3D
-## The long service corridor between the security office and the main lounge (the corridor reference): grey-green
-## lockers down both walls, the windows above them on the outside wall boarded over with steel sheets, fluorescent
-## fittings across the ceiling all the way along in a green haze, a door now and then,
-## and at the far end a pair of steel doors under a clock, a dark figure standing before them. Built far below the
-## terminal (ORIGIN) like the jet bridge: the main story joins it to the office's passage door and to the lounge's
-## east doors with PortalViews. Local frame: the entrance doorway at the origin, the corridor running along +Z to the
-## far doors at LENGTH; the outside wall (windows) on -X, the rooms (doors) on +X.
+## The service corridors round the security office (user: "보안실을 나서면 상가 1층마냥 문이 많은 복도, 1줄로 쭉 된
+## 복도가 아니라 약간 미로처럼", with a dark office-corridor reference; this replaced the long straight locker
+## corridor): narrow corridors that turn and branch with doors all down them — numbered rooms, a store, the plant
+## room — under a dropped ceiling of square lights in a grey-green haze; dark wood doors, chairs along a wall, framed
+## pictures; dead ends (one under an EXIT sign that is no way out). The way down to the lounge (1F; these corridors and
+## the office are on 4F): the lift at the end of the last long run (Lift; the steel double doors under an EXIT sign that
+## stood there went — user: "출구 문을 엘리베이터로 바꿔줘"), or the emergency stairs from the run's north end
+## (StairCore). The walls are the user's concrete-over-blue-band tile (shaders/corridor_wall.gdshader). Nothing happens in here (the red ball and the dark figure that did were removed — user:
+## "복도에서 공 나오고 … 이런거 다 빼, 완전히 다른 게임 로직을 넣을거야").
+##
+## Built far below the terminal (ORIGIN) like the jet bridge, and laid out in the terminal's own coordinates round
+## the office's footprint (local = Terminal coordinates; nothing of the office itself is built here, only its outside
+## faces): the office's big windows look out on it (Terminal.sec_view) and from here you look in at the office through
+## the same windows (office_panes, Terminal.sec_inview). The story joins it to the office's west door — the key card
+## door (entry_frame; it and the 관계자 외 출입금지 door swapped places, and that one was then removed) —
+## with a PortalView; the lift and the stair lobby are built twice and swap you over while shut.
+##
+## The way through: out of the office's west door into W, north up W past the office's windows, west along N past the
+## north arm's windows, then the T with V — north the stairs, south the long run to the lift. Off the way: W south to
+## S (east along the rooms south of the office, round into E along the office's east wall, a dead
+## end north), S2 south off S, B west off W turning south into B2 under that EXIT sign.
 
 const ORIGIN := Vector3(-160, -320, 0)
-const LENGTH := 46.0
-const W := 3.4                # between the wall faces
-const H := 3.0                # ceiling
-const FAR_W := 1.7            # the far double doors (and the lounge's east doors, built by the same hand)
+const H := 3.25               # the dropped ceiling (over the office windows' heads, 3.05)
+const T := 0.2                # its own walls (the office's outside faces are the office's 0.3)
+const FAR_W := 1.7            # double_door's width (the lounge's 2F staff doors and the story's doors)
 const FAR_H := 2.3
-const LOCKER := Vector3(0.455, 1.85, 0.48)
-const LOCKER_STEP := 0.46
-const SIDE_DOORS := [8.0, 20.0, 33.0]     # the rooms' doors (z), between locker banks
-const BALL_LOCKER := [1.0, 15.67]         # [side, z]: the locker the red ball comes out of, in the bank before door 2
-const BALL_DOOR := 1                      # the side door the ball runs off into
-const BALL_R := 0.17
+const LIGHT := Color(0.76, 0.92, 0.84)
+## The corridors, in the terminal's coordinates (x, z): the office's outside faces are x -12.25 (east), z -14.85
+## (south), x -22.55 (the south arm's west), z -25.85 (the north arm's south), x -30.55 (its west end).
+const HALLS := {
+	"e": Rect2(-12.25, -21.5, 2.2, 10.85),
+	"s": Rect2(-22.55, -12.85, 10.3, 2.2),
+	"w": Rect2(-24.75, -25.85, 2.2, 15.2),
+	"n": Rect2(-35.0, -25.85, 10.25, 2.2),
+	"v": Rect2(-37.2, -29.5, 2.2, 23.5),
+	"s2": Rect2(-20.9, -10.65, 2.2, 6.15),
+	"b": Rect2(-30.5, -20.5, 5.75, 2.2),
+	"b2": Rect2(-32.7, -20.5, 2.2, 8.0),
+}
+const ENTRY := Vector3(-22.4, 0, Terminal.SEC_ENTRY_Z)   # the office's west door (the key card door), through = -X
+const FAR := Vector3(-36.1, 0, -6.0)          # the lift's doorway in V's south end wall (its corridor face; the car lies +Z)
+## Square fittings down the middle of every corridor: [x, z, lit].
+const FITTINGS := [
+	[-11.15, -19.8, true], [-11.15, -16.0, true], [-11.15, -11.75, true],
+	[-15.0, -11.75, true], [-19.8, -11.75, true], [-23.65, -11.75, true],
+	[-23.65, -15.9, true], [-23.65, -20.0, true], [-23.65, -24.75, true],
+	[-28.4, -24.75, true], [-32.2, -24.75, true],
+	[-36.1, -28.2, true], [-36.1, -24.75, true], [-36.1, -20.6, true], [-36.1, -16.4, false], [-36.1, -12.2, true],
+	[-36.1, -8.4, true],
+	[-19.8, -7.4, true], [-27.6, -19.4, true], [-31.6, -19.4, true], [-31.6, -14.4, false],
+]
 
 var zone: LightZone
 var entry: Dictionary         # the door you come in by (Terminal.steel_door: {root, leaf, block, use}), open out of it
-var far_doors: Dictionary     # double_door: {root, leaf, leaves, block, use}
-var far_vestibule: Array[MeshInstance3D] = []   # past the far doors: the story lines them with the lounge's portal
-var beyond: Area3D            # just past the far doors
-var figure: Node3D            # hidden until the story shows it (appear)
-var side_doors: Array[Dictionary] = []
-var locker_door: Node3D       # the ball locker's door, a hinge node (open_locker)
-var ball: Node3D              # the red ball, on that locker's floor until the story lets it out
+var entry_closet: Array[MeshInstance3D] = []   # the dark box behind it (in the office's footprint): a view of the office
+var lift_car: Dictionary      # Lift.car at the far end (4F); Terminal links it to the lounge's (1F)
+var stair_lobby: Dictionary   # the stairwell's copy of the stair lobby (StairCore.lobby), at its foot
+var stair_door: Dictionary    # {} — the stairs are open to the corridor (the steel door that stood there was removed)
+var side_doors: Array[Dictionary] = []          # every locked door (they rattle)
+var doors_by := {}            # plate -> door
+var office_panes: Array[MeshInstance3D] = []    # the maze's side of the office's big windows (Terminal.sec_inview)
+var wall_m: Material
+var _frame_m: Material
 
 
 func build() -> void:
 	name = "ServiceHall"
 	position = ORIGIN
-	var wall := Mats.shader_mat("res://shaders/wall_panel.gdshader", {
-		"color": Color(0.3, 0.34, 0.31), "seam_color": Color(0.17, 0.19, 0.17), "panel_w": 1.2, "panel_h": 1.25,
-		"roughness": 0.62, "base_height": ORIGIN.y, "skirting": 0.1})
+	# the walls: the user's tile (concrete panels over a pale blue band with a dark foot), world space, one tile up
+	# the wall's height (user: "복도 벽 텍스처 이걸로 해줘"; the floor and ceiling as they were)
+	wall_m = Mats.shader_mat("res://shaders/corridor_wall.gdshader", {
+		"albedo_tex": load("res://assets/textures/level/wall_corridor_concrete.png"), "base_height": ORIGIN.y,
+		"wall_h": H, "tile_w": H})
+	_frame_m = Mats.std(Color(0.07, 0.065, 0.06), 0.45, 0.2)
 	var floor_m := Mats.shader_mat("res://shaders/floor_tile.gdshader", {
-		"color_a": Color(0.31, 0.33, 0.31), "color_b": Color(0.28, 0.3, 0.28), "grout_color": Color(0.2, 0.21, 0.2),
-		"tile_size": 0.6, "roughness_base": 0.07, "roughness_var": 0.3})
-	var ceil_m := Mats.shader_mat("res://shaders/ceiling.gdshader", {"color": Color(0.5, 0.53, 0.5), "grid_color": Color(0.36, 0.38, 0.36)})
-	var hw := W * 0.5
-	# shell: floor, ceiling, the long walls, the entrance wall (a 1 m doorway) and the far wall (the double doors)
-	Geo.box(self, Vector3(0, -0.05, LENGTH * 0.5), Vector3(W + 0.6, 0.1, LENGTH + 0.6), floor_m)
-	Geo.box(self, Vector3(0, H + 0.1, LENGTH * 0.5), Vector3(W + 0.6, 0.2, LENGTH + 0.6), ceil_m, false)
-	# the outside wall solid, the rooms' wall opened for its three doors; the end walls centred on the door frames
-	Geo.box(self, Vector3(-(hw + 0.15), H * 0.5, LENGTH * 0.5), Vector3(0.3, H, LENGTH + 0.6), wall)
-	var openings := []
-	for z: float in SIDE_DOORS:
-		openings.append([z + 0.3 - 0.5, z + 0.3 + 0.5, 2.13])
-	Geo.wall(self, Vector2(hw + 0.15, -0.3), Vector2(hw + 0.15, LENGTH + 0.3), H, wall, 0.3, openings)
-	for s in [-1.0, 1.0]:
-		Geo.box(self, Vector3(s * (0.5 + hw + 0.3) * 0.5, H * 0.5, 0), Vector3(hw + 0.3 - 0.5, H, 0.3), wall)
-		Geo.box(self, Vector3(s * (FAR_W * 0.5 + 0.08 + hw + 0.3) * 0.5, H * 0.5, LENGTH), Vector3(hw + 0.3 - FAR_W * 0.5 - 0.08, H, 0.3), wall)
-	Geo.box(self, Vector3(0, (2.15 + H) * 0.5, 0), Vector3(1.0, H - 2.15, 0.3), wall)
-	Geo.box(self, Vector3(0, (FAR_H + 0.08 + H) * 0.5, LENGTH), Vector3(FAR_W + 0.16, H - FAR_H - 0.08, 0.3), wall)
+		"color_a": Color(0.3, 0.32, 0.31), "color_b": Color(0.27, 0.29, 0.28), "grout_color": Color(0.19, 0.2, 0.19),
+		"tile_size": 0.6, "roughness_base": 0.08, "roughness_var": 0.28})
+	var ceil_m := Mats.get_mat("ceiling_corridor_tile")       # the user's tile photo (was a plain grey grid)
+	# the floor and the dropped ceiling over the whole maze (and over the rooms between, shut away behind their doors)
+	# (not over the stair hall at W's south end, x -28.8..-21.8 z -10.45..-5.8: it has its own floors and ceiling)
+	for r: Array in [[Vector3(-23.625, 0, -20.125), Vector2(27.75, 19.35)], [Vector3(-33.15, 0, -8.125), Vector2(8.7, 4.65)],
+			[Vector3(-15.775, 0, -8.125), Vector2(12.05, 4.65)], [Vector3(-19.8, 0, -5.0), Vector2(2.8, 1.6)]]:
+		Geo.box(self, r[0] + Vector3(0, -0.05, 0), Vector3(r[1].x, 0.1, r[1].y), floor_m)
+		Geo.box(self, r[0] + Vector3(0, H + 0.1, 0), Vector3(r[1].x, 0.2, r[1].y), ceil_m, false)
+	_build_walls()
+	ArchiveRoom.build(self)        # the records room behind the door farthest from the lift (E's end)
 	_build_entry()
-	_build_far_end()
-	_build_lockers()
-	_build_ball_locker()
-	_build_windows()
-	_build_side_doors()
+	_build_lift_end()
+	_build_office_side()
 	_build_lights()
+	_build_stairs()                # (after the lights: its lamps are on the corridors' zone)
 	_build_details()
 	_build_reverb()
 
 
-## Inside the corridor (or in the doorways at its ends)?
+## Inside the maze (or in the doorways at its ends, the lift's car, the stairwell and its lobby)?
 func contains(p: Vector3) -> bool:
 	var l := to_local(p)
-	return absf(l.x) < W * 0.5 + 0.3 and l.z > -1.6 and l.z < LENGTH + 3.4 and absf(l.y) < 6.0
+	if l.x > -37.8 and l.x < -9.4 and l.z > -30.0 and l.z < -2.2 and absf(l.y) < 6.0:
+		return true
+	if ArchiveRoom.contains_local(l):
+		return true
+	return StairCore.contains_hall(l)
 
 
-## The door frames the story joins with portals, global: +Z = on into the corridor at the entrance, on through the
-## far doors at the far end.
+## Standing where the office's big windows can be seen (W, N, B and the corners into them): the view in through them
+## (Terminal.sec_inview) is live only here.
+func sees_office(p: Vector3) -> bool:
+	var l := to_local(p)
+	return l.x > -35.0 and l.x < -22.4 and l.z > -26.0 and l.z < -10.6 and absf(l.y) < 6.0
+
+
+## The door frame the story joins with a portal, global: on (-X) out of the office's west door, the key card door.
 func entry_frame() -> Transform3D:
-	return global_transform
-
-
-func far_frame() -> Transform3D:
-	return global_transform * Transform3D(Basis(), Vector3(0, 0, LENGTH))
+	return Transform3D(Basis(Vector3.UP, -PI / 2), to_global(ENTRY))
 
 
 # --------------------------------------------------------------------------------------------
-## The way in: the office's own passage door seen from the passage side (Terminal.steel_door), hung open out of the
-## corridor into a dark closet behind it (the closet stays out of the portal's view); its leaf only shows once you
-## are through (the office's real leaf stands in front of it until then).
+## Every wall, by its corridor face: the office's outside faces (0.3, holed for its doors and big windows) and the
+## maze's own (T), with the locked doors in them.
+func _build_walls() -> void:
+	var big := 0.3
+	var hw := Terminal.SEC_VIEW_SIZE.x * 0.5
+	var head := Terminal.SEC_VIEW_Y + Terminal.SEC_VIEW_SIZE.y * 0.5
+	var sill := Terminal.SEC_VIEW_Y - Terminal.SEC_VIEW_SIZE.y * 0.5
+	# E, out of the passage door: the office's east wall (and the rooms' south of it), a dead end north
+	_wall_z(-12.25, -21.7, -12.85, -1.0, [], [], big)      # the office's east wall: no door (removed — user)
+	_wall_z(-10.05, -21.7, -10.45, 1.0, [[-19.9, "관리사무소"], [-16.0, "회의실"], [-12.6, "전기실"]])
+	_wall_x(-21.5, -12.55, -9.85, -1.0, [[ArchiveRoom.DOOR_X, "자료실"]])   # the records room (ArchiveRoom)
+	# S, west along the rooms south of the office; S2 off it
+	# (W's south end, x -24.75..-22.55, is open onto the stair hall — StairCore; its door 103 went with it)
+	_wall_x(-10.65, -24.95, -9.85, 1.0, [[-12.9, "101"], [-16.2, "102"]], [[-20.9, -18.7, H], [-24.75, -22.55, H]])
+	_wall_x(-12.85, -22.55, -12.55, -1.0, [[-21.2, "110"], [-16.8, "창고"]])
+	# W, north past the office's west door and its windows; B off it
+	var cuts_w := []
+	for z: float in Terminal.SEC_VIEW_W:
+		cuts_w.append([z - hw, z + hw, head, sill])
+	_wall_z(-22.55, -25.85, -12.85, 1.0, [], cuts_w + [[ENTRY.z - 0.55, ENTRY.z + 0.55, 2.2]], big)   # the way in
+	_wall_z(-24.75, -23.65, -10.45, -1.0, [[-22.1, "104"], [-15.0, "105"], [-11.75, "106"]], [[-20.5, -18.3, H]])
+	# N, west along the north arm's windows
+	var cuts_n := []
+	for x: float in Terminal.SEC_VIEW_N:
+		cuts_n.append([x - hw, x + hw, head, sill])
+	_wall_x(-25.85, -35.0, -22.25, -1.0, [[-33.2, "207"]], cuts_n, big)
+	_wall_x(-23.65, -35.0, -24.75, 1.0, [[-27.2, "201"], [-30.6, "202"], [-33.4, "203"]])
+	# V: north a dead end, south the long run to the far doors
+	_wall_z(-37.2, -29.7, -5.8, -1.0, [[-27.0, "방재센터"], [-18.0, "205"], [-11.5, "206"]])
+	_wall_z(-35.0, -29.7, -25.85, 1.0)
+	_wall_z(-35.0, -23.65, -5.8, 1.0, [[-21.8, "204"], [-15.5, "미화원 대기실"], [-9.6, "탈의실"]])
+	# V's north end walled up again (the stairs moved to W's south end — user: "원래 위치는 그냥 벽으로 막아주고")
+	_wall_x(-29.5, -37.4, -34.8, -1.0)
+	_wall_x(-6.0, -37.4, -34.8, 1.0, [], [[FAR.x - Lift.OPEN_W * 0.5, FAR.x + Lift.OPEN_W * 0.5, Lift.OPEN_H]])
+	# S2
+	_wall_z(-20.9, -10.45, -4.3, -1.0, [[-8.0, "107"]])
+	_wall_z(-18.7, -10.45, -4.3, 1.0, [[-6.8, "108"]])
+	_wall_x(-4.5, -21.1, -18.5, 1.0, [[-19.8, "109"]])
+	# B and B2, to the door under the EXIT sign
+	_wall_x(-20.5, -32.9, -24.75, -1.0, [[-28.0, "111"]])
+	_wall_x(-18.3, -30.5, -24.75, 1.0, [[-27.6, "112"]])
+	_wall_z(-32.7, -20.7, -12.3, -1.0, [[-16.0, "113"]])
+	_wall_z(-30.5, -18.3, -12.3, 1.0, [[-14.6, "114"]])
+	_wall_x(-12.5, -32.9, -30.3, 1.0, [[-31.6, "출구"]])
+
+
+## A wall along Z with its corridor face at x = `x` from z0 to z1 (z0 < z1), its body `t` thick on the `side` (+1:
+## toward +X); `doors` = [[z, plate], …] (locked OfficeKit doors, plate on the corridor side) and `cuts` = more
+## openings, [from z, to z, head(, sill)].
+func _wall_z(x: float, z0: float, z1: float, side: float, doors := [], cuts := [], t := T) -> void:
+	var cx := x + side * t * 0.5
+	var offs := []
+	for c: Array in cuts:
+		offs.append([c[0] - z0, c[1] - z0, c[2], c[3] if c.size() > 3 else 0.0])
+	for dd: Array in doors:
+		var z: float = dd[0]
+		offs.append([z - 0.475 - z0, z + 0.475 - z0, 2.13])
+		_door(Vector3(cx, 0, z), PI if side > 0.0 else 0.0, dd[1], t)
+	Geo.wall(self, Vector2(cx, z0), Vector2(cx, z1), H, wall_m, t, offs)
+
+
+## The same along X (x0 < x1; `side` +1: the body toward +Z).
+func _wall_x(z: float, x0: float, x1: float, side: float, doors := [], cuts := [], t := T) -> void:
+	var cz := z + side * t * 0.5
+	var offs := []
+	for c: Array in cuts:
+		offs.append([c[0] - x0, c[1] - x0, c[2], c[3] if c.size() > 3 else 0.0])
+	for dd: Array in doors:
+		var x: float = dd[0]
+		offs.append([x - 0.475 - x0, x + 0.475 - x0, 2.13])
+		_door(Vector3(x, 0, cz), PI / 2 if side > 0.0 else -PI / 2, dd[1], t)
+	Geo.wall(self, Vector2(x0, cz), Vector2(x1, cz), H, wall_m, t, offs)
+
+
+## A locked door (it rattles): the worn steel door of the user's photo (OfficeKit.steel_door), no plate on it (user:
+## "문마다 무슨실 무슨 실 설명이랑 팻말 되어있는거 다 삭제해줘"): `plate` is only its name in doors_by (the office plan
+## labels it).
+func _door(at: Vector3, rot: float, plate: String, t: float) -> void:
+	var door := OfficeKit.steel_door(self, at, rot, t)
+	(door.use as Interactable).callback = func(): Terminal.current.rattle(door)
+	side_doors.append(door)
+	doors_by[plate] = door
+
+
+# --------------------------------------------------------------------------------------------
+## The way in: the office's own passage door seen from outside (Terminal.steel_door, on the same spot), hung open into
+## a dark closet in the office's footprint (out of every portal's view); its leaf only shows once you are through
+## (the office's real leaf stands in front of it until then). No plate beside it.
 func _build_entry() -> void:
-	entry = Terminal.steel_door(self, Vector3.ZERO, -PI / 2)
+	entry = Terminal.steel_door(self, ENTRY, PI)
 	(entry.leaf as Node3D).rotation.y = deg_to_rad(84.0)
 	(entry.leaf as Node3D).visible = false
 	(entry.block as StaticBody3D).collision_layer = 0
 	(entry.use as Interactable).enabled = false
 	var black := Mats.get_mat("void")
-	for b: Array in [[Vector3(0, -0.05, -0.95), Vector3(1.6, 0.1, 1.6)], [Vector3(0, 2.3, -0.95), Vector3(1.6, 0.1, 1.6)],
-			[Vector3(-0.85, 1.15, -0.95), Vector3(0.1, 2.4, 1.6)], [Vector3(0.85, 1.15, -0.95), Vector3(0.1, 2.4, 1.6)],
-			[Vector3(0, 1.15, -1.8), Vector3(1.6, 2.4, 0.1)]]:
-		Geo.box(self, b[0], b[1], black, true).layers = Geo.VIS_PORTAL_HIDDEN
+	var cx := ENTRY.x + 0.95                # (in the office's footprint, east of its west door)
+	for b: Array in [[Vector3(cx, 0.002, ENTRY.z), Vector3(1.6, 0.004, 1.6), false],
+			[Vector3(cx, 2.25, ENTRY.z), Vector3(1.6, 0.05, 1.6), false],
+			[Vector3(cx, 1.15, ENTRY.z - 0.82), Vector3(1.6, 2.3, 0.04), true],
+			[Vector3(cx, 1.15, ENTRY.z + 0.82), Vector3(1.6, 2.3, 0.04), true],
+			[Vector3(cx + 0.8, 1.15, ENTRY.z), Vector3(0.04, 2.3, 1.6), true]]:
+		var m := Geo.box(self, b[0], b[1], black, b[2])
+		m.layers = Geo.VIS_PORTAL_HIDDEN
+		entry_closet.append(m)
 
 
-## The far end: the double doors under a clock (2:17), the figure before them, a dark vestibule behind them that the
-## story lines with the lounge's portal, and the trigger past them.
-func _build_far_end() -> void:
-	far_doors = double_door(self, Transform3D(Basis(), Vector3(0, 0, LENGTH)))
-	var clock := Node3D.new()
-	add_child(clock)
-	clock.position = Vector3(0, 2.66, LENGTH - 0.18)
-	clock.rotation.y = PI
-	Geo.cyl(clock, Vector3.ZERO, 0.19, 0.05, Mats.get_mat("plastic_white")).rotation.x = PI / 2
-	Geo.cyl(clock, Vector3(0, 0, -0.005), 0.205, 0.04, Mats.get_mat("plastic_dark")).rotation.x = PI / 2
-	Geo.label(clock, "2:17", Vector3(0, 0, 0.03), 0.0, 32, Color(0.1, 0.1, 0.1), 0.003, true, "lcd")
-	var black := Mats.get_mat("void")
-	var vz := LENGTH + 1.75
-	far_vestibule.append(Geo.box(self, Vector3(0, -0.04, vz), Vector3(FAR_W + 1.4, 0.1, 3.2), black, false))
-	far_vestibule.append(Geo.box(self, Vector3(0, FAR_H + 0.5, vz), Vector3(FAR_W + 1.4, 0.2, 3.2), black, false))
+## The far end: the lift (user: "출구 문을 엘리베이터로 바꿔줘") in the end wall of the last run, down to the lounge
+## on 1F (Lift: its car is built behind this wall and again behind the lounge's; Terminal links the two). And the
+## stairs: the steel door at the run's north end onto the stairwell (StairCore), whose
+## foot at 1F leads through the stair lobby to the lounge too.
+func _build_lift_end() -> void:
+	lift_car = Lift.car(self, Transform3D(Basis(Vector3.UP, PI), FAR), T, 4, 1)
+
+
+func _build_stairs() -> void:
+	stair_lobby = StairCore.build(self)
+	stair_door = {}                # (no door at 4F any more: the corridor runs onto the landing)
+
+
+## The maze's side of the office's big windows: a dark frame and sill on each, the pane that shows the office through
+## it (office_panes: Terminal.sec_inview's surface, to your eye only), the blind half down on one.
+func _build_office_side() -> void:
+	for i in Terminal.SEC_VIEW_W.size():
+		_office_window(Vector3(-22.55, Terminal.SEC_VIEW_Y, Terminal.SEC_VIEW_W[i]), -PI / 2, 0.4 if i == 1 else 0.0)
+	for x: float in Terminal.SEC_VIEW_N:
+		_office_window(Vector3(x, Terminal.SEC_VIEW_Y, -25.85), 0.0)
+	# (the office's east wall's frosted window with papers taped on it was taken off this side — user: "이거 없애")
+
+
+## One window at `at` on a wall face, the corridor toward its local +Z; `blinds` = how far its venetian blind is down.
+func _office_window(at: Vector3, rot: float, blinds := 0.0) -> void:
+	var h := Node3D.new()
+	add_child(h)
+	h.position = at
+	h.rotation.y = rot
+	var size := Terminal.SEC_VIEW_SIZE
+	var t := 0.07
+	for sy in [-1.0, 1.0]:
+		Geo.box(h, Vector3(0, sy * (size.y * 0.5 + t * 0.5), 0.025), Vector3(size.x + t * 2.0, t, 0.05), _frame_m, false)
 	for sx in [-1.0, 1.0]:
-		far_vestibule.append(Geo.box(self, Vector3(sx * (FAR_W * 0.5 + 0.6), FAR_H * 0.5 + 0.25, vz), Vector3(0.2, FAR_H + 0.5, 3.2), black, false))
-	far_vestibule.append(Geo.box(self, Vector3(0, FAR_H * 0.5 + 0.25, vz + 1.6), Vector3(FAR_W + 1.4, FAR_H + 0.5, 0.2), black, false))
-	Geo.box(self, Vector3(0, -0.05, vz), Vector3(FAR_W + 1.4, 0.1, 3.2), black).visible = false     # floor to stand on
-	beyond = Geo.area(self, Vector3(0, 1.0, LENGTH + 1.5), Vector3(FAR_W, 2.0, 1.1))   # clear of the leaves' swing
-	# someone standing in front of the doors, facing you: a dark shape in the haze
-	figure = Node3D.new()
-	figure.name = "Figure"
-	add_child(figure)
-	figure.position = Vector3(0.3, 0, LENGTH - 2.3)
-	var shade := StandardMaterial3D.new()
-	shade.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	shade.albedo_color = Color(0.012, 0.016, 0.014)
-	var robe := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = 0.16
-	cm.bottom_radius = 0.36
-	cm.height = 1.5
-	cm.radial_segments = 14
-	robe.mesh = cm
-	robe.material_override = shade
-	figure.add_child(robe)
-	robe.position = Vector3(0, 0.75, 0)
-	var shoulders := Geo.capsule(figure, Vector3(0, 1.42, 0), 0.17, 0.62, shade)
-	shoulders.rotation.z = PI / 2
-	var head := Geo.sphere(figure, Vector3(0.02, 1.66, 0.04), 0.125, shade)
-	head.scale = Vector3(1.0, 1.15, 1.0)
-	for c in figure.find_children("*", "GeometryInstance3D", true, false):
-		(c as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	figure.visible = false
-
-
-## The figure is there, before the far doors: it comes in a dip of the lights, so it is never seen coming.
-func appear() -> void:
-	if figure.visible:
+		Geo.box(h, Vector3(sx * (size.x * 0.5 + t * 0.5), 0, 0.025), Vector3(t, size.y, 0.05), _frame_m, false)
+	Geo.box(h, Vector3(0, -size.y * 0.5 - t - 0.015, 0.06), Vector3(size.x + 0.24, 0.03, 0.12), _frame_m, false)
+	var pane := Geo.box(h, Vector3(0, 0, 0.003), Vector3(size.x, size.y, 0.002), Mats.get_mat("black"), false)
+	pane.layers = Geo.VIS_PORTAL_HIDDEN
+	office_panes.append(pane)
+	if blinds <= 0.0:
 		return
-	zone.trigger_dip(0.3)
-	await get_tree().create_timer(0.1, false).timeout
-	figure.visible = true
-
-
-## The figure goes in a dip of the lights.
-func vanish() -> void:
-	if not figure.visible:
-		return
-	zone.trigger_dip(0.35)
-	Snd.play_at("flicker_zap", to_global(Vector3(0, H - 0.2, LENGTH - 6.0)), -8.0, 0.8, 10.0)
-	await get_tree().create_timer(0.12).timeout
-	figure.visible = false
-
-
-# --------------------------------------------------------------------------------------------
-## The ball locker's door creaks open: the latch, then a long creak as it swings out into the corridor.
-func open_locker() -> void:
-	var s: float = BALL_LOCKER[0]
-	var at := to_global(Vector3(s * (W * 0.5 - LOCKER.z), 1.2, BALL_LOCKER[1]))
-	Snd.play_at("lock_click", at, -9.0, 1.35, 3.0)
-	await get_tree().create_timer(0.3, false).timeout
-	Snd.play_at("amb_creak_1", at, -1.0, 1.15, 5.0)
-	var tw := locker_door.create_tween()
-	tw.tween_property(locker_door, "rotation:y", -s * deg_to_rad(105.0), 1.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await tw.finished
-
-
-## The ball bounces out of the open locker, each hop lower, and rolls to a stop in the middle of the corridor.
-func ball_out() -> void:
-	var s: float = BALL_LOCKER[0]
-	var z: float = BALL_LOCKER[1]
-	# [where it lands, how high it hops, how long]
-	var hops := [[Vector3(s * 0.95, BALL_R, z - 0.12), 0.4, 0.46], [Vector3(s * 0.56, BALL_R, z - 0.26), 0.25, 0.36],
-		[Vector3(s * 0.3, BALL_R, z - 0.36), 0.11, 0.24], [Vector3(s * 0.17, BALL_R, z - 0.43), 0.04, 0.15]]
-	var tw := ball.create_tween()
-	var from := ball.position
-	var vol := -2.0
-	for h: Array in hops:
-		tw.tween_method(_ball_at.bind(from, h[0], h[1]), 0.0, 1.0, h[2])
-		tw.tween_callback(_bounce.bind(h[0], vol))
-		from = h[0]
-		vol -= 5.0
-	tw.tween_method(_ball_at.bind(from, Vector3(s * 0.1, BALL_R, z - 0.62), 0.0), 0.0, 1.0, 0.7) \
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	await tw.finished
-
-
-## Come near and the ball is off: it rolls away fast to the side door ahead of it (BALL_DOOR), which bursts open as it
-## comes, takes it into the dark and slams.
-func ball_away() -> void:
-	var s: float = BALL_LOCKER[0]
-	var door: Dictionary = side_doors[BALL_DOOR]
-	var dz: float = SIDE_DOORS[BALL_DOOR]
-	var roll := Snd.make_loop("ball_roll_loop", ball, -4.0, 3.0, 25.0)
-	roll.pitch_scale = 1.2
-	roll.play()
-	var from := ball.position
-	var p1 := Vector3(s * 0.55, BALL_R, dz - 1.1)
-	var p2 := Vector3(s * 1.25, BALL_R, dz - 0.1)
-	var tw := ball.create_tween()
-	tw.tween_method(_ball_at.bind(from, p1, 0.0), 0.0, 1.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	tw.tween_callback(_burst.bind(door))
-	tw.tween_method(_ball_at.bind(p1, p2, 0.0), 0.0, 1.0, 0.25)
-	tw.tween_method(_ball_at.bind(p2, Vector3(s * 2.6, BALL_R, dz + 0.05), 0.0), 0.0, 1.0, 0.3)
-	tw.tween_callback(func():
-		ball.visible = false
-		roll.stop())
-	tw.tween_interval(0.35)
-	await tw.finished
-	var leaf: Node3D = door.leaf
-	var shut := leaf.create_tween()
-	shut.tween_property(leaf, "rotation:y", 0.0, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	await shut.finished
-	Snd.play_at("door_slam", (door.root as Node3D).global_position + Vector3(0, 1.0, 0), -1.0, 1.0, 8.0)
-
-
-## The ball between `a` and `b` at `k` (0..1), hopping `hop` high on the way.
-func _ball_at(k: float, a: Vector3, b: Vector3, hop: float) -> void:
-	ball.position = a.lerp(b, k) + Vector3(0, hop * 4.0 * k * (1.0 - k), 0)
-
-
-func _bounce(at: Vector3, volume_db: float) -> void:
-	Snd.play_at(Snd.variant("ball_bounce"), to_global(at), volume_db, randf_range(0.96, 1.06), 4.0)
-
-
-## A side door bursts open into the corridor (something on the other side), swinging past and settling.
-func _burst(door: Dictionary) -> void:
-	var leaf: Node3D = door.leaf
-	Snd.play_at("door_heavy", (door.root as Node3D).global_position + Vector3(0, 1.0, 0), -1.0, 1.05, 7.0)
-	var tw := leaf.create_tween()
-	tw.tween_property(leaf, "rotation:y", deg_to_rad(98.0), 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(leaf, "rotation:y", deg_to_rad(90.0), 0.25).set_trans(Tween.TRANS_SINE)
+	var slat := Mats.std(Color(0.62, 0.62, 0.58), 0.7)
+	Geo.box(h, Vector3(0, size.y * 0.5 - 0.025, 0.08), Vector3(size.x - 0.04, 0.05, 0.06), slat, false)    # head rail
+	var n := int(size.y * blinds / 0.045)
+	for i in n:
+		var s := Geo.box(h, Vector3(0, size.y * 0.5 - 0.07 - i * 0.045, 0.08), Vector3(size.x - 0.06, 0.003, 0.046), slat, false)
+		s.rotation.x = 0.5
+	Geo.box(h, Vector3(0, size.y * 0.5 - 0.07 - n * 0.045, 0.08), Vector3(size.x - 0.05, 0.022, 0.05), slat, false)
 
 
 ## A pair of steel doors with wired-glass lights and push bars in a frame on the wall plane at `xf` (in `parent`'s
 ## space); they swing to local +Z (swing). Returns {root, leaf, leaves, block, use}; the use is "문 열기" with no
-## callback. The lounge's east doors are the same pair.
+## callback. The lounge's staff doors are the same pair.
 static func double_door(parent: Node3D, xf: Transform3D) -> Dictionary:
 	var root := Node3D.new()
 	parent.add_child(root)
@@ -293,170 +321,51 @@ static func swing(door: Dictionary, deg: float, time: float) -> Tween:
 
 
 # --------------------------------------------------------------------------------------------
-## Grey-green steel lockers in banks along both walls (one MultiMesh per part: bodies tinted locker by locker, the
-## vent slots, the handles), a dark plinth under each bank.
-func _build_lockers() -> void:
-	var hw := W * 0.5
-	# [side (-1 outside wall / +1 rooms), z from, z to]
-	var banks := [[-1.0, 1.2, 12.6], [-1.0, 14.2, 29.8], [-1.0, 31.4, 44.6],
-		[1.0, 1.2, 7.0], [1.0, 9.0, 19.0], [1.0, 21.0, 32.0], [1.0, 34.0, 44.6]]
-	var bodies: Array[Transform3D] = []
-	var tints: Array[Color] = []
-	var slots: Array[Transform3D] = []
-	var handles: Array[Transform3D] = []
-	var plinths: Array[Transform3D] = []
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 3318
-	for b: Array in banks:
-		var s: float = b[0]
-		var n := int((b[2] - b[1]) / LOCKER_STEP)
-		var face := s * (hw - LOCKER.z)               # the door face (x)
-		var cx := s * (hw - LOCKER.z * 0.5)
-		var z0: float = b[1] + LOCKER_STEP * 0.5
-		plinths.append(Transform3D(Basis.from_scale(Vector3(LOCKER.z, 0.09, n * LOCKER_STEP)), Vector3(cx, 0.045, b[1] + n * LOCKER_STEP * 0.5)))
-		Geo.blocker(self, Vector3(cx, 0.95, b[1] + n * LOCKER_STEP * 0.5), Vector3(LOCKER.z, 1.9, n * LOCKER_STEP))
-		for i in n:
-			var z := z0 + i * LOCKER_STEP
-			if s == BALL_LOCKER[0] and absf(z - BALL_LOCKER[1]) < 0.05:
-				continue                                  # built on its own (_build_ball_locker)
-			var lean := rng.randf_range(-0.004, 0.004)
-			bodies.append(Transform3D(Basis(Vector3.UP, lean).scaled(LOCKER), Vector3(cx, 0.09 + LOCKER.y * 0.5, z)))
-			var g := rng.randf_range(0.9, 1.08)
-			tints.append(Color(0.22 * g, 0.27 * g, 0.24 * g) if rng.randf() > 0.06 else Color(0.2, 0.22, 0.25))
-			for y in [1.68, 1.6, 0.36, 0.28]:
-				slots.append(Transform3D(Basis.from_scale(Vector3(0.006, 0.022, 0.26)), Vector3(face - s * 0.003, y, z)))
-			handles.append(Transform3D(Basis.from_scale(Vector3(0.03, 0.12, 0.03)), Vector3(face - s * 0.015, 1.05, z + 0.16)))
-	var cube := BoxMesh.new()
-	var body_m := Mats.std(Color.WHITE, 0.42, 0.4)
-	body_m.vertex_color_use_as_albedo = true
-	_multi(cube, body_m, bodies, tints)
-	_multi(cube, Mats.std(Color(0.05, 0.055, 0.05), 0.6), slots)
-	_multi(cube, Mats.get_mat("metal"), handles)
-	_multi(cube, Mats.std(Color(0.1, 0.11, 0.1), 0.7), plinths)
-
-
-## The locker the red ball comes out of (left out of the banks): an open box behind the front — its neighbours'
-## sides lined dark, a back, floor, roof and hat shelf — the door on a hinge at its near edge (vent slots, handle),
-## and the ball on its floor.
-func _build_ball_locker() -> void:
-	var s: float = BALL_LOCKER[0]
-	var z: float = BALL_LOCKER[1]
-	var hw := W * 0.5
-	var face := s * (hw - LOCKER.z)
-	var back := s * (hw - 0.012)
-	var cx := (face + back) * 0.5
-	var depth := absf(back - face)
-	var inside := Mats.std(Color(0.035, 0.04, 0.038), 0.7)
-	Geo.box(self, Vector3(back - s * 0.01, 1.015, z), Vector3(0.02, 1.85, 0.43), inside, false)
-	for y: float in [0.1, 1.93, 1.56]:                                       # floor, roof, hat shelf
-		Geo.box(self, Vector3(cx, y, z), Vector3(depth, 0.016, 0.43), inside, false)
-	for sz: float in [-1.0, 1.0]:                                            # lining the neighbours' sides
-		Geo.box(self, Vector3(cx, 1.015, z + sz * 0.213), Vector3(depth, 1.84, 0.004), inside, false)
-	locker_door = Node3D.new()
-	add_child(locker_door)
-	locker_door.position = Vector3(face - s * 0.008, 0.1, z - 0.22)
-	var tint := Mats.std(Color(0.22, 0.27, 0.24), 0.42, 0.4)
-	Geo.box(locker_door, Vector3(0, 0.92, 0.22), Vector3(0.016, 1.82, 0.436), tint, false)
-	var dark := Mats.std(Color(0.05, 0.055, 0.05), 0.6)
-	for y: float in [1.68, 1.6, 0.36, 0.28]:
-		Geo.box(locker_door, Vector3(-s * 0.009, y - 0.1, 0.22), Vector3(0.006, 0.022, 0.26), dark, false)
-	Geo.box(locker_door, Vector3(-s * 0.02, 0.95, 0.38), Vector3(0.03, 0.12, 0.03), Mats.get_mat("metal"), false)
-	ball = Node3D.new()
-	ball.name = "RedBall"
-	add_child(ball)
-	ball.position = Vector3(s * (hw - LOCKER.z * 0.5), 0.108 + BALL_R, z)
-	var sm := SphereMesh.new()
-	sm.radius = BALL_R
-	sm.height = BALL_R * 2.0
-	sm.radial_segments = 32
-	sm.rings = 16
-	var mi := MeshInstance3D.new()
-	mi.mesh = sm
-	var red := Mats.std(Color(0.7, 0.05, 0.04), 0.38)
-	red.emission_enabled = true                           # a little of its own, so it reads red under the green tubes
-	red.emission = Color(0.55, 0.03, 0.02)
-	red.emission_energy_multiplier = 0.35
-	mi.material_override = red
-	ball.add_child(mi)
-
-
-## The outside wall's windows above the lockers, boarded over with steel sheets bolted to the frame, one hanging
-## askew. Nothing of outside shows, and no light comes through.
-func _build_windows() -> void:
-	var hw := W * 0.5
-	var sheet := Mats.std(Color(0.2, 0.21, 0.22), 0.55, 0.65)
-	var rust := Mats.std(Color(0.28, 0.2, 0.14), 0.8, 0.3)
-	var frame := Mats.std(Color(0.16, 0.17, 0.17), 0.5, 0.4)
-	var x := -hw
-	for i in 7:
-		var z := 4.0 + i * 6.0
-		var c := Vector3(x + 0.025, 2.38, z)
-		Geo.box(self, c + Vector3(-0.012, 0, 0), Vector3(0.03, 0.98, 1.62), frame, false)             # the old frame
-		var plate := Geo.box(self, c + Vector3(0.02, 0, 0), Vector3(0.012, 0.9, 1.54), rust if i == 4 else sheet, false)
-		if i == 2:
-			plate.rotation.x = 0.035                  # askew
-		for k in 2:
-			Geo.box(self, c + Vector3(0.03, -0.18 + k * 0.36, 0), Vector3(0.02, 0.05, 1.5), sheet, false)   # stiffeners
-		for cz in [-0.68, 0.68]:
-			for cy in [-0.36, 0.36]:
-				Geo.box(self, c + Vector3(0.03, cy, cz), Vector3(0.02, 0.03, 0.03), Mats.get_mat("metal"), false)
-
-
-## The doors on the rooms' side, all locked (they rattle): a store, the plant room, the staff room.
-func _build_side_doors() -> void:
-	var names := ["창고  STORAGE", "기계실  PLANT ROOM", "직원 휴게실  STAFF ROOM"]
-	for i in SIDE_DOORS.size():
-		var door := OfficeKit.door(self, Vector3(W * 0.5 + 0.15, 0, SIDE_DOORS[i]), PI, names[i])
-		(door.use as Interactable).callback = func(): Terminal.current.rattle(door)
-		side_doors.append(door)
-		Geo.box(self, Vector3(W * 0.5 + 0.9, 1.1, SIDE_DOORS[i]), Vector3(1.0, 2.2, 1.4), Mats.get_mat("void"), false)   # dark beyond
-
-
-## Fluorescent fittings across the ceiling every 3.6 m, cold green; two dead (not over the ball's door), the zone
-## flickers now and then.
+## Square fittings down the corridors (FITTINGS; two dead), cold green-white; the zone flickers now and then; the
+## haze they hang in, a volume per corridor (none over the office's footprint, where its windows' view looks from).
 func _build_lights() -> void:
 	zone = LightZone.new()
 	zone.name = "Zone_servicehall"
 	add_child(zone)
-	zone.setup("servicehall", "관리동 복도", Color(0.74, 1.0, 0.8), 3.0)
-	var i := 0
-	var z := 2.0
-	while z < LENGTH:
-		var dead := i == 6 or i == 9            # not the one over the ball's door (z 20): that has to be seen
-		if dead:
-			Geo.box(zone, Vector3(0, H - 0.03, z), Vector3(1.6, 0.06, 0.16), Mats.std(Color(0.3, 0.32, 0.3), 0.5), false)
+	zone.setup("servicehall", "관리동 복도", LIGHT, 3.0)
+	var dead := Mats.std(Color(0.3, 0.32, 0.3), 0.5)
+	for f: Array in FITTINGS:
+		var at := Vector3(f[0], H - 0.035, f[1])
+		if f[2]:
+			zone.add_panel(at, Vector2(0.6, 0.6), true, 0.8, 6.5, LIGHT)
 		else:
-			zone.add_panel(Vector3(0, H - 0.04, z), Vector2(1.6, 0.14), true, 0.85, 7.0, Color(0.72, 1.0, 0.8))
-		i += 1
-		z += 3.6
-	zone.add_hum(Vector3(0, H - 0.3, 8.0), -22.0)
-	zone.add_hum(Vector3(0, H - 0.3, 30.0), -22.0)
+			Geo.box(zone, at, Vector3(0.6, 0.06, 0.6), dead, false)
+			Geo.box(zone, at + Vector3(0, 0.02, 0), Vector3(0.7, 0.05, 0.7), Mats.get_mat("plastic_white"), false)
+	for p: Vector3 in [Vector3(-11.15, H - 0.3, -16.0), Vector3(-23.65, H - 0.3, -18.0), Vector3(-36.1, H - 0.3, -15.0)]:
+		zone.add_hum(p, -24.0)
 	zone.erratic = 0.12
 	zone.night_dim = 0.85
-	# the haze the light hangs in
-	var fog := FogVolume.new()
-	fog.size = Vector3(W, H, LENGTH)
 	var fm := FogMaterial.new()
-	fm.density = 0.09
-	fm.albedo = Color(0.5, 0.7, 0.56)
-	fm.edge_fade = 0.15
-	fog.material = fm
-	add_child(fog)
-	fog.position = Vector3(0, H * 0.5, LENGTH * 0.5)
+	fm.density = 0.05
+	fm.albedo = Color(0.48, 0.56, 0.52)
+	fm.edge_fade = 0.1
+	for r: Rect2 in HALLS.values():
+		var fog := FogVolume.new()
+		fog.size = Vector3(r.size.x, H, r.size.y)
+		fog.material = fm
+		add_child(fog)
+		fog.position = Vector3(r.get_center().x, H * 0.5, r.get_center().y)
 
 
-## A conduit and a cable tray along the rooms' side, puddles on the floor, a fire hose cabinet in the locker gap.
+## Air grilles in the ceiling between the lights, wet patches on the floor. (No clock, floor sign, bin, framed
+## pictures, fire hose cabinet or chairs out here any more — user: "원통형 쓰레기통 다 삭제", "시계랑 ㅇㅇ층
+## 이렇게 표시되어 있는 간판도 삭제해줘", "소화전이랑 액자도 삭제해줘", "복도에 의자 삭제해주고".)
 func _build_details() -> void:
-	var hw := W * 0.5
-	var conduit := Geo.cyl(self, Vector3(hw - 0.12, H - 0.22, LENGTH * 0.5), 0.04, LENGTH, Mats.get_mat("steel_frame"))
-	conduit.rotation.x = PI / 2
-	Geo.box(self, Vector3(hw - 0.2, H - 0.1, LENGTH * 0.5), Vector3(0.3, 0.04, LENGTH), Mats.get_mat("metal_dark"), false)
+	for g: Array in [[-11.15, -17.9, 0.0], [-17.4, -11.75, PI / 2], [-23.65, -18.0, 0.0], [-23.65, -22.4, 0.0],
+			[-30.3, -24.75, PI / 2], [-36.1, -18.5, 0.0], [-36.1, -10.3, 0.0], [-29.6, -19.4, PI / 2]]:
+		OfficeKit.vent_grille(self, Vector3(g[0], H - 0.006, g[1]), g[2], Vector2(0.3, 0.9), PI / 2)
+	Props.exit_sign(self, Vector3(-31.6, 2.62, -12.55), PI)          # over B2's dead end: no way out
 	var wet := Mats.std(Color(0.2, 0.22, 0.2), 0.0, 0.0)
 	wet.metallic_specular = 0.9
 	wet.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	wet.albedo_color.a = 0.55
-	for p: Array in [[Vector3(0.3, 0.002, 6.0), Vector2(1.2, 0.8)], [Vector3(-0.5, 0.002, 17.5), Vector2(0.9, 1.6)],
-			[Vector3(0.6, 0.002, 26.0), Vector2(1.4, 0.7)], [Vector3(-0.2, 0.002, 39.0), Vector2(1.0, 1.9)]]:
+	for p: Array in [[Vector3(-23.4, 0.002, -14.2), Vector2(0.9, 1.4)], [Vector3(-36.3, 0.002, -11.0), Vector2(1.0, 1.8)],
+			[Vector3(-30.0, 0.002, -24.6), Vector2(1.3, 0.7)]]:
 		var q := QuadMesh.new()
 		q.size = p[1]
 		var mi := MeshInstance3D.new()
@@ -465,15 +374,6 @@ func _build_details() -> void:
 		add_child(mi)
 		mi.position = p[0]
 		mi.rotation.x = -PI / 2
-	# the floor you are on, by the way in
-	LevelKit.wall_sign(self, Vector3(hw - 0.01, 2.35, 2.6), -90.0, "2F  관리동\nADMIN WING", Vector2(1.1, 0.42))
-	var cab := Node3D.new()
-	add_child(cab)
-	cab.position = Vector3(-hw + 0.12, 1.25, 13.4)
-	cab.rotation.y = PI / 2
-	Geo.box(cab, Vector3.ZERO, Vector3(0.7, 0.9, 0.22), Mats.std(Color(0.55, 0.08, 0.06), 0.45, 0.2), false)
-	Geo.box(cab, Vector3(0, 0, 0.112), Vector3(0.6, 0.8, 0.004), Mats.std(Color(0.1, 0.1, 0.1), 0.1), false)
-	Geo.fit(Geo.label(cab, "소화전", Vector3(0, 0.28, 0.116), 0.0, 40, Color(0.95, 0.9, 0.85), 0.004, false, "print"), 0.5)
 
 
 func _build_reverb() -> void:
@@ -483,31 +383,13 @@ func _build_reverb() -> void:
 	a.collision_mask = 0
 	a.monitoring = false
 	a.reverb_bus_enabled = true
-	a.reverb_bus_name = "RevLong"
-	a.reverb_bus_amount = 0.36
+	a.reverb_bus_name = "RevMid"
+	a.reverb_bus_amount = 0.32
 	a.reverb_bus_uniformity = 0.4
 	var cs := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(W, H, LENGTH)
+	box.size = Vector3(27.8, H, 24.0)
 	cs.shape = box
 	a.add_child(cs)
 	add_child(a)
-	a.position = Vector3(0, H * 0.5, LENGTH * 0.5)
-
-
-func _multi(mesh: Mesh, mat: Material, xforms: Array[Transform3D], colors: Array[Color] = []) -> void:
-	if xforms.is_empty():
-		return
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = not colors.is_empty()
-	mm.mesh = mesh
-	mm.instance_count = xforms.size()
-	for i in xforms.size():
-		mm.set_instance_transform(i, xforms[i])
-		if mm.use_colors:
-			mm.set_instance_color(i, colors[i])
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.material_override = mat
-	add_child(mmi)
+	a.position = Vector3(-23.6, H * 0.5, -17.8)

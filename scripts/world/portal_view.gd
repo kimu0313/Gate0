@@ -21,6 +21,7 @@ void fragment() {
 var src: Transform3D
 var dst: Transform3D
 var eye: Camera3D
+var res_scale := 1.0     # the view's resolution against the screen's (windows onto a dark night can take half)
 var _vp: SubViewport
 var _cam: Camera3D
 var _mat: ShaderMaterial
@@ -67,6 +68,17 @@ func surface_material() -> ShaderMaterial:
 	return _mat
 
 
+## Only these render layers show in the view (VIS_PORTAL_HIDDEN never does).
+func set_cull_mask(mask: int) -> void:
+	_cam.cull_mask = mask & ~Geo.VIS_PORTAL_HIDDEN
+
+
+## The view without the world's volumetric fog (FogVolumes where the view's eye stands are not its place's).
+func set_volumetric_fog(on: bool) -> void:
+	if _cam.environment:
+		_cam.environment.volumetric_fog_enabled = on
+
+
 func set_active(on: bool) -> void:
 	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS if on else SubViewport.UPDATE_DISABLED
 	_mat.set_shader_parameter("live", on)
@@ -82,7 +94,7 @@ func _process(_delta: float) -> void:
 func _place() -> void:
 	if eye == null or not is_instance_valid(eye):
 		return
-	var size := Vector2i(get_viewport().get_visible_rect().size)
+	var size := Vector2i(get_viewport().get_visible_rect().size * res_scale)
 	if _vp.size != size:
 		_vp.size = size
 	_cam.fov = eye.fov

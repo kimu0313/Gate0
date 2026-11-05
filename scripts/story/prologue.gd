@@ -25,11 +25,11 @@ extends StoryScript
 ##
 ## Checkpoints: "" (the start), "chase" (caught: back to the moment it starts to move), "bridge" (debug: inside).
 
-const START := Vector3(-16.2, 0.05, -11.75)          # in the security office by its south wall, looking up the room
+const START := Vector3(-17.4, 0.05, -15.9)          # in the security office by its south wall, looking up the room
 const FIGURE_POS := Vector3(-12.7, 0.0, -45.4)
 const CART_POS := Vector3(-13.1, 0.0, -46.8)
 const CHASE_SPAWN := Vector3(-12.2, 0.05, -42.8)
-const SEC_DOOR := Vector3(-12.25, 0.0, -16.0)        # the office door on the passage's west wall (Terminal.sec_door)
+const SEC_DOOR := Vector3(-12.25, 0.0, -16.0)        # the door on the passage's west wall you come out of (Terminal.sec_door)
 const FIRE_DOOR := Vector3(-11.2, 0.0, -8.5)         # the staff passage's mouth on the strip: the chase's way out
 const KEY_LOCAL := Vector3(0.32, 0.0, -JetBridge.LENGTH + 0.75)   # bridge space, on the floor before the gate door
 ## The cart you hear from the office, a little ahead of you all the way: behind the office door, up the passage, at
@@ -53,9 +53,12 @@ var _chasing := false
 var _chase_t := 0.0
 var _crumb := Vector3.INF
 var _door_hit := false
-var _door_use: Interactable      # Terminal.sec_use: out of the office at the start
-var _door_open := false          # opened from inside, waiting to swing shut behind you
+var _door_use: Interactable      # the office's one door (Terminal.sec_entry, west): out of it at the start
+var _door_open := false          # the office's door opened from inside, the way out
 var _office_opened := false      # the office door has been opened (the cart beyond it is heard clearly from then on)
+var _exit: PortalView            # past the office's west door: the staff passage (_build_exit)
+var _exit_m: Transform3D         # the office side of that doorway -> the passage side
+var _exited := false
 var _fire_l: Node3D              # the fire door's leaves (hinge nodes), its collider and its [E]
 var _fire_r: Node3D
 var _fire_block: StaticBody3D
@@ -82,7 +85,7 @@ func setup() -> void:
 	# 2F's shops and the aircraft hall are never seen in the prologue
 	for zn in t.zones.keys():
 		t.set_zone_light(zn, zn not in ["baggage", "service", "shops", "airhall"], true)
-		(t.zones[zn] as LightZone).night_dim = 0.62
+		(t.zones[zn] as LightZone).night_dim = 1.0 if zn == "secoffice" else 0.62   # the office: its own pools of light
 	t.shutters.baggage.open(true)
 	d.ui.tablet.set_checklist(CHECKLIST)
 	d.ui.tablet.set_target("수하물 운송 설비 확인", "baggage", Terminal.BELT_POS)
@@ -93,8 +96,12 @@ func setup() -> void:
 	_place_key()
 	_build_scene_02()
 	_build_fire_door()
-	_door_use = t.sec_use
+	_door_use = t.sec_entry.use
 	_door_use.callback = _door_pressed
+	# the passage's door on the office's east side (you come out of it, through the portal): locked from the passage
+	t.sec_use.prompt = "문 열기"
+	t.sec_use.callback = func(): t.rattle(t.sec_passage)
+	t.sec_use.enabled = true
 	match Game.checkpoint:
 		"chase":
 			t.set_zone_light("secoffice", false, true)
@@ -110,6 +117,7 @@ func setup() -> void:
 		_:
 			d.set_clock(Game.START_CLOCK)
 			d.player.teleport(Transform3D(Basis(), START))
+			_build_exit()
 
 
 func run() -> void:
@@ -170,15 +178,56 @@ func _guide_through_door() -> void:
 	create_tween().tween_property(d, "guide_gain_db", 0.0, 0.6).set_trans(Tween.TRANS_SINE)
 
 
-## [E] on the office door from inside: it opens (and swings shut by itself once you are up the passage).
+## [E] on the office door (the west door, its only one) from inside: it opens, and past it is the staff passage.
 func _door_pressed() -> void:
 	if _door_open:
 		return
 	_door_open = true
 	_office_opened = true
 	_door_use.enabled = false
-	Snd.play_at("door_heavy", SEC_DOOR + Vector3(-0.3, 1.0, 0), -10.0, 1.15, 5.0)
-	d.terminal.swing_sec_door(84.0, 1.1)
+	var w: Node3D = d.terminal.sec_entry.root
+	Snd.play_at("door_heavy", w.global_position + Vector3(0.3, 1.0, 0), -10.0, 1.15, 5.0)
+	d.terminal.swing_door(d.terminal.sec_entry, 84.0, 1.1)
+	if _exit:
+		_exit.set_active(true)
+
+
+## The way out at the start (user: the office's doors cut down to the west one, the key card door): past the west door
+## — through a PortalView on the dark vestibule outside it (Terminal.sec_vestibule) — the staff passage, as if you
+## stepped out of the passage's door on the office's east side (Terminal.sec_door, shut behind you as you come out).
+## The office and the night-duty room stay out of that view; the cart up the passage is heard through the same door
+## while you are inside (StoryDirector.guide_xform).
+func _build_exit() -> void:
+	var t := d.terminal
+	var src := Transform3D(Basis(Vector3.UP, -PI / 2), (t.sec_entry.root as Node3D).global_position)
+	var dst := Transform3D(Basis(Vector3.UP, PI / 2), Vector3(-12.4, 0.0, -16.0))
+	var env: Environment = null
+	for we: WorldEnvironment in d.world.find_children("*", "WorldEnvironment", true, false):
+		env = we.environment
+	_exit = PortalView.create(t, src, dst, d.player.camera, env)
+	_exit.set_cull_mask(0xFFFFF & ~(Terminal.VIS_OFFICE | Geo.VIS_SEALED))
+	for m: MeshInstance3D in t.sec_vestibule:
+		m.material_override = _exit.surface_material()
+	_exit_m = dst * src.affine_inverse()
+	d.guide_xform = _exit_m.affine_inverse()
+	# (far enough out that you land clear of the passage door's frame on the other side)
+	var past := Geo.area(t, Vector3(-23.65, 1.0, Terminal.SEC_ENTRY_Z), Vector3(0.6, 2.0, 1.0))
+	past.body_entered.connect(func(body):
+		if body == d.player and _door_open and not _exited:
+			_exited = true
+			_out_of_office.call_deferred())
+
+
+## Through the office door: you are in the passage, the same offset from its door, heading and pitch; the door is
+## shut behind you (its closer), the office's own door too.
+func _out_of_office() -> void:
+	var p := d.player
+	_door_open = false
+	Lift.carry(p, Transform3D(), _exit_m)
+	_exit.set_active(false)
+	d.guide_xform = Transform3D()
+	d.terminal.swing_door(d.terminal.sec_entry, 0.0, 0.01)
+	Snd.play_at("door_slam", SEC_DOOR + Vector3(0.2, 1.0, 0), -16.0, 1.25, 5.0)
 
 
 # =========================================================================================
@@ -320,13 +369,6 @@ func _chase() -> void:
 
 func _physics_process(delta: float) -> void:
 	_flicker_lamp(delta)
-	# the office door you left open swings shut behind you once you are up the passage
-	if _door_open and not _chasing:
-		var q := d.player.global_position
-		if q.x > -12.2 and q.distance_to(SEC_DOOR) > 4.5:
-			_door_open = false
-			d.terminal.swing_sec_door(0.0, 1.3)
-			Snd.play_at("door_heavy", SEC_DOOR + Vector3(0.2, 1.0, 0), -14.0, 1.3, 5.0)
 	if not _chasing or fig == null:
 		return
 	_chase_t += delta

@@ -4,19 +4,19 @@ extends StoryScript
 ## over a steel fire door with a chain and a padlock through its push bars, and you in front of it with the key you
 ## have just picked up off the floor. Open the padlock: the leaves swing away and what lies past them is no gate — a
 ## dark vestibule and an open door into your own security office (a PortalView on the bridge's vestibule, looking in
-## from Terminal.SEC_ENTRY_PLANE). Walk through and you are there, coming in at the office's west door, which slams
-## shut behind you and will not open again. The passage door is locked now and wants a key card: open the drawers
-## ([E], Drawer) until one has it, tag the reader by the door and it opens — not onto the passage but onto a long
-## service corridor (ServiceHall, far below; a PortalView on a dark box in the passage beyond the door). Through it,
-## the door slams and locks behind you; lockers, boarded windows, fluorescent tubes in a green haze, and no running.
-## A locker creaks open and a red ball bounces out; come near and it rolls off into a side room whose door bursts open
-## and slams; then someone stands at the far end, before a pair of steel doors under a clock — gone in a dip of the
-## lights as you come near (_corridor_loop). The office and the corridor are a floor up: the doors open onto the main
-## lounge's 2F at the atrium's edge
-## (another PortalView: the 2F from the admin wing's staff doors), the hall below with the airliner that came through
-## its glass; you come out of those doors, they slam and lock, and you go down a stopped escalator. From there the
-## lounge is the hub (PartHub): a check-in device at security wants three things, one from each of three branches
-## (PartFog, PartRepeat, PartBaggage), in any order; then PartFinal, the last run to Gate 0 and back to the start. The
+## from Terminal.SEC_ENTRY_PLANE). Walk through and you are there, coming in at the office's door — its only one, the
+## steel door in the west wall with the card reader (user: the card door moved there, the other doors were removed)
+## — which slams shut behind you and is locked: it wants a key card: open the drawers ([E], Drawer) until
+## one has it, tag the reader and it opens — not onto the dark vestibule but onto the service corridors that wind
+## round the office like a maze (ServiceHall, far below; a PortalView on that vestibule). Through it, the door slams
+## and locks behind you; doors everywhere, square lights in a grey-green haze, the lit office through its own big
+## windows as you pass them, and no running (the red ball and the figure that once played out in here are gone —
+## user: "복도에서 공 나오고 … 이런거 다 빼"). The office and the corridors are on the 4th floor,
+## the main lounge on the 1st: down the last long run is the lift, and from the run's north end the emergency stairs
+## lead down through a stair lobby (Lift, StairCore — the terminal's; either one emits Terminal.crossed); you come out
+## by the lounge's east wall, the airliner that came through its glass ahead. From there the lounge is the hub
+## (PartHub): a check-in device at security wants three things, one from each of three branches (PartFog, PartRepeat,
+## PartBaggage), in any order; then PartFinal, the last run to Gate 0 and back to the start. The
 ## office you come back to here is not the one you left (_warp_office). The inspector says nothing on screen and keeps
 ## the controls the whole way (a thought at a locked door or the device apart); no markers.
 ##
@@ -24,9 +24,7 @@ extends StoryScript
 
 const STAGES := ["", "hub", "baggage", "final"]
 const CARD_DRAWER := "c3"                # the guard's desk, bottom drawer
-const HINT_GAP_MS := 6000                # the locked passage door's thought comes again at most this often
-const BALL_NEAR := 4.5                   # in the corridor: how close you come before the red ball is off
-const FIGURE_GONE := 12.0                # ...and to the figure at its far end before it is gone
+const HINT_GAP_MS := 6000                # the locked key card door's thought comes again at most this often
 ## How much of their light the lounge and its 2F units have at night (the rest of the terminal's zones run at 0.62;
 ## user: "내부 조금 더 어둡게").
 const HUB_DIM := {"hall": 0.48, "shops": 0.48, "airhall": 0.62}
@@ -41,11 +39,8 @@ var _hint_at := -HINT_GAP_MS      # when the "it wants a card" thought last show
 var _granted := false
 var hall: ServiceHall
 var _hall_portal: PortalView      # the office's passage door -> the corridor's entrance
-var _lounge_portal: PortalView    # the corridor's far doors -> the lounge deck's staff doors
 var _in_hall := false
-var _far_open := false
-var _in_lounge := false
-var _ball_gone := false           # the red ball has run off into the side room and its door slammed
+var _in_lounge := false            # down on the lounge's floor (by the lift or the stairs) at least once
 var hub: PartHub
 var fog: PartFog
 var repeat: PartRepeat
@@ -55,7 +50,6 @@ var _caught_once := false
 var _warp_nodes: Array[Node3D] = []   # what _warp_office added to your office
 var _clock_labels: Array[Label3D] = []
 var _screens := {}                    # MeshInstance3D -> [dead, snow] as they were
-var _figure_shown := false        # the figure has stood at the corridor's far end
 
 
 func setup() -> void:
@@ -108,8 +102,9 @@ func _restore() -> void:
 	_hub_lights()
 	t.set_zone_light("secoffice", false, true)
 	d.bridge.zone.set_on(false, true)
-	for leaf: Node3D in t.lounge_door.leaves:
-		leaf.visible = true
+	t.service_hall.zone.set_on(false, true)            # the 4th floor's corridors: lit again if you go back up
+	t.crossed.connect(_crossed)
+	_in_lounge = true
 	if not Game.has_item("keycard") and not Game.flag("checked_in"):
 		Game.add_item("keycard")
 	hub.restore()
@@ -165,29 +160,31 @@ func caught() -> void:
 	Game.restart_checkpoint()
 
 
-## The office as you come back to it: not the room you left. The clock has gone to 0:00, every monitor is snow, a row
+## The office as you come back to it: not the room you left. Every monitor is snow (a clock showing 2:17 would go to
+## 0:00, but the office has none now — user: "시계도 없었으면 좋겠어"), a row
 ## of airport seats stands in the middle of the floor, bags have been left round it. (The key card is where it always
 ## was. The red FLIGHT 000 / GATE 0 written across the floor is gone — user: "바닥에 이 빨간글씨 삭제해라".)
 func _warp_office() -> void:
 	var t := d.terminal
-	var rect: Rect2 = Terminal.ZONE_RECTS.secoffice
-	for l: Label3D in t.find_children("*", "Label3D", true, false):
-		if l.text == "2:17" and rect.has_point(Vector2(l.global_position.x, l.global_position.z)):
+	for l: Label3D in t.sec_root.find_children("*", "Label3D", true, false):
+		if l.text == "2:17":
 			Geo.set_text(l, "0:00")
 			_clock_labels.append(l)
-	for m: MeshInstance3D in t.find_children("*", "MeshInstance3D", true, false):
+	for m: MeshInstance3D in t.sec_root.find_children("*", "MeshInstance3D", true, false):
 		var sm := m.material_override as ShaderMaterial
 		if sm and sm.shader and sm.shader.resource_path.ends_with("cctv_feed.gdshader"):
 			_screens[m] = [m.get_instance_shader_parameter("dead"), m.get_instance_shader_parameter("snow")]
 			m.set_instance_shader_parameter("dead", 0.0)
 			m.set_instance_shader_parameter("split", 1.0)
 			m.set_instance_shader_parameter("snow", 1.0)
-	var row := Props.seat_row(t, Vector3(-16.2, 0, -12.6), 4, PI)
+	var row := Props.seat_row(t, Vector3(-17.3, 0, -22.0), 4, PI)
+	Terminal.office_layers(row)
 	_warp_nodes.append(row)
 	for i in 3:
 		var bag := Props.suitcase(t, Color.from_hsv(0.05 + i * 0.3, 0.3, 0.3))
-		bag.position = Vector3(-17.9 + i * 1.3, 0.0, -13.4 - (i % 2) * 0.5)
+		bag.position = [Vector3(-19.15, 0.0, -22.0), Vector3(-15.6, 0.0, -22.05), Vector3(-17.5, 0.0, -21.25)][i]
 		bag.rotation.y = i * 1.4
+		Terminal.office_layers(bag)
 		_warp_nodes.append(bag)
 
 
@@ -203,6 +200,7 @@ func restore_office() -> void:
 		m.set_instance_shader_parameter("snow", _screens[m][1])
 	t.swing_sec_door(0.0, 0.01)
 	t.swing_door(t.sec_entry, 0.0, 0.01)
+	t.service_hall.zone.set_on(true, true)               # the corridors round it lit again, out of its windows
 	var z: LightZone = t.zones.secoffice
 	z.night_dim = 1.0
 	z.set_on(true, true)
@@ -216,9 +214,9 @@ func _arrive() -> void:
 	d.ui.hud.show_key_hints(12.0)
 	d.objective("자물쇠 열기")
 	await d.until(func(): return _through)
-	# your office again, in at its west door — which slams and locks behind you once you are in
+	# your office again, in at its door (the west one, its only one) — which slams and locks behind you once you are in
 	d.clear_objective()
-	await d.until(func(): return d.player.global_position.x > -18.6)
+	await d.until(func(): return d.player.global_position.x > Terminal.SEC_LEG.position.x + 1.4)
 	d.player.zone_override = ""
 	var entry: Node3D = t.sec_entry.root
 	t.swing_door(t.sec_entry, 0.0, 0.22)
@@ -242,17 +240,8 @@ func _arrive() -> void:
 	await d.wait(0.25)
 	Snd.play_at("lock_click", (e.root as Node3D).global_position + Vector3(0, 1.0, 0), -6.0, 0.9, 4.0)
 	(e.use as Interactable).enabled = true
-	_corridor_loop()
+	# down to the lounge on 1F by the lift at the far end or the stairs at the north end (_crossed)
 	await d.until(func(): return _in_lounge)
-	# out onto the lounge's 2F deck by its staff doors, which swing to and lock behind you
-	var ld := t.lounge_door
-	await d.wait(0.4)
-	ServiceHall.swing(ld, 0.0, 0.25)
-	await d.wait(0.22)
-	Snd.play_at("door_slam", (ld.root as Node3D).global_position + Vector3(0, 1.0, 0), -2.0, 0.92, 7.0)
-	d.player.add_shake(0.25)
-	await d.wait(0.25)
-	Snd.play_at("lock_click", (ld.root as Node3D).global_position + Vector3(0, 1.0, 0), -6.0, 0.9, 4.0)
 
 
 ## Past the gate door the bridge's dark vestibule shows the vestibule outside your office's west door (PortalView), so
@@ -291,41 +280,31 @@ func _env() -> Environment:
 	return null
 
 
-## The service corridor past the office's passage door (built far below, its lights on), the portal that shows it
-## through the door once it opens — a dark box lining the passage just beyond the door — and the trigger just past
-## the doorway; its far doors (locked to nothing, they open on [E]) and the deck's staff doors they open onto,
-## leaves out of sight until you come through.
+## The service corridors past the office's west door, the key card door (the terminal builds them far below, lights
+## on, for the office's windows), the portal that shows them through the door once it opens — on the dark vestibule
+## outside it (Terminal.sec_vestibule) — and the trigger just past the doorway. The way on down to the lounge is the terminal's own: the
+## lift at the far end and the stairs (Terminal.crossed).
 func _build_hall() -> void:
 	var t := d.terminal
-	hall = ServiceHall.new()
-	d.world.add_child(hall)
-	hall.build()
+	hall = t.service_hall
 	hall.zone.set_on(true, true)
-	var src := Transform3D(Basis(Vector3.UP, PI / 2), t.sec_door.global_position)
+	# out of the west door (the key card door), on (-X) into the corridor that runs past it: the dark vestibule outside
+	# it shows the corridor once the door opens
+	var src := Transform3D(Basis(Vector3.UP, -PI / 2), (t.sec_entry.root as Node3D).global_position)
 	_hall_portal = PortalView.create(t, src, hall.entry_frame(), d.player.camera, _env())
-	var mat := _hall_portal.surface_material()
-	for b: Array in [[Vector3(-11.2, 0.003, -16.0), Vector3(1.98, 0.004, 5.0)], [Vector3(-11.2, 2.6, -16.0), Vector3(1.98, 0.02, 5.0)],
-			[Vector3(-10.25, 1.3, -16.0), Vector3(0.02, 2.6, 5.0)], [Vector3(-11.2, 1.3, -18.5), Vector3(1.98, 2.6, 0.02)],
-			[Vector3(-11.2, 1.3, -13.5), Vector3(1.98, 2.6, 0.02)]]:
-		Geo.box(t, b[0], b[1], mat, false)
-	var past := Geo.area(t, Vector3(-11.6, 1.0, -16.0), Vector3(0.6, 2.0, 1.0))   # far enough in to clear the leaf
+	for m: MeshInstance3D in t.sec_vestibule:
+		m.material_override = _hall_portal.surface_material()
+	var past := Geo.area(t, Vector3(-23.2, 1.0, Terminal.SEC_ENTRY_Z), Vector3(0.6, 2.0, 1.0))   # far enough out to clear the frame
 	past.body_entered.connect(func(body):
 		if body == d.player and _granted and not _in_hall:
 			_in_hall = true
 			_into_hall.call_deferred())
-	hall.far_doors.use.prompt = "문 열기"
-	hall.far_doors.use.callback = _open_far
 	hall.entry.use.callback = func(): t.rattle(hall.entry)
-	hall.beyond.body_entered.connect(func(body):
-		if body == d.player and _far_open and not _in_lounge:
-			_in_lounge = true
-			_into_lounge.call_deferred())
-	for leaf: Node3D in t.lounge_door.leaves:
-		leaf.visible = false
+	t.crossed.connect(_crossed)
 
 
 ## Through the office door: you are at the corridor's entrance, the same offset from its doorway, heading and pitch.
-## The lounge is lit for the night now, and its portal made (only now: one more full-screen view to keep).
+## The lounge is lit for the night now.
 func _into_hall() -> void:
 	var p := d.player
 	var m := _hall_portal.dst * _hall_portal.src.affine_inverse()
@@ -336,73 +315,33 @@ func _into_hall() -> void:
 	p.no_sprint = true                                   # no running in the corridor
 	_hall_portal.set_active(false)
 	(hall.entry.leaf as Node3D).visible = true
-	var t := d.terminal
-	_hub_lights()
-	t.set_zone_light("secoffice", false, true)          # behind you for good
-	_lounge_portal = PortalView.create(hall, hall.far_frame(), (t.lounge_door.root as Node3D).global_transform, p.camera, _env())
-	for m2 in hall.far_vestibule:
-		m2.material_override = _lounge_portal.surface_material()
-	d.objective("복도 끝 문 열기")
+	_hub_lights()                                        # (the office stays lit: you see it through its windows)
+	d.objective("1층으로 내려가기")
 
 
-## The corridor's own little loop (no running in here): a locker creaks open and a red ball bounces out and comes to
-## rest; come near and it rolls off fast, a side door bursts open, takes it in and slams; walk on and the figure stands
-## at the far end — gone in a dip of the lights once you are within FIGURE_GONE of it.
-func _corridor_loop() -> void:
-	await d.wait(1.2)
-	await hall.open_locker()
-	await hall.ball_out()
-	await d.until(func(): return d.player.global_position.distance_to(hall.ball.global_position) < BALL_NEAR)
-	await hall.ball_away()
-	d.player.add_shake(0.2)
-	_ball_gone = true
-	await d.wait(0.8)
-	await hall.appear()
-	_figure_shown = true
-	await d.until(func(): return d.player.global_position.distance_to(hall.figure.global_position) < FIGURE_GONE)
-	hall.vanish()
-
-
-func _open_far() -> void:
-	if _far_open:
-		return
-	_far_open = true
-	hall.far_doors.use.enabled = false
-	_lounge_portal.set_active(true)
-	Snd.play_at("door_heavy", hall.to_global(Vector3(0, 1.0, ServiceHall.LENGTH)), -6.0, 0.95, 6.0)
-	ServiceHall.swing(hall.far_doors, 82.0, 1.2)
-	d.objective("라운지로 들어가기")
-
-
-## Through the corridor's far doors: out of the deck's staff doors, which stand open behind you as those did.
-func _into_lounge() -> void:
+## Down to the lounge on 1F by the lift or the stairs, or back up to the 4th floor: the corridors and the office are
+## lit only while you are on their floor (from the corridors you see the office through its windows); no running up
+## there.
+func _crossed(to_lounge: bool) -> void:
 	var p := d.player
-	var m := _lounge_portal.dst * _lounge_portal.src.affine_inverse()
-	var fwd := m.basis * (-p.camera.global_basis.z)
-	p.teleport(Transform3D(Basis(), m * p.global_position))
-	p.set_look(atan2(-fwd.x, -fwd.z), asin(clampf(fwd.y, -1.0, 1.0)))
-	p.zone_override = ""
-	p.no_sprint = false
-	_lounge_portal.set_active(false)
-	var ld := d.terminal.lounge_door
-	var leaves: Array[Node3D] = ld.leaves
-	for i in leaves.size():
-		leaves[i].visible = true
-		leaves[i].rotation.y = (-1.0 if i == 0 else 1.0) * deg_to_rad(82.0)
-	(ld.block as StaticBody3D).collision_layer = 0
-	hall.zone.set_on(false, true)
+	p.no_sprint = not to_lounge
+	hall.zone.set_on(not to_lounge, true)
+	d.terminal.set_zone_light("secoffice", not to_lounge, true)
+	if to_lounge:
+		_in_lounge = true
 
 
-## The office as you come back to it: the passage door locked — it rattles, and its reader wants a card — and the key
-## card lying in one of the drawers.
+## The office as you come back to it: the west door (the steel key card door) locked — it rattles, and its reader
+## wants a card — and the key card lying in one of the drawers.
 func _set_office() -> void:
 	var t := d.terminal
-	t.sec_use.prompt = "문 열기"
-	t.sec_use.enabled = true
-	t.sec_use.callback = func():
+	var use: Interactable = t.sec_entry.use
+	use.prompt = "문 열기"
+	use.enabled = true
+	use.callback = func():
 		if _granted:
 			return
-		t.rattle(t.sec_passage)
+		t.rattle(t.sec_entry)
 		_refuse()
 		_locked_hint()
 	t.sec_reader.interactable.enabled = true
@@ -450,15 +389,15 @@ func _swipe(reader: CardReader) -> void:
 	_granted = true
 	reader.show_result(true, "OK")
 	reader.interactable.enabled = false
-	d.terminal.sec_use.enabled = false
+	(d.terminal.sec_entry.use as Interactable).enabled = false
 	d.clear_objective()
-	var door := d.terminal.sec_door
+	var door: Node3D = d.terminal.sec_entry.root
 	await d.wait(0.35)
-	Snd.play_at("lock_click", door.global_position + Vector3(-0.2, 1.0, -0.4), -4.0, 1.0, 4.0)
+	Snd.play_at("lock_click", door.global_position + Vector3(0.2, 1.0, 0.4), -4.0, 1.0, 4.0)
 	await d.wait(0.3)
-	Snd.play_at("door_heavy", door.global_position + Vector3(-0.3, 1.0, 0), -8.0, 1.1, 5.0)
+	Snd.play_at("door_heavy", door.global_position + Vector3(0.3, 1.0, 0), -8.0, 1.1, 5.0)
 	_hall_portal.set_active(true)                  # past the door now: the service corridor
-	d.terminal.swing_sec_door(84.0, 1.4)
+	d.terminal.swing_door(d.terminal.sec_entry, 84.0, 1.4)
 	d.objective("밖으로 나가기")
 
 
@@ -484,6 +423,7 @@ func _place_card(dr: Drawer) -> void:
 	_card_use.press_sound = ""
 	_card_use.enabled = false
 	_card_use.collision_layer = 0                        # shut in the drawer: nothing to reach
+	Terminal.office_layers(dr.inside)                    # lit by the office's lights like the rest of it
 	dr.toggled.connect(func(x: Drawer):
 		if _card_use:
 			_card_use.enabled = x.is_open

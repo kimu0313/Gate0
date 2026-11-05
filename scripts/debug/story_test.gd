@@ -39,8 +39,10 @@ func _ready() -> void:
 	_d.start()
 	if Game.chapter == "ch1":
 		await _ch1()
-	else:
+	elif Game.chapter == "prologue":
 		await _prologue()
+	else:
+		await _shift1()
 
 
 func _shot(name_text: String, settle := 0.6) -> void:
@@ -85,6 +87,11 @@ func _walk(points: Array, speed := 2.2) -> void:
 	while _p.walking() and Time.get_ticks_msec() - t0 < 60000:
 		await _tree.process_frame
 	_log("at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+
+
+## A to-do line as the HUD shows it: its [b] marks (yellow) taken out.
+func _plain(s: String) -> String:
+	return s.replace("[b]", "").replace("[/b]", "")
 
 
 func _has_toast(prefix: String) -> bool:
@@ -208,11 +215,11 @@ func _prologue() -> void:
 		if shut_gain > -12.0:
 			_end(1, "the cart behind the shut office door is not faint (%+.1f dB)" % shut_gain)
 			return
-		# out through the office door ([E] from inside), up the passage
-		await _walk([Vector3(-13.7, 0.05, -16.2)], 1.6)
-		_p.look_at_point(Prologue.SEC_DOOR + Vector3(0, 1.1, 0), 0.05)
+		# out through the office door (its only one, the west door: [E] from inside), out into the passage
+		await _walk([Vector3(-19.5, 0.05, -16.5), Vector3(-21.2, 0.05, Terminal.SEC_ENTRY_Z)], 1.6)
+		_p.look_at_point((world.terminal.sec_entry.root as Node3D).global_position + Vector3(0, 1.1, 0), 0.05)
 		await _wait(0.2)
-		if _p.current_interactable != world.terminal.sec_use:
+		if _p.current_interactable != world.terminal.sec_entry.use:
 			_end(1, "the [E] ray does not reach the office door from inside")
 			return
 		if _has_toast("[F]"):
@@ -226,6 +233,11 @@ func _prologue() -> void:
 		if _d.guide_gain_db < -1.0:
 			_end(1, "the cart is still faint with the office door open (%+.1f dB)" % _d.guide_gain_db)
 			return
+		await _walk([Vector3(-23.6, 0.05, Terminal.SEC_ENTRY_Z)], 1.6)       # through it: out in the passage
+		if _p.global_position.x < Prologue.OUT_OF_OFFICE_X:
+			_end(1, "through the office door but not out in the staff passage (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+			return
+		_log("through the office door: in the passage at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 		await _walk([Vector3(-11.2, 0.05, -16.0)])
 		await _wait(0.3)
 		var hint: Array = _toasts.filter(func(t): return str(t[0]).begins_with("[F]"))
@@ -538,14 +550,14 @@ func _ch1() -> void:
 	await _walk([b.to_global(Vector3(0, 0.05, -JetBridge.LENGTH - 1.4))], 1.4)
 	await _wait(0.6)
 	var q := _p.global_position
-	if not part._through or q.x > -20.1 or q.x < -22.4 or absf(q.z + 14.6) > 1.4 or absf(q.y) > 0.5:
+	if not part._through or q.x > Terminal.SEC_LEG.position.x - 0.1 or q.x < Terminal.SEC_ENTRY_PLANE.x - 0.4 or absf(q.z - Terminal.SEC_ENTRY_Z) > 1.4 or absf(q.y) > 0.5:
 		_end(1, "through the gate door but not in the vestibule outside the office (at %s)" % str(q.snapped(Vector3.ONE * 0.1)))
 		return
 	_log("through the gate door: in the vestibule outside the office's west door at %s" % str(q.snapped(Vector3.ONE * 0.1)))
 	await _shot("22_vestibule", 0.2)
-	# into the office: the west door shuts and locks behind you
+	# into the office by its west door (its only door): it shuts and locks behind you
 	var t: Terminal = world.terminal
-	await _walk([Vector3(-19.6, 0.05, -14.6), Vector3(-17.6, 0.05, -14.6)], 1.4)
+	await _walk([Vector3(-20.8, 0.05, Terminal.SEC_ENTRY_Z), Vector3(-19.4, 0.05, -17.2), Vector3(-18.0, 0.05, -17.2)], 1.4)
 	await _wait(1.0)
 	if (t.sec_entry.leaf as Node3D).rotation.y > 0.05:
 		_end(1, "the west door did not shut behind the player")
@@ -553,22 +565,23 @@ func _ch1() -> void:
 	_log("west door shut behind")
 	_p.look_at_point(Vector3(-16.6, 1.2, -20.0), 0.3)
 	await _shot("23_office", 0.4)
-	# the passage door is locked: it rattles and the order is to find the card
-	await _walk([Vector3(-13.2, 0.05, -16.0)], 1.4)
-	_p.look_at_point(Prologue.SEC_DOOR + Vector3(0, 1.1, 0), 0.05)
+	# the key card door (west) is locked: it rattles and the order is to find the card
+	await _walk([Vector3(-19.5, 0.05, -16.5), Vector3(-21.2, 0.05, Terminal.SEC_ENTRY_Z)], 1.4)
+	var west: Node3D = t.sec_entry.root
+	_p.look_at_point(west.global_position + Vector3(0, 1.1, 0), 0.05)
 	await _wait(0.2)
-	if _p.current_interactable != t.sec_use:
-		_end(1, "the [E] ray does not reach the office's passage door")
+	if _p.current_interactable != t.sec_entry.use:
+		_end(1, "the [E] ray does not reach the office's key card door")
 		return
 	_p.current_interactable.interact()
-	_log("[E] 문 열기 (passage door, locked)")
+	_log("[E] 문 열기 (the key card door, locked)")
 	await _obj("키 카드 찾기", 6.0)
 	await _wait(0.6)
 	if world.ui.hud._obj_head.visible:
 		_end(1, "an objective is shown on the HUD (none should be)")
 		return
-	if t.sec_leaf.rotation.y > 0.05:
-		_end(1, "the locked passage door opened")
+	if (t.sec_entry.leaf as Node3D).rotation.y > 0.05:
+		_end(1, "the locked key card door opened")
 		return
 	# tried again, a thought says it wants a key card — once, not on every try
 	var thoughts: Array[String] = []
@@ -582,11 +595,11 @@ func _ch1() -> void:
 	Events.subtitle.disconnect(on_sub)
 	_log("thoughts at the locked door: %s" % [thoughts])
 	if thoughts.size() != 1 or thoughts[0] != "……키 카드가 필요한 것 같다.":
-		_end(1, "trying the locked passage door again should think it needs a key card, once")
+		_end(1, "trying the locked key card door again should think it needs a key card, once")
 		return
 	await _shot("23b_needs_card", 0.2)
 	# a wrong drawer first, then the right one (the guard's desk, bottom): look, [E], the card
-	await _walk([Vector3(-13.6, 0.05, -16.4), Vector3(-13.6, 0.05, -19.3), Vector3(-14.4, 0.05, -19.3)], 1.4)
+	await _walk([Vector3(-19.5, 0.05, -16.6), Vector3(-17.3, 0.05, -17.2)], 1.4)
 	for name_text: String in ["c1", Chapter1.CARD_DRAWER]:
 		var dr: Drawer = t.sec_drawers[name_text]
 		var stand := dr.global_position + dr.global_basis.z * 1.0
@@ -618,8 +631,8 @@ func _ch1() -> void:
 		_end(1, "no key card after the drawers")
 		return
 	await _obj("키 카드로", 6.0)
-	# the reader by the door: OK, the lock lets go, the door swings open; out into the passage
-	await _walk([Vector3(-13.6, 0.05, -19.3), Vector3(-13.6, 0.05, -17.2), Vector3(-13.3, 0.05, -16.85)], 1.4)
+	# the reader by the west door: OK, the lock lets go, the door swings open; out into the corridor past it
+	await _walk([Vector3(-17.3, 0.05, -17.2), Vector3(-19.5, 0.05, -16.5), Vector3(-21.45, 0.05, -15.55)], 1.4)
 	_p.look_at_point(t.sec_reader.global_position, 0.1)
 	await _wait(0.25)
 	if _p.current_interactable != t.sec_reader.interactable:
@@ -629,91 +642,75 @@ func _ch1() -> void:
 	_p.current_interactable.interact()
 	_log("[E] 출입카드 태그")
 	await _obj("밖으로 나가기", 6.0)
-	await _wait(1.2)
+	await _wait(1.6)
 	await _shot("26_door_open", 0.0)
-	# through the door: not the passage but the long service corridor; its door slams and locks behind you
-	await _walk([Vector3(-12.9, 0.05, -16.0), Vector3(-11.2, 0.05, -16.0)], 1.4)
+	# through the door: not the dark vestibule but the service corridor; its door slams and locks behind you
+	await _walk([Vector3(-21.6, 0.05, Terminal.SEC_ENTRY_Z), Vector3(-23.5, 0.05, Terminal.SEC_ENTRY_Z)], 1.4)
 	await _wait(0.3)
 	var hall: ServiceHall = part.hall
 	if not part._in_hall or not hall.contains(_p.global_position):
 		_end(1, "through the office door but not in the service corridor (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 		return
 	_log("through the office door: in the service corridor at %s" % str(hall.to_local(_p.global_position).snapped(Vector3.ONE * 0.1)))
-	await _obj("복도 끝", 6.0)
+	await _obj("1층으로", 6.0)
 	await _wait(1.6)
 	if (hall.entry.leaf as Node3D).rotation.y > 0.05:
 		_end(1, "the corridor's entrance door did not shut behind the player")
 		return
 	_log("corridor door shut behind")
-	_p.look_at_point(hall.to_global(Vector3(0, 1.4, ServiceHall.LENGTH)), 0.3)
+	_p.look_at_point(hall.to_global(Vector3(-23.65, 1.4, -24.0)), 0.3)
 	await _shot("27_corridor", 0.6)
 	if not _p.no_sprint:
 		_end(1, "the sprint key still works in the corridor")
 		return
-	# down the corridor: a locker creaks open and the red ball bounces out; come near and it runs off into a side room,
-	# then the figure before the far doors shows and is gone before you get there
-	await _walk([hall.to_global(Vector3(0, 0.05, 9.0))], 2.2)
-	await _wait(1.5)
-	_p.look_at_point(hall.ball.global_position, 0.3)
-	await _shot("27b_ball", 0.6)
-	await _walk([hall.to_global(Vector3(0, 0.05, 11.2))], 1.4)
-	_p.look_at_point(hall.to_global(Vector3(1.4, 0.6, ServiceHall.SIDE_DOORS[ServiceHall.BALL_DOOR])), 0.2)
-	await _wait(0.9)
-	await _shot("27c_ball_door", 0.0)
-	await _wait(2.0)
-	_p.look_at_point(hall.to_global(Vector3(0, 1.4, ServiceHall.LENGTH)), 0.3)
-	await _shot("27d_figure", 0.6)
-	await _walk([hall.to_global(Vector3(0, 0.05, ServiceHall.LENGTH - 1.3))], 2.2)
-	if not part._ball_gone:
-		_end(1, "the red ball never ran off into the side room")
+	# north up the corridor past the office's windows, along the north arm's and down the last run to the lift
+	# (nothing happens on the way any more)
+	var far := ServiceHall.FAR
+	await _walk([hall.to_global(Vector3(-23.65, 0.05, Terminal.SEC_VIEW_W[0]))], 2.2)
+	_p.look_at_point(hall.to_global(Vector3(Terminal.SEC_LEG.position.x, 1.7, Terminal.SEC_VIEW_W[0])), 0.3)
+	await _shot("27e_office_window", 0.6)
+	await _walk([hall.to_global(Vector3(-23.65, 0.05, -24.75)), hall.to_global(Vector3(far.x, 0.05, -24.75)),
+			hall.to_global(Vector3(far.x - 0.5, 0.05, far.z - 1.3))], 2.2)
+	_log("corridor: walked through to the lift")
+	# the lift at the run's end, down to the lounge on 1F (the stairs are --lift-test's)
+	var lift: Lift = (world.terminal as Terminal).lift
+	if not await _press((lift.cars[0].call as Node3D).global_position, "엘리베이터 부르기"):
 		return
-	if not part._figure_shown:
-		_end(1, "the figure never showed at the end of the corridor")
+	var t_call := Time.get_ticks_msec()
+	while not (lift.doors_open and not lift.busy) and Time.get_ticks_msec() - t_call < 8000:
+		await _tree.process_frame
+	if not lift.doors_open:
+		_end(1, "the lift's doors did not open at 4F")
 		return
-	if hall.figure.visible:
-		_end(1, "the figure at the end of the corridor is still there")
+	await _shot("28_lift", 0.0)
+	var car0: Node3D = lift.cars[0].root
+	await _walk([hall.to_global(far + Vector3(0, 0.05, -0.5)), car0.global_transform * Vector3(0.2, 0.05, -0.9)], 1.4)
+	if not lift.is_inside(0):
+		_end(1, "could not step into the lift (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 		return
-	_log("corridor: the ball ran off into the side room, the figure showed and was gone")
-	_p.look_at_point(hall.to_global(Vector3(0, 1.1, ServiceHall.LENGTH)), 0.05)
-	await _wait(0.25)
-	if _p.current_interactable != hall.far_doors.use:
-		_end(1, "the [E] ray does not reach the corridor's far doors")
+	if not await _press((lift.cars[0].go as Node3D).global_position, "1층 누르기"):
 		return
-	await _shot("28_far_doors", 0.0)
-	_p.current_interactable.interact()
-	_log("[E] 문 열기 (the corridor's far doors)")
-	await _obj("라운지로", 6.0)
-	await _wait(1.4)
-	await _shot("29_far_open", 0.0)
-	# through them: out onto the lounge's 2F deck by its staff doors, which slam behind you
-	await _walk([hall.to_global(Vector3(0, 0.05, ServiceHall.LENGTH + 2.0))], 1.4)
-	await _wait(0.3)
+	var t_ride := Time.get_ticks_msec()
+	while not (lift.at == 1 and lift.doors_open and not lift.busy) and Time.get_ticks_msec() - t_ride < 20000:
+		await _tree.process_frame
+	await _shot("29_lift_open", 0.0)
 	var arrive := _p.global_position
-	var door := Terminal.DECK_DOOR
-	if not part._in_lounge or absf(arrive.x - door.x) > 1.0 or absf(arrive.z - (door.z + 1.4)) > 1.0 or absf(arrive.y - door.y) > 0.5:
-		_end(1, "through the corridor's far doors but not on the lounge's 2F deck (at %s)" % str(arrive.snapped(Vector3.ONE * 0.1)))
+	if not part._in_lounge or not lift.is_inside(1):
+		_end(1, "the lift did not bring the player down to the lounge (at %s)" % str(arrive.snapped(Vector3.ONE * 0.1)))
 		return
-	_log("through the far doors: on the lounge's deck at %s" % str(arrive.snapped(Vector3.ONE * 0.1)))
+	_log("down in the lift: in the lounge's car at %s" % str(arrive.snapped(Vector3.ONE * 0.1)))
+	var car1: Node3D = lift.cars[1].root
+	await _walk([car1.global_transform * Vector3(0, 0.05, 0.6), _at(Terminal.HALL_E - 2.5, Terminal.LIFT_Z)], 1.6)
+	if _p.global_position.x > Terminal.HALL_E - 1.5 or absf(_p.global_position.y) > 0.3:
+		_end(1, "could not step out of the lift into the lounge (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+		return
 	await _obj("수속 장치", 8.0)
-	await _wait(1.2)
-	var ld: Array[Node3D] = (world.terminal as Terminal).lounge_door.leaves
-	if absf(ld[0].rotation.y) > 0.05 or absf(ld[1].rotation.y) > 0.05:
-		_end(1, "the deck's staff doors did not shut behind the player")
-		return
-	_p.look_at_point(Vector3(-3.0, 1.0, 20.0), 0.3)
-	await _shot("30_deck", 0.6)
+	_p.look_at_point(Vector3(-3.0, 1.2, 20.0), 0.3)
+	await _shot("30_lounge_1f", 0.6)
 	Engine.time_scale = SPEED
-	# along the edge to the nearest down escalator and down it to the lounge floor
-	var downs: Array = Terminal.escalator_units().filter(func(u: Array) -> bool: return u[1])
-	downs.sort_custom(func(a: Array, b: Array) -> bool: return absf(a[0].x - door.x) < absf(b[0].x - door.x))
-	var down: Vector3 = downs[0][0]
-	await _walk([Vector3(down.x, 0.0, door.z + 1.5), Vector3(down.x, 0.0, SOUTH_LANE)], 2.0)
-	if _p.global_position.y > 0.3:
-		_end(1, "could not walk down the escalator (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
-		return
-	_log("down the escalator at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+	_log("out of the lift on the lounge floor at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
 	await _shot("31_lounge_floor", 0.3)
-	await _walk([_at(down.x + 1.6, SOUTH_LANE), _at(MID_LANE, SOUTH_LANE), _at(MID_LANE, NORTH_AISLE)], 3.0)
+	await _walk([_at(Terminal.HALL_E - 2.5, NORTH_AISLE), _at(MID_LANE, NORTH_AISLE)], 3.0)
 	await _after_lounge(part)
 
 
@@ -1062,3 +1059,295 @@ func _look_shot(target: Vector3, name_text: String) -> void:
 	_p.look_at_point(target, 0.4)
 	await _wait(0.5)
 	await _shot(name_text, 0.4)
+
+
+# =========================================================================================
+## The game (Shift1): the letter, the corridor at the lift (its doors shut behind you), round the corridors to the
+## office's door, through it, and the supervisor's handover line by line. In `loop` mode it then leaves to the main
+## menu (as the pause menu does).
+func _shift1() -> void:
+	var part := _d.part as Shift1
+	var t: Terminal = world.terminal
+	var hall := t.service_hall
+	if _shots != "":
+		await _wait(9.4)
+		await _shot("49_letter", 0.0)
+	await _obj("시설관리팀", 40.0)
+	var q := hall.to_local(_p.global_position)
+	if q.distance_to(Shift1.START_LOCAL) > 0.6:
+		_end(1, "the game does not start before the lift (at %s)" % str(q.snapped(Vector3.ONE * 0.1)))
+		return
+	_log("at the lift, back to it: %s" % str(q.snapped(Vector3.ONE * 0.1)))
+	await _shot("50_start", 0.4)
+	await _wait(3.0)
+	if t.lift.doors_open:
+		_end(1, "the lift's doors did not shut behind the player")
+		return
+	_log("lift doors shut behind")
+	var hud: Hud = world.ui.hud
+	if hud._clock.is_visible_in_tree():
+		_end(1, "the clock is on screen (it should be gone)")
+		return
+	var want: Array[String] = ["[ ] " + Shift1.TASK_FIND, "[ ] " + Shift1.TASK_TALK]
+	if not hud._task_box.visible or hud.task_lines() != want:
+		_end(1, "the to-do list should read %s (got %s)" % [want, hud.task_lines()])
+		return
+	_log("to-do: %s" % [hud.task_lines()])
+	# no controls guide on screen at the start, and [Tab] opens nothing yet
+	if hud._keys.visible:
+		_end(1, "the controls guide (bottom left) is on screen at the start")
+		return
+	var tab0 := InputEventAction.new()
+	tab0.action = "tablet"
+	tab0.pressed = true
+	Input.parse_input_event(tab0)
+	await _wait(0.4)
+	if world.ui.modal != "":
+		_end(1, "[Tab] opened '%s' before the guidelines were found" % world.ui.modal)
+		return
+	await _shot("50b_todo", 0.0)
+	t.lift._call(0)
+	await _wait(2.0)
+	if t.lift.doors_open:
+		_end(1, "the lift opened (it should be locked)")
+		return
+	_log("the lift stays shut when called")
+	# north up the last run, east along the north arm's windows, south down the west corridor to the office's door
+	var ez := Terminal.SEC_ENTRY_Z
+	await _walk([hall.to_global(Vector3(-36.1, 0.05, -24.75)), hall.to_global(Vector3(-23.65, 0.05, -24.75)),
+			hall.to_global(Vector3(-23.65, 0.05, ez))], 2.2)
+	_p.look_at_point((hall.entry.root as Node3D).global_position + Vector3(0, 1.1, 0), 0.05)
+	await _wait(0.25)
+	if _p.current_interactable != hall.entry.use:
+		_end(1, "the [E] ray does not reach the office's door from the corridor")
+		return
+	_p.current_interactable.interact()
+	_log("[E] 문 열기 (the office's door, from the corridor)")
+	await _wait(0.4)
+	if hud.task_lines() != ["[x] " + Shift1.TASK_FIND, "[ ] " + Shift1.TASK_TALK]:
+		_end(1, "opening the office's door did not tick '%s' (%s)" % [Shift1.TASK_FIND, hud.task_lines()])
+		return
+	_log("to-do after the door: %s" % [hud.task_lines()])
+	await _shot("51a_ticked", 0.0)
+	await _wait(0.8)
+	await _shot("51_door_open", 0.0)
+	await _walk([hall.to_global(Vector3(-21.4, 0.05, ez))], 1.4)
+	await _wait(0.3)
+	if not part.in_office or _p.global_position.x < -22.4 or absf(_p.global_position.y) > 0.3:
+		_end(1, "through the office's door but not in the office (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+		return
+	_log("in the office at %s" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+	await _walk([Vector3(-20.6, 0.05, -16.6)], 1.4)
+	await _wait(2.5)
+	if (t.sec_entry.leaf as Node3D).rotation.y > 0.05:
+		_end(1, "the office's door did not shut behind the player")
+		return
+	_log("the door shut behind")
+	if hud.task_lines() != ["[ ] " + Shift1.TASK_TALK]:
+		_end(1, "the ticked line did not go, leaving '%s' (%s)" % [Shift1.TASK_TALK, hud.task_lines()])
+		return
+	_log("to-do once in: %s" % [hud.task_lines()])
+	# the supervisor at the deepest desk (the north arm's west end): [E] till he has said it all
+	var boss := part.boss
+	await _walk([Vector3(-21.0, 0.05, -18.0), Vector3(-21.0, 0.05, -30.7), Vector3(-24.0, 0.05, -30.7)], 1.6)
+	_p.look_at_point(boss.global_position + Vector3(0, 1.1, 0), 0.05)
+	await _wait(0.3)
+	if _p.current_interactable != boss.use:
+		_end(1, "the [E] ray does not reach the supervisor (got '%s')" % (_p.current_interactable.prompt if _p.current_interactable else "nothing"))
+		return
+	var heard: Array[String] = []
+	var on_sub := func(kind: String, text: String, _dur: float):
+		if kind == "npc":
+			heard.append(text)
+	Events.subtitle.connect(on_sub)
+	for i in OfficeNpc.LINES.size() + 1:
+		boss.use.interact()
+		await _wait(0.7)
+		if i == 0:
+			if hud.task_lines() != ["[x] " + Shift1.TASK_TALK]:
+				_end(1, "starting the talk did not tick '%s' (%s)" % [Shift1.TASK_TALK, hud.task_lines()])
+				return
+			await _shot("52a_talk_ticked", 0.0)
+		if i == 2:
+			await _shot("52_boss", 0.0)
+		if i == 5 and hud._task_box.visible:
+			_end(1, "the to-do list is still up after its last line was ticked (%s)" % [hud.task_lines()])
+			return
+		# the radio changes hands on its line: in your belongings, and a toast says so
+		if i == OfficeNpc.RADIO_LINE - 1 and Game.has_item("radio"):
+			_end(1, "the radio was handed over before its line")
+			return
+		if i == OfficeNpc.RADIO_LINE:
+			if not Game.has_item("radio") or not _has_toast("무전기를 받았다"):
+				_end(1, "no radio (or no toast) on the radio line (items %s)" % [Game.inventory])
+				return
+			_log("the radio handed over on: %s" % OfficeNpc.LINES[i])
+			await _shot("52b_radio", 0.0)
+	_log("the supervisor said %d lines: %s" % [heard.size(), heard[0] if not heard.is_empty() else ""])
+	if not boss.talked or heard.size() != OfficeNpc.LINES.size():
+		_end(1, "the handover did not play line by line (%d lines, talked=%s)" % [heard.size(), boss.talked])
+		return
+	# the next things to do, on the to-do list
+	await _wait(1.2)
+	var after: Array[String] = []
+	for task: String in Shift1.TASKS_AFTER:
+		after.append("[ ] " + _plain(task))
+	if not hud._task_box.visible or hud.task_lines() != after:
+		_end(1, "after the talk the to-do list should read %s (got %s)" % [after, hud.task_lines()])
+		return
+	_log("to-do after the talk: %s" % [hud.task_lines()])
+	await _shot("52c_tasks", 0.0)
+	boss.use.interact()
+	await _wait(0.5)
+	Events.subtitle.disconnect(on_sub)
+	if heard.size() != OfficeNpc.LINES.size() + 1:
+		_end(1, "talking to him again says nothing")
+		return
+	# no flashlight yet: [F] does nothing and its hint is hidden
+	if _p.flashlight_owned or hud._flash_hint.visible:
+		_end(1, "the flashlight works (or its [F] hint shows) before it has been found")
+		return
+	# changing locker 04 on the north arm's north wall: open it, [E] on the uniform, change
+	await _wait(0.4)
+	await _walk([Vector3(-21.3, 0.05, -30.6), Vector3(-19.6, 0.05, -30.15)], 1.4)
+	var lk: Dictionary = t.sec_locker
+	_p.look_at_point((lk.use as Interactable).global_position, 0.05)
+	await _wait(0.3)
+	if _p.current_interactable != lk.use:
+		_end(1, "the [E] ray does not reach locker 04 (got '%s')" % (_p.current_interactable.prompt if _p.current_interactable else "nothing"))
+		return
+	_p.current_interactable.interact()
+	await _wait(0.9)
+	_p.look_at_point((lk.hang as Node3D).global_position + Vector3(0, -0.32, 0), 0.05)
+	await _wait(0.3)
+	if _p.current_interactable != part._uniform_use:
+		_end(1, "the [E] ray does not reach the uniform in the open locker (got '%s')" % (_p.current_interactable.prompt if _p.current_interactable else "nothing"))
+		return
+	await _shot("52d_locker", 0.0)
+	_p.current_interactable.interact()
+	await _wait(4.0)
+	if not part.changed or not Game.flag("uniform") or not _p.controls_enabled or not _has_toast("직원복으로 갈아입었다"):
+		_end(1, "changing into the uniform did not finish (changed=%s)" % part.changed)
+		return
+	_log("changed into the uniform")
+	await _shot("52e_changed", 0.0)
+	# the flashlight on the guard's desk
+	await _walk([Vector3(-20.4, 0.05, -29.0), Vector3(-20.7, 0.05, -26.95), Vector3(-20.7, 0.05, -22.0),
+			Vector3(-20.6, 0.05, -17.7), Vector3(-18.0, 0.05, -17.85)], 1.4)
+	_p.look_at_point(part._light_node.global_position + Vector3(0, 0.02, 0), 0.1)
+	await _wait(0.3)
+	if _p.current_interactable != part._light_use:
+		var rq := PhysicsRayQueryParameters3D.create(_p.camera.global_position, _p.camera.global_position - _p.camera.global_basis.z * Player.INTERACT_RANGE, Geo.LAYER_WORLD | Geo.LAYER_INTERACT)
+		rq.exclude = [_p.get_rid()]
+		var hit := _p.get_world_3d().direct_space_state.intersect_ray(rq)
+		_end(1, "the [E] ray does not reach the flashlight on the desk (got '%s'; the ray hits %s at %s)" % [
+			_p.current_interactable.prompt if _p.current_interactable else "nothing",
+			(hit.collider as Node).get_path() if hit else "nothing", str(hit.position) if hit else "-"])
+		return
+	await _shot("52f_flashlight", 0.0)
+	_p.current_interactable.interact()
+	await _wait(0.5)
+	if not part.has_light or not _p.flashlight_owned or not Game.has_item("flashlight") or not hud._flash_hint.visible:
+		_end(1, "picking up the flashlight did not hand it over")
+		return
+	_p.toggle_flashlight(1)
+	await _wait(3.0)
+	if hud.task_lines() != ["[ ] " + _plain(Shift1.TASK_GUIDE)] or not _has_toast("[F] 손전등"):
+		_end(1, "after the uniform and the flashlight the to-do list should read only '%s' (%s)" % [Shift1.TASK_GUIDE, hud.task_lines()])
+		return
+	_log("flashlight found; to-do: %s" % [hud.task_lines()])
+	await _shot("52g_light_on", 0.0)
+	_p.toggle_flashlight(0)
+	# out of the office and back in: he has gone to rest, asleep on the night-duty room's bed, and only snores
+	await _wait(0.4)
+	await _walk([Vector3(-20.6, 0.05, -16.6), Vector3(-21.5, 0.05, ez)], 1.6)
+	_p.look_at_point((t.sec_entry.root as Node3D).global_position + Vector3(0, 1.1, 0), 0.05)
+	await _wait(0.25)
+	if _p.current_interactable != t.sec_entry.use:
+		_end(1, "the [E] ray does not reach the office's door from inside")
+		return
+	_p.current_interactable.interact()
+	await _wait(0.9)
+	await _walk([Vector3(-23.6, 0.05, ez)], 1.4)
+	await _wait(0.3)
+	if not hall.contains(_p.global_position):
+		_end(1, "out through the office's door but not in the corridor (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+		return
+	if not part.boss.asleep:
+		_end(1, "the manager is not asleep on the bed once you have left the office")
+		return
+	_log("out in the corridor; the manager has gone to bed")
+	# round to the records room at E's end: its door, the third aisle, the folder on its shelf
+	await _walk([hall.to_global(Vector3(-23.65, 0.05, -11.75)), hall.to_global(Vector3(-11.15, 0.05, -11.75)),
+			hall.to_global(Vector3(ArchiveRoom.DOOR_X, 0.05, -20.4))], 2.0)
+	var ad: Dictionary = hall.doors_by["자료실"]
+	_p.look_at_point((ad.root as Node3D).global_position + Vector3(0, 1.1, 0), 0.05)
+	await _wait(0.3)
+	if _p.current_interactable != ad.use:
+		_end(1, "the [E] ray does not reach the records room's door")
+		return
+	await _shot("53a_archive_door", 0.0)
+	_p.current_interactable.interact()
+	await _wait(1.0)
+	var gx := ArchiveRoom.guide_xform()
+	var a3: float = ArchiveRoom.AISLES[2]
+	await _walk([hall.to_global(Vector3(ArchiveRoom.DOOR_X, 0.05, -22.4)), hall.to_global(Vector3(a3, 0.05, -22.5)),
+			hall.to_global(Vector3(a3 + 0.15, 0.05, gx.origin.z))], 1.6)
+	_p.look_at_point(hall.to_global(gx * Vector3(0, Shift1.GUIDE_H * 0.5, 0)), 0.1)
+	await _wait(0.3)
+	if _p.current_interactable != part._guide_use:
+		_end(1, "the [E] ray does not reach the guidelines on their shelf (got '%s')" % (_p.current_interactable.prompt if _p.current_interactable else "nothing"))
+		return
+	await _shot("53b_guide", 0.0)
+	_p.current_interactable.interact()
+	await _wait(3.2)
+	if not part.has_guide or not Game.has_item("guide") or not _has_toast("지침서를 찾았다") or hud._task_box.visible:
+		_end(1, "taking the guidelines did not finish the list (%s)" % [hud.task_lines()])
+		return
+	_log("the guidelines taken; the to-do list is done")
+	if not _has_toast("[TAB] 지침서"):
+		_end(1, "no notice that [Tab] opens the guidelines")
+		return
+	# the manager comes running from your right and talks
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 12000 and not (part._runner and part._runner.talking):
+		await _tree.process_frame
+	var runner := part._runner
+	if runner == null or not runner.talking:
+		_end(1, "the manager did not come running up and start talking")
+		return
+	var gap := Vector2(runner.global_position.x - _p.global_position.x, runner.global_position.z - _p.global_position.z).length()
+	if gap > 2.0:
+		_end(1, "the manager stopped %.1f m away (should be right by you)" % gap)
+		return
+	_log("the manager ran up (%.1f m away) and talks" % gap)
+	_p.look_at_point(runner.global_position + Vector3(0, 1.6, 0), 0.2)
+	await _wait(0.4)
+	await _shot("53c_manager", 0.0)
+	for k in Shift1.ARCHIVE_LINES.size():
+		runner.use.interact()
+		await _wait(0.3)
+	if runner.talking:
+		_end(1, "the manager's talk did not end")
+		return
+	# [Tab] opens the guidelines now (it did nothing before), and closes them
+	var tab := InputEventAction.new()
+	tab.action = "tablet"
+	tab.pressed = true
+	Input.parse_input_event(tab)
+	await _wait(0.5)
+	if world.ui.modal != "guide":
+		_end(1, "[Tab] did not open the guidelines (modal '%s')" % world.ui.modal)
+		return
+	await _shot("53d_guide_open", 0.2)
+	Input.parse_input_event(tab)
+	await _wait(0.4)
+	if world.ui.modal != "":
+		_end(1, "[Tab] did not close the guidelines")
+		return
+	_log("[Tab] opens and closes the guidelines")
+	if _mode == "loop":
+		_log("the handover heard; back to the main menu")
+		Game.go_menu()
+		return
+	_end(0, "shift1: the letter, the lift, the corridors, the office's door, the supervisor's handover")

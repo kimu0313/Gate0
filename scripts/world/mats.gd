@@ -31,6 +31,19 @@ static func emissive(color: Color, energy := 2.0, albedo := Color.BLACK) -> Stan
 	return m
 
 
+## Old painted sheet steel in `color` (user, with a photo of worn lockers: "사물함이나 책상 쇠 부분 텍스처 참고해서
+## 이렇게 바꿔줘"): the paint gone dull and grimy, rust in patches that run downward, scratches through to bright metal
+## (shaders/weathered.gdshader). One material per colour, cached.
+static func weathered_steel(color: Color) -> Material:
+	var key := "wsteel_" + color.to_html()
+	if not _cache.has(key):
+		_cache[key] = shader_mat("res://shaders/weathered.gdshader", {"base_color": color,
+				"rust_color": Color(0.42, 0.29, 0.15), "grime_color": color * Color(0.55, 0.53, 0.48), "metallic": 0.4,
+				"roughness": 0.52, "rust": 0.3, "grime": 0.5, "scale": 6.5, "scratches": 1.0, "runs": 0.75,
+				"scratch_color": Color(0.74, 0.75, 0.74)})
+	return _cache[key]
+
+
 static func shader_mat(path: String, params := {}) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = load(path)
@@ -84,6 +97,74 @@ static func _make(mat_name: String) -> Material:
 				"tile_size": 2.0, "roughness_base": 0.55, "roughness_var": 0.3, "grout": 0.02})
 		"carpet":
 			return shader_mat("res://shaders/carpet.gdshader")
+		"plastic_peripheral":
+			# the office keyboards' and mice's light grey plastic (user, with photos of the two): barely yellowed,
+			# grimy where hands go
+			return shader_mat("res://shaders/weathered.gdshader", {"base_color": Color(0.8, 0.79, 0.74),
+					"rust_color": Color(0.76, 0.72, 0.6), "grime_color": Color(0.58, 0.56, 0.5), "metallic": 0.0, "roughness": 0.55,
+					"rust": 0.3, "grime": 0.3, "scale": 24.0})
+		"plastic_aged":
+			# old computers' beige plastic (user, with a photo of an old beige PC: "컴퓨터 텍스처도 참고해줘"): yellowed in
+			# patches, grimy, scuffed dark in places
+			return shader_mat("res://shaders/weathered.gdshader", {"base_color": Color(0.74, 0.69, 0.56),
+					"rust_color": Color(0.66, 0.58, 0.4), "grime_color": Color(0.46, 0.42, 0.34), "metallic": 0.0, "roughness": 0.62,
+					"rust": 0.6, "grime": 0.45, "scale": 11.0})
+		"fixture_cast":
+			# the office light fittings' cast housings and end brackets: near-black iron, rust and grime
+			return shader_mat("res://shaders/weathered.gdshader", {"base_color": Color(0.085, 0.075, 0.065),
+					"rust_color": Color(0.27, 0.14, 0.07), "metallic": 0.55, "roughness": 0.58, "rust": 0.45, "grime": 0.35, "scale": 14.0})
+		"fixture_reflector":
+			# their reflector troughs: brushed steel gone dull and warm, a little rust, grime in patches
+			return shader_mat("res://shaders/weathered.gdshader", {"base_color": Color(0.56, 0.53, 0.47),
+					"rust_color": Color(0.36, 0.24, 0.13), "grime_color": Color(0.2, 0.19, 0.16), "metallic": 0.85, "roughness": 0.34,
+					"rust": 0.14, "grime": 0.55, "scale": 7.0, "brushed": 1.0})
+		"cork_board":
+			# the office's notice boards (user, a cork photo: "이 텍스처로 바꿔줘"): the photo once across each board
+			# (OfficeKit.notice_board crops it to the board's shape; repeated, its edges showed as stripes)
+			var m := StandardMaterial3D.new()
+			m.albedo_texture = load("res://assets/textures/level/cork_board.png")
+			m.roughness = 0.95
+			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return m
+		"ceiling_corridor_tile":
+			# the service corridors' ceiling (user, with a photo of pale marbled square tiles in grey joints: "천장 텍스처 이걸로
+			# 해줘"): four by four 0.6 m tiles to a repeat, in world space
+			var m := StandardMaterial3D.new()
+			m.albedo_texture = load("res://assets/textures/level/ceiling_corridor_tile.png")
+			m.uv1_triplanar = true
+			m.uv1_world_triplanar = true
+			m.uv1_scale = Vector3.ONE / 2.4
+			m.roughness = 0.8
+			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return m
+		"floor_office_stone":
+			# the security office's floor (user, with a dark stone-tile photo: "보안실 바닥 이 텍스처로 해줘"): that photo,
+			# four 0.6 m tiles to a repeat, laid in world space so every floor slab lines up; a little sheen for the pools
+			var m := StandardMaterial3D.new()
+			m.albedo_texture = load("res://assets/textures/level/floor_office_stone.png")
+			m.uv1_triplanar = true
+			m.uv1_world_triplanar = true
+			m.uv1_scale = Vector3.ONE / 1.2
+			m.roughness = 0.62
+			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return m
+		"floor_checker":
+			# the security office's black-and-white checkerboard vinyl (the police-station concept art)
+			return shader_mat("res://shaders/floor_checker.gdshader", {"white_tile": Color(0.64, 0.62, 0.55)})   # aged ivory
+		"plaster_wall":
+			# its painted plaster walls and pilasters: pale sage over a dark teal-green dado, grimy (user: a dark old-office
+			# reference, "사무실의 색감과 분위기는 이래야해")
+			return shader_mat("res://shaders/concrete.gdshader", {"color": Color(0.6, 0.62, 0.53), "dark": Color(0.49, 0.51, 0.44),
+					"joint": 0.0, "tie": 0.0, "roughness": 0.72, "dado": 1.0, "dado_color": Color(0.17, 0.25, 0.24),
+					"use_detail": true, "detail_tex": load("res://assets/textures/level/wall_office_plaster.png"),
+					"detail_size": Vector2(2.4, 4.0)})     # the worn-plaster photo (user: "투톤 색상은 유지한 채 텍스처만 이렇게")
+		"plaster_ceiling":
+			# the security office's ceiling: the light grey stone-relief photo (user: "천장 텍스처를 이걸로 바꿔줘"),
+			# repeated mirror-wise every 1.5 x 3 m
+			return shader_mat("res://shaders/concrete.gdshader", {"color": Color(0.72, 0.72, 0.7), "dark": Color(0.66, 0.66, 0.64),
+					"joint": 0.0, "tie": 0.0, "roughness": 0.85, "use_detail": true, "detail_horiz": true,
+					"detail_tex": load("res://assets/textures/level/ceiling_office_stone.png"), "detail_size": Vector2(1.5, 3.0),
+					"detail_mean": 0.813})
 		"carpet_red":
 			return shader_mat("res://shaders/carpet.gdshader", {
 				"base_color": Color(0.12, 0.035, 0.04), "pattern_color": Color(0.16, 0.06, 0.05)})

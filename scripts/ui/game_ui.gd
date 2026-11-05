@@ -39,6 +39,9 @@ var _pause_status: VBoxContainer
 var _settings: SettingsPanel
 var _death: Control
 var _keypad_cb: Callable
+var _guide: Control              # the guidelines folder, open (open_guide)
+var _guide_art: TextureRect
+var _guide_backdrop: Control
 
 
 func _ready() -> void:
@@ -65,6 +68,7 @@ func _ready() -> void:
 		if _keypad_cb.is_valid():
 			_keypad_cb.call(code))
 	_build_reader()
+	_build_guide()
 	_pause_layer = CanvasLayer.new()
 	_pause_layer.layer = 20
 	add_child(_pause_layer)
@@ -152,6 +156,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			_close_reader()
 		return
+	if modal == "guide":
+		if event.is_action_pressed("pause") or event.is_action_pressed("tablet") or event.is_action_pressed("interact"):
+			get_viewport().set_input_as_handled()
+			close_guide()
+		return
 	if modal != "":
 		return
 	if event.is_action_pressed("pause"):
@@ -159,8 +168,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pause()
 	elif event.is_action_pressed("tablet") and player.controls_enabled and not player.cutscene:
 		get_viewport().set_input_as_handled()
-		if story.tablet_allowed:
-			open_tablet()
+		match story.tab_opens:
+			"guide":
+				open_guide()
+			"none":
+				pass
+			_:
+				if story.tablet_allowed:
+					open_tablet()
 
 
 # =========================================================================================
@@ -202,6 +217,8 @@ func close_modal() -> void:
 func close_all() -> void:
 	if modal == "doc":
 		_close_reader()
+	elif modal == "guide":
+		close_guide()
 	else:
 		tablet_locked = false
 		close_modal()
@@ -222,6 +239,81 @@ func open_keypad(cb: Callable) -> void:
 	keypad.modulate.a = 1.0
 	keypad.reset()
 	keypad.open_anim()
+
+
+# --- the guidelines ------------------------------------------------------------------------
+## The guidelines folder opened ([Tab] once you have it — user: "지침서를 얻으면 tab을 눌러 열 수 있고 … 지침서를 열면
+## 이렇게 생겼어", with a picture of an open file folder: typed pages, a photo clipped on): that picture
+## (assets/ui/guide_open.png) on a dark blurred backdrop, its edges feathered into the dark; it drops in a little
+## askew like the reader's pages. [Tab] / ESC / [E] closes it.
+func _build_guide() -> void:
+	_guide = Control.new()
+	UiKit.full_rect(_guide)
+	_guide.visible = false
+	_guide.mouse_filter = Control.MOUSE_FILTER_STOP
+	_modal_layer.add_child(_guide)
+	_guide_backdrop = UiKit.backdrop(Color(0.0, 0.0, 0.0, 0.82), 3.0)
+	_guide.add_child(_guide_backdrop)
+	_guide_backdrop.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed:
+			close_guide())
+	_guide_art = TextureRect.new()
+	_guide_art.texture = load("res://assets/ui/guide_open.png")
+	_guide_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_guide_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_guide_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = """shader_type canvas_item;
+uniform float feather = 0.1;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	vec2 d = min(UV, 1.0 - UV);
+	COLOR = vec4(c.rgb, c.a * smoothstep(0.0, feather, min(d.x, d.y)) * COLOR.a);
+}"""
+	var sm := ShaderMaterial.new()
+	sm.shader = sh
+	_guide_art.material = sm
+	_guide.add_child(_guide_art)
+	var hint := UiKit.key_hints([["%s/ESC" % Game.key_label("tablet"), "닫기"]], UiKit.MIN_TEXT, UiKit.TEXT_DIM)
+	hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	hint.offset_top = -56
+	hint.offset_bottom = -24
+	hint.offset_left = -200
+	hint.offset_right = 200
+	hint.alignment = BoxContainer.ALIGNMENT_CENTER
+	_guide.add_child(hint)
+
+
+func open_guide() -> void:
+	_open_modal("guide")
+	var vp := _guide.get_viewport_rect().size
+	var side := minf(vp.y * 0.92, vp.x * 0.92)
+	_guide_art.size = Vector2(side, side)
+	_guide_art.pivot_offset = _guide_art.size * 0.5
+	var at := (vp - _guide_art.size) * 0.5 - Vector2(0, 14)
+	_guide_art.position = at + Vector2(0, 70)
+	_guide_art.rotation = deg_to_rad(-2.5)
+	_guide_art.modulate.a = 0.0
+	_guide.visible = true
+	var tw := _guide_art.create_tween().set_parallel(true)
+	tw.tween_property(_guide_art, "position", at, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_guide_art, "rotation", 0.0, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_guide_art, "modulate:a", 1.0, 0.16)
+	(_guide_backdrop.get_node("Blur").material as ShaderMaterial).set_shader_parameter("amount", 0.0)
+	UiFx.backdrop_to(_guide_backdrop, 1.0, 0.25)
+	Snd.play("page_flip", -4.0)
+
+
+func close_guide() -> void:
+	if not _guide.visible:
+		return
+	var tw := _guide_art.create_tween().set_parallel(true)
+	tw.tween_property(_guide_art, "position", _guide_art.position + Vector2(0, 90), 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tw.tween_property(_guide_art, "modulate:a", 0.0, 0.14)
+	UiFx.backdrop_to(_guide_backdrop, 0.0, 0.14)
+	tw.chain().tween_callback(func(): _guide.visible = false)
+	Snd.play("page_flip", -10.0, 0.85)
+	close_modal()
 
 
 # --- documents -----------------------------------------------------------------------------

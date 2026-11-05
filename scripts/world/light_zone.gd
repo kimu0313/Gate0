@@ -50,13 +50,15 @@ func setup(zname: String, dname: String, color := Color(0.9, 0.95, 1.0), energy 
 ## A rectangular ceiling light panel (emissive) with an optional omni light under it. A `color` with alpha 0 (the
 ## default) lights in the zone's own colour (setup).
 func add_panel(pos: Vector3, size: Vector2, with_light := true, light_energy := 1.1, light_range := 11.0,
-		color := Color.TRANSPARENT, shadow := false) -> MeshInstance3D:
+		color := Color.TRANSPARENT, shadow := false, housing := true) -> MeshInstance3D:
 	if color.a == 0.0:
 		color = panel_mat.emission
 	var mi := Geo.box(self, pos, Vector3(size.x, 0.06, size.y), panel_mat, false)
 	panels.append(mi)
-	# fixture housing: a pale rim around the diffuser so it reads as a troffer, not a cut-out
-	if TripoProps.exists("common", "CMN_TrofferLight"):
+	# fixture housing: a pale rim around the diffuser so it reads as a troffer, not a cut-out (none: the caller frames it)
+	if not housing:
+		pass
+	elif TripoProps.exists("common", "CMN_TrofferLight"):
 		_tripo_housing(pos, size)
 	else:
 		Geo.box(self, pos + Vector3(0, 0.02, 0), Vector3(size.x + 0.1, 0.05, size.y + 0.1), Mats.get_mat("plastic_white"), false)

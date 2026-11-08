@@ -223,11 +223,19 @@ const SKETCH_SHOTS := [
 	["archive_cross", Vector3(-171.6, -318.4, -22.4), -90.0, Vector2(0.5, 0.52), 74.0],   # across the row ends by the door
 	["archive_back", Vector3(-165.1, -318.4, -32.4), 165.0, Vector2(0.5, 0.52), 74.0],    # from the far corner, back toward the door
 	["maze_lift", Vector3(-196.1, -318.4, -10.5), 180.0, Vector2(0.5, 0.52), 66.0],
+	["maze_numbers", Vector3(-196.7, -318.4, -10.0), 12.0, Vector2(0.5, 0.52), 66.0],      # up V from the lift: A01, A02 … on the doors
+	["power_door", Vector3(-171.75, -318.4, -11.1), -50.0, Vector2(0.5, 0.52), 66.0, 6.0],   # E's 전력실 door, its plate
+	["power_in", Vector3(-170.3, -318.4, -12.6), -90.0, Vector2(0.5, 0.52), 76.0],         # the power room from its doorway
+	["power_panel", Vector3(-168.7, -318.55, -12.6), -90.0, Vector2(0.5, 0.52), 58.0, -6.0],   # the lift's power panel
+	["lift_car_4f", Vector3(-196.1, -318.45, -3.95), 0.0, Vector2(0.5, 0.52), 82.0, 6.0],     # in the 4F car: the door, its floor screen, the panel
+	["lift_escape", Vector3(-196.05, -318.55, -4.93), 90.0, Vector2(0.5, 0.52), 62.0],        # the emergency escape box
 	["maze_stairs", Vector3(-183.65, -318.4, -15.0), 180.0, Vector2(0.5, 0.52), 70.0],         # up the last run onto the open stair hall
 	["stair_landing", Vector3(-183.65, -318.4, -10.05), 185.0, Vector2(0.5, 0.5), 74.0, -14.0],   # on the 4F landing: the flight down, the parapet
 	["stair_4f", Vector3(-187.8, -318.4, -9.95), -160.0, Vector2(0.5, 0.5), 74.0, -38.0],
 	["stair_mid", Vector3(-185.3, -320.5, -3.97), 0.0, Vector2(0.5, 0.5), 74.0, -18.0],
 	["stair_1f", Vector3(-186.3, -331.0, -8.95), 0.0, Vector2(0.5, 0.5), 74.0, -5.0],
+	["stair_3f", Vector3(-185.65, -322.6, -6.6), 0.0, Vector2(0.5, 0.5), 70.0, -3.0],      # 3F's painted number over the landing
+	["maze_batten", Vector3(-23.65 - 160.0, -318.6, -18.6), 180.0, Vector2(0.5, 0.5), 70.0, 38.0],   # a corridor batten close up
 	["stair_up", Vector3(-183.6, -331.0, -9.85), 180.0, Vector2(0.5, 0.5), 74.0, 32.0],
 	["lobby_in", Vector3(17.6, 1.6, 7.0), -90.0, Vector2(0.5, 0.52), 74.0],
 	["lounge_lift", Vector3(11.5, 1.6, 5.5), -90.0, Vector2(0.5, 0.52), 70.0],
@@ -1473,6 +1481,8 @@ func _build_vertical() -> void:
 	stairs = StairCore.link(self, service_hall.stair_lobby, lobby_l, service_hall.stair_door)
 	lift.carried.connect(func(to: int): crossed.emit(to == 1))
 	stairs.carried.connect(func(to: int): crossed.emit(to == 1))
+	# the lift runs on the 4F power room's lift panel (PowerRoom): thrown back on, the lift has power again
+	service_hall.power_room.switched_on.connect(func(): lift.set_powered(true))
 	var face := HALL_E - 0.2
 	# a light washing the wall with the two doors, so they read from across the lounge
 	var wash := Geo.spot(self, Vector3(face - 1.5, MEZZ_Y - SLAB - 0.1, (LIFT_Z + STAIR_Z) * 0.5),
@@ -1769,13 +1779,14 @@ func _pilaster(o: Node3D, at: Vector3, along_z: bool) -> void:
 	Geo.box(o, at + Vector3(0, 0.06, 0), s * Vector3(1, 0, 1) + grow * 0.5 + Vector3(0, 0.12, 0), Mats.get_mat("metal_dark"), false)
 
 
-## The plaster ceiling and its steel beams, the pipes along it, the fluorescent fittings hung on rods (the zone's
+## The ceiling (the corridors' marbled tiles, Mats "ceiling_corridor_tile" — user: "복도 천장 텍스처를 사무실 천장에
+## 넣어줘") and its steel beams, the pipes along it, the fluorescent fittings hung on rods (the zone's
 ## panels with no housing of their own; one dead), the brass ceiling fans.
 func _sec_ceiling(o: Node3D) -> void:
 	var y := SEC_CEIL
 	for r: Rect2 in sec_floor_rects():
 		var c := r.get_center()
-		Geo.box(o, Vector3(c.x, y + 0.15, c.y), Vector3(r.size.x, 0.3, r.size.y), Mats.get_mat("plaster_ceiling"), false)
+		Geo.box(o, Vector3(c.x, y + 0.15, c.y), Vector3(r.size.x, 0.3, r.size.y), Mats.get_mat("ceiling_corridor_tile"), false)
 	var west := SEC_LEG.position.x
 	var north := SEC_BAR.position.y
 	for zz: float in SEC_BEAMS_Z:
@@ -2076,6 +2087,11 @@ func _sec_walls(o: Node3D, sets: Dictionary) -> void:
 		"사물함 열기", func(): open_locker(not sec_locker.open))
 	luse.press_sound = ""
 	sec_locker["use"] = luse
+	# its name on the wall over the bank's middle (user: "작업복 갈아입는 사물함 위에 사물함이라는 표시해줘"), a dark
+	# plate like the records room's
+	var lplate := Geo.box(o, Vector3(-19.6, 2.2, north + 0.01), Vector3(0.7, 0.19, 0.016), Mats.std(Color(0.13, 0.14, 0.15), 0.4, 0.3), false)
+	Geo.box(o, Vector3(-19.6, 2.2, north + 0.002), Vector3(0.72, 0.21, 0.004), Mats.std(Color(0.55, 0.57, 0.57), 0.35, 0.6), false)
+	Geo.fit(Geo.label(lplate, "사물함", Vector3(0, 0, 0.0085), 0.0, 96, Color(0.93, 0.93, 0.9), 0.0016, false, "sign"), 0.56, 0.13)
 	# the north arm's south wall: a big window onto the maze outside (sec_view — user: "이쪽 벽에 큰 창문들 달아줘
 	# 밖에 보이게"; one since the arm's west end came in) with a low cabinet under it; a coat rack in the corner
 	var wx_bar := SEC_VIEW_N

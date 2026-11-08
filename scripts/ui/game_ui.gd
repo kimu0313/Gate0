@@ -40,7 +40,7 @@ var _settings: SettingsPanel
 var _death: Control
 var _keypad_cb: Callable
 var _guide: Control              # the guidelines folder, open (open_guide)
-var _guide_art: TextureRect
+var _guide_art: GuideView
 var _guide_backdrop: Control
 
 
@@ -127,6 +127,8 @@ func bind(p: Player, d: StoryDirector) -> void:
 	hud.player = p
 	tablet.bind_world(d.terminal, p)
 	p.interact_target_changed.connect(hud.set_prompt)
+	p.camera_changed.connect(hud.set_camera_view)
+	p.photo_taken.connect(hud.camera_shot)
 
 
 func _process(_delta: float) -> void:
@@ -242,10 +244,10 @@ func open_keypad(cb: Callable) -> void:
 
 
 # --- the guidelines ------------------------------------------------------------------------
-## The guidelines folder opened ([Tab] once you have it — user: "지침서를 얻으면 tab을 눌러 열 수 있고 … 지침서를 열면
-## 이렇게 생겼어", with a picture of an open file folder: typed pages, a photo clipped on): that picture
-## (assets/ui/guide_open.png) on a dark blurred backdrop, its edges feathered into the dark; it drops in a little
-## askew like the reader's pages. [Tab] / ESC / [E] closes it.
+## The guidelines folder opened ([Tab] once you have it — user: "지침서를 얻으면 tab을 눌러 열 수 있고", then, with a
+## picture of an open case file: "지침서는 이런 서류 연 디자인으로"): GuideView, the folder lying open, on a dark
+## blurred backdrop; it drops in turning and settles a little askew, as if put down on a desk. [Tab] / ESC / [E]
+## closes it.
 func _build_guide() -> void:
 	_guide = Control.new()
 	UiKit.full_rect(_guide)
@@ -257,22 +259,7 @@ func _build_guide() -> void:
 	_guide_backdrop.gui_input.connect(func(e):
 		if e is InputEventMouseButton and e.pressed:
 			close_guide())
-	_guide_art = TextureRect.new()
-	_guide_art.texture = load("res://assets/ui/guide_open.png")
-	_guide_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_guide_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_guide_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sh := Shader.new()
-	sh.code = """shader_type canvas_item;
-uniform float feather = 0.1;
-void fragment() {
-	vec4 c = texture(TEXTURE, UV);
-	vec2 d = min(UV, 1.0 - UV);
-	COLOR = vec4(c.rgb, c.a * smoothstep(0.0, feather, min(d.x, d.y)) * COLOR.a);
-}"""
-	var sm := ShaderMaterial.new()
-	sm.shader = sh
-	_guide_art.material = sm
+	_guide_art = GuideView.new()
 	_guide.add_child(_guide_art)
 	var hint := UiKit.key_hints([["%s/ESC" % Game.key_label("tablet"), "닫기"]], UiKit.MIN_TEXT, UiKit.TEXT_DIM)
 	hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -286,18 +273,18 @@ void fragment() {
 
 func open_guide() -> void:
 	_open_modal("guide")
+	_guide_art.build()
 	var vp := _guide.get_viewport_rect().size
-	var side := minf(vp.y * 0.92, vp.x * 0.92)
-	_guide_art.size = Vector2(side, side)
-	_guide_art.pivot_offset = _guide_art.size * 0.5
-	var at := (vp - _guide_art.size) * 0.5 - Vector2(0, 14)
+	var s := minf(vp.x * 0.96 / GuideView.SIZE.x, (vp.y - 76.0) / GuideView.SIZE.y)
+	_guide_art.scale = Vector2(s, s)
+	var at := vp * 0.5 - GuideView.SIZE * 0.5 - Vector2(0, 22)
 	_guide_art.position = at + Vector2(0, 70)
-	_guide_art.rotation = deg_to_rad(-2.5)
+	_guide_art.rotation = deg_to_rad(-4.5)
 	_guide_art.modulate.a = 0.0
 	_guide.visible = true
 	var tw := _guide_art.create_tween().set_parallel(true)
 	tw.tween_property(_guide_art, "position", at, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(_guide_art, "rotation", 0.0, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_guide_art, "rotation", deg_to_rad(-1.2), 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_guide_art, "modulate:a", 1.0, 0.16)
 	(_guide_backdrop.get_node("Blur").material as ShaderMaterial).set_shader_parameter("amount", 0.0)
 	UiFx.backdrop_to(_guide_backdrop, 1.0, 0.25)

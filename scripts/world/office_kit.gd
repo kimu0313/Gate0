@@ -436,6 +436,40 @@ static func tube_fitting(parent: Node3D, pos: Vector3, along_x: bool, ceiling_y:
 	return tubes
 
 
+## A surface-mounted twin-tube batten along local X at `pos` (its top against the ceiling at pos.y), after the user's
+## photo (the service corridors: "복도 천장 전등 이걸로 교체해줘"): a narrow white steel channel 1.26 m long with
+## rolled lips, white end caps standing down past the tubes, two lampholders each, a screw head, and two bare T8
+## tubes side by side under the channel (`tube_mat`: the zone's panel material lit, a grey glass dead). Returns the
+## tubes.
+static func batten(parent: Node3D, pos: Vector3, along_x: bool, tube_mat: Material) -> Array[MeshInstance3D]:
+	var h := _holder(parent, pos, 0.0 if along_x else PI / 2)
+	var steel: Material = _cached("batten_steel", func(): return Mats.std(Color(0.8, 0.8, 0.78), 0.42, 0.15))
+	var cap: Material = _cached("batten_cap", func(): return Mats.std(Color(0.86, 0.86, 0.84), 0.5))
+	var holder_m: Material = _cached("batten_holder", func(): return Mats.std(Color(0.9, 0.9, 0.88), 0.55))
+	var screw: Material = _cached("batten_screw", func(): return Mats.std(Color(0.35, 0.35, 0.34), 0.35, 0.8))
+	var l := 1.26
+	var tubes: Array[MeshInstance3D] = []
+	# the channel, its lips rolled down along both edges
+	Geo.box(h, Vector3(0, -0.021, 0), Vector3(l - 0.05, 0.042, 0.1), steel, false)
+	for s in [-1.0, 1.0]:
+		Geo.box(h, Vector3(0, -0.044, s * 0.047), Vector3(l - 0.05, 0.008, 0.008), steel, false)
+	# the end caps (standing down past the tubes), a screw head on each, two lampholders on their inner faces
+	for e in [-1.0, 1.0]:
+		var ex: float = e * (l * 0.5 - 0.02)
+		Geo.box(h, Vector3(ex, -0.046, 0), Vector3(0.04, 0.092, 0.104), cap, false)
+		var sc := Geo.cyl(h, Vector3(ex, -0.03, 0.053), 0.005, 0.003, screw, false, 8)
+		sc.rotation.x = PI / 2
+		for s in [-1.0, 1.0]:
+			var lh := Geo.cyl(h, Vector3(ex - e * 0.03, -0.068, s * 0.026), 0.017, 0.02, holder_m, false, 14)
+			lh.rotation.z = PI / 2
+	# the tubes between the lampholders
+	for s in [-1.0, 1.0]:
+		var tube := Geo.cyl(h, Vector3(0, -0.068, s * 0.026), 0.0135, l - 0.12, tube_mat, false, 14)
+		tube.rotation.z = PI / 2
+		tubes.append(tube)
+	return tubes
+
+
 ## Angled desk lamp facing +Z; lit, it throws a warm pool on the desk in front of it (a spot down out of the shade)
 ## and a little glow round itself.
 static func desk_lamp(parent: Node3D, pos: Vector3, rot_y: float, lit := true) -> void:

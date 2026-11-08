@@ -7,6 +7,10 @@ extends Node
 ## the checkpoint (the reloaded scene runs this again and escapes). `tear` (--checkpoint baggage) stands in the open in
 ## baggage claim and checks it has you. `loop` plays the part but does not quit at its end, so the game goes on to the
 ## next scene (scripts/debug/loop_test.gd drives the whole game that way). A story test never writes the player's save.
+## The game: with no chapter it plays Shift1 (the prologue) to the end — the dead lift, the handover, the camera, the
+## power room, the lift breaking down, the escape lever, passing out; `--chapter shift1 --checkpoint lift` with `lift`
+## rides and escapes from the checkpoint, with `liftfail` lets the minute run out (the car falls, the reloaded scene
+## checks you are back at the lift); `--chapter wake` comes round in the lift and walks out into the dark corridor.
 ## Past the 2F the clock runs at SPEED so a whole run stays short.
 
 const SPEED := 5.0
@@ -41,6 +45,10 @@ func _ready() -> void:
 		await _ch1()
 	elif Game.chapter == "prologue":
 		await _prologue()
+	elif Game.chapter == "wake":
+		await _wake()
+	elif Game.checkpoint == "lift" and _mode in ["lift", "liftfail"]:
+		await _shift1_lift()
 	else:
 		await _shift1()
 
@@ -1106,12 +1114,33 @@ func _shift1() -> void:
 		_end(1, "[Tab] opened '%s' before the guidelines were found" % world.ui.modal)
 		return
 	await _shot("50b_todo", 0.0)
+	# the lift is dead: its call button beeps, you think it through, and two lines join the to-do list
+	var thought: Array[String] = []
+	var on_self := func(kind: String, text: String, _dur: float):
+		if kind == "self":
+			thought.append(text)
+	Events.subtitle.connect(on_self)
+	_p.look_at_point((t.lift.cars[0].call as Node3D).global_position, 0.3)
 	t.lift._call(0)
-	await _wait(2.0)
+	await _wait(1.0)
+	await _shot("50c_lift_thought", 0.0)
+	await _wait(2.8)
+	Events.subtitle.disconnect(on_self)
 	if t.lift.doors_open:
-		_end(1, "the lift opened (it should be locked)")
+		_end(1, "the lift opened (it should have no power)")
 		return
-	_log("the lift stays shut when called")
+	if thought.size() != 2 or thought[0] != Shift1.LIFT_THOUGHT[0] or thought[1] != Shift1.LIFT_THOUGHT[1]:
+		_end(1, "pressing the dead lift's button should think %s (got %s)" % [Shift1.LIFT_THOUGHT, thought])
+		return
+	var want4: Array[String] = ["[ ] " + Shift1.TASK_FIND, "[ ] " + Shift1.TASK_TALK, "[ ] " + Shift1.TASK_POWER_FIND, "[ ] " + Shift1.TASK_POWER_ON]
+	if hud.task_lines() != want4:
+		_end(1, "after the dead lift the to-do list should read %s (got %s)" % [want4, hud.task_lines()])
+		return
+	_log("the lift is dead; thought %s; to-do %s" % [thought, hud.task_lines()])
+	if _p.no_sprint:
+		_end(1, "you cannot run in the corridors ([SHIFT] should work there)")
+		return
+	await _shot("50d_power_todo", 0.0)
 	# north up the last run, east along the north arm's windows, south down the west corridor to the office's door
 	var ez := Terminal.SEC_ENTRY_Z
 	await _walk([hall.to_global(Vector3(-36.1, 0.05, -24.75)), hall.to_global(Vector3(-23.65, 0.05, -24.75)),
@@ -1124,10 +1153,10 @@ func _shift1() -> void:
 	_p.current_interactable.interact()
 	_log("[E] 문 열기 (the office's door, from the corridor)")
 	await _wait(0.4)
-	if hud.task_lines() != ["[x] " + Shift1.TASK_FIND, "[ ] " + Shift1.TASK_TALK]:
-		_end(1, "opening the office's door did not tick '%s' (%s)" % [Shift1.TASK_FIND, hud.task_lines()])
+	if _tl(hud) != ["[x] " + Shift1.TASK_FIND, "[ ] " + Shift1.TASK_TALK]:
+		_end(1, "opening the office's door did not tick '%s' (%s)" % [Shift1.TASK_FIND, _tl(hud)])
 		return
-	_log("to-do after the door: %s" % [hud.task_lines()])
+	_log("to-do after the door: %s" % [_tl(hud)])
 	await _shot("51a_ticked", 0.0)
 	await _wait(0.8)
 	await _shot("51_door_open", 0.0)
@@ -1143,10 +1172,10 @@ func _shift1() -> void:
 		_end(1, "the office's door did not shut behind the player")
 		return
 	_log("the door shut behind")
-	if hud.task_lines() != ["[ ] " + Shift1.TASK_TALK]:
-		_end(1, "the ticked line did not go, leaving '%s' (%s)" % [Shift1.TASK_TALK, hud.task_lines()])
+	if _tl(hud) != ["[ ] " + Shift1.TASK_TALK]:
+		_end(1, "the ticked line did not go, leaving '%s' (%s)" % [Shift1.TASK_TALK, _tl(hud)])
 		return
-	_log("to-do once in: %s" % [hud.task_lines()])
+	_log("to-do once in: %s" % [_tl(hud)])
 	# the supervisor at the deepest desk (the north arm's west end): [E] till he has said it all
 	var boss := part.boss
 	await _walk([Vector3(-21.0, 0.05, -18.0), Vector3(-21.0, 0.05, -30.7), Vector3(-24.0, 0.05, -30.7)], 1.6)
@@ -1164,14 +1193,14 @@ func _shift1() -> void:
 		boss.use.interact()
 		await _wait(0.7)
 		if i == 0:
-			if hud.task_lines() != ["[x] " + Shift1.TASK_TALK]:
-				_end(1, "starting the talk did not tick '%s' (%s)" % [Shift1.TASK_TALK, hud.task_lines()])
+			if _tl(hud) != ["[x] " + Shift1.TASK_TALK]:
+				_end(1, "starting the talk did not tick '%s' (%s)" % [Shift1.TASK_TALK, _tl(hud)])
 				return
 			await _shot("52a_talk_ticked", 0.0)
 		if i == 2:
 			await _shot("52_boss", 0.0)
-		if i == 5 and hud._task_box.visible:
-			_end(1, "the to-do list is still up after its last line was ticked (%s)" % [hud.task_lines()])
+		if i == 5 and not _tl(hud).is_empty():
+			_end(1, "the to-do list is still up after its last line was ticked (%s)" % [_tl(hud)])
 			return
 		# the radio changes hands on its line: in your belongings, and a toast says so
 		if i == OfficeNpc.RADIO_LINE - 1 and Game.has_item("radio"):
@@ -1192,10 +1221,10 @@ func _shift1() -> void:
 	var after: Array[String] = []
 	for task: String in Shift1.TASKS_AFTER:
 		after.append("[ ] " + _plain(task))
-	if not hud._task_box.visible or hud.task_lines() != after:
-		_end(1, "after the talk the to-do list should read %s (got %s)" % [after, hud.task_lines()])
+	if _tl(hud) != after:
+		_end(1, "after the talk the to-do list should read %s (got %s)" % [after, _tl(hud)])
 		return
-	_log("to-do after the talk: %s" % [hud.task_lines()])
+	_log("to-do after the talk: %s" % [_tl(hud)])
 	await _shot("52c_tasks", 0.0)
 	boss.use.interact()
 	await _wait(0.5)
@@ -1252,10 +1281,10 @@ func _shift1() -> void:
 		return
 	_p.toggle_flashlight(1)
 	await _wait(3.0)
-	if hud.task_lines() != ["[ ] " + _plain(Shift1.TASK_GUIDE)] or not _has_toast("[F] 손전등"):
-		_end(1, "after the uniform and the flashlight the to-do list should read only '%s' (%s)" % [Shift1.TASK_GUIDE, hud.task_lines()])
+	if _tl(hud) != ["[ ] " + _plain(Shift1.TASK_GUIDE)] or not _has_toast("[F] 손전등"):
+		_end(1, "after the uniform and the flashlight the to-do list should read only '%s' (%s)" % [Shift1.TASK_GUIDE, _tl(hud)])
 		return
-	_log("flashlight found; to-do: %s" % [hud.task_lines()])
+	_log("flashlight found; to-do: %s" % [_tl(hud)])
 	await _shot("52g_light_on", 0.0)
 	_p.toggle_flashlight(0)
 	# out of the office and back in: he has gone to rest, asleep on the night-duty room's bed, and only snores
@@ -1301,8 +1330,8 @@ func _shift1() -> void:
 	await _shot("53b_guide", 0.0)
 	_p.current_interactable.interact()
 	await _wait(3.2)
-	if not part.has_guide or not Game.has_item("guide") or not _has_toast("지침서를 찾았다") or hud._task_box.visible:
-		_end(1, "taking the guidelines did not finish the list (%s)" % [hud.task_lines()])
+	if not part.has_guide or not Game.has_item("guide") or not _has_toast("지침서를 찾았다") or not _tl(hud).is_empty():
+		_end(1, "taking the guidelines did not finish the list (%s)" % [_tl(hud)])
 		return
 	_log("the guidelines taken; the to-do list is done")
 	if not _has_toast("[TAB] 지침서"):
@@ -1324,9 +1353,19 @@ func _shift1() -> void:
 	_p.look_at_point(runner.global_position + Vector3(0, 1.6, 0), 0.2)
 	await _wait(0.4)
 	await _shot("53c_manager", 0.0)
+	# he holds out a camera; it is yours on its line (and not before), a toast says so
+	if runner._held == null or Game.has_item("camera"):
+		_end(1, "the manager should be holding out a camera (held %s, camera in hand %s)" % [runner._held, Game.has_item("camera")])
+		return
 	for k in Shift1.ARCHIVE_LINES.size():
 		runner.use.interact()
 		await _wait(0.3)
+		if k == Shift1.CAMERA_LINE - 1:
+			if not Game.has_item("camera") or not _has_toast("카메라를 받았다") or runner._held != null:
+				_end(1, "no camera handed over on its line (items %s)" % [Game.inventory])
+				return
+			_log("the camera handed over on: %s" % Shift1.ARCHIVE_LINES[Shift1.CAMERA_LINE])
+			await _shot("53c2_camera", 0.0)
 	if runner.talking:
 		_end(1, "the manager's talk did not end")
 		return
@@ -1346,8 +1385,239 @@ func _shift1() -> void:
 		_end(1, "[Tab] did not close the guidelines")
 		return
 	_log("[Tab] opens and closes the guidelines")
+	# the camera on the mouse: a toast says so; the right button takes it out (the viewfinder), the left takes a
+	# shot, the right again puts it away
+	var rmb := false
+	for ev in InputMap.action_get_events("camera"):
+		rmb = rmb or (ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT)
+	if not _has_toast("[우클릭] 카메라") or not _p.camera_owned or not rmb:
+		_end(1, "no camera on the right mouse button (toast %s, owned %s, bound %s)" % [_has_toast("[우클릭] 카메라"), _p.camera_owned, rmb])
+		return
+	var click := func(button: MouseButton):
+		var e := InputEventMouseButton.new()
+		e.button_index = button
+		e.pressed = true
+		Input.parse_input_event(e)
+		var u := InputEventMouseButton.new()
+		u.button_index = button
+		u.pressed = false
+		Input.parse_input_event(u)
+	click.call(MOUSE_BUTTON_RIGHT)
+	await _wait(0.4)
+	if not _p.camera_mode or not hud._viewfinder.visible:
+		_end(1, "the right mouse button did not take the camera out")
+		return
+	var shots0 := Game.photos.size()
+	click.call(MOUSE_BUTTON_LEFT)
+	await _wait(0.6)
+	await _shot("53e_camera_up", 0.0)
+	if Game.photos.size() != shots0 + 1:
+		_end(1, "the left mouse button with the camera out took no photo")
+		return
+	click.call(MOUSE_BUTTON_RIGHT)
+	await _wait(0.4)
+	if _p.camera_mode or hud._viewfinder.visible:
+		_end(1, "the right mouse button again did not put the camera away")
+		return
+	_log("right click takes the camera out and puts it away; left click took a shot")
+	# out of the records room and down E to the power room: its door ticks the first power line, the lift panel's
+	# handle the second
+	var power := hall.power_room
+	await _walk([hall.to_global(Vector3(a3, 0.05, -22.4)), hall.to_global(Vector3(ArchiveRoom.DOOR_X, 0.05, -22.4)),
+			hall.to_global(Vector3(ArchiveRoom.DOOR_X, 0.05, -20.0)), hall.to_global(Vector3(-11.1, 0.05, PowerRoom.DOOR_Z))], 2.0)
+	if not await _press((power.door.root as Node3D).global_position + Vector3(0, 1.1, 0), "문 열기"):
+		_end(1, "the [E] ray does not reach the power room's door")
+		return
+	await _wait(0.5)
+	if hud.task_lines() != ["[x] " + Shift1.TASK_POWER_FIND, "[ ] " + Shift1.TASK_POWER_ON]:
+		_end(1, "opening the power room's door did not tick '%s' (%s)" % [Shift1.TASK_POWER_FIND, hud.task_lines()])
+		return
+	await _shot("54a_power_door", 0.0)
+	await _walk([hall.to_global(Vector3(-9.3, 0.05, PowerRoom.DOOR_Z + 0.2)), hall.to_global(Vector3(-8.05, 0.05, PowerRoom.DOOR_Z))], 1.4)
+	await _shot("54b_power_room", 0.2)
+	if not await _press(power.lever_use.global_position, "승강기 전원 올리기"):
+		_end(1, "the [E] ray does not reach the lift panel's handle")
+		return
+	await _wait(0.9)
+	if not t.lift.powered or t.lift.locked or not part.lift_powered:
+		_end(1, "throwing the lift panel's handle did not give the lift its power back")
+		return
+	if hud.task_lines().size() != 1 or hud.task_lines()[0] != "[x] " + Shift1.TASK_POWER_ON:
+		_end(1, "powering the lift did not tick '%s' (%s)" % [Shift1.TASK_POWER_ON, hud.task_lines()])
+		return
+	_log("the lift has power; to-do %s" % [hud.task_lines()])
+	await _shot("54c_power_on", 0.0)
+	await _wait(2.2)
+	if hud._task_box.visible:
+		_end(1, "the to-do list is still up after its last line was ticked (%s)" % [hud.task_lines()])
+		return
+	# all the way back round to the lift
+	await _walk([hall.to_global(Vector3(-9.3, 0.05, PowerRoom.DOOR_Z + 0.2)), hall.to_global(Vector3(-11.1, 0.05, PowerRoom.DOOR_Z)),
+			hall.to_global(Vector3(-11.15, 0.05, -11.75)), hall.to_global(Vector3(-23.65, 0.05, -11.75)),
+			hall.to_global(Vector3(-23.65, 0.05, -24.75)), hall.to_global(Vector3(-36.1, 0.05, -24.75)),
+			hall.to_global(ServiceHall.FAR + Vector3(-0.4, 0.05, -1.6))], 2.4)
+	if not await _lift_ride(part, true):
+		return
 	if _mode == "loop":
-		_log("the handover heard; back to the main menu")
+		_log("the prologue is over; on to the title")
+		Game.finish_shift1()
+		return
+	_end(0, "shift1: the letter, the dead lift, the corridors, the office's door, the handover, the camera, the power room, the breakdown, passed out")
+
+
+## The to-do list without the two power lines (they stay up from the start until the power room).
+func _tl(hud: Hud) -> Array[String]:
+	var out: Array[String] = []
+	for l: String in hud.task_lines():
+		if not l.ends_with(Shift1.TASK_POWER_FIND) and not l.ends_with(Shift1.TASK_POWER_ON):
+			out.append(l)
+	return out
+
+
+## Calls the lift (at 4F, with power), steps in, presses 1: it breaks down RIDE_BREAK s in (red light, alarm, the floor
+## screen scrambled); `escape`: turns the escape box's latch and pulls the lever — the car stops and you pass out
+## (Shift1.prologue_over); else waits for the minute to run out (Shift1.failed). False (and the test ended) on a fault.
+func _lift_ride(part: Shift1, escape: bool) -> bool:
+	var lift: Lift = world.terminal.lift
+	var hall := world.terminal.service_hall as ServiceHall
+	if not lift.doors_open:
+		if not await _press((lift.cars[0].call as Node3D).global_position, "엘리베이터 부르기"):
+			_end(1, "the [E] ray does not reach the lift's call button")
+			return false
+		var t0 := Time.get_ticks_msec()
+		while not (lift.doors_open and not lift.busy) and Time.get_ticks_msec() - t0 < 8000:
+			await _tree.process_frame
+		if not lift.doors_open:
+			_end(1, "the lift with power did not open when called")
+			return false
+	var c0: Node3D = lift.cars[0].root
+	await _walk([hall.to_global(ServiceHall.FAR + Vector3(0, 0.05, -0.5)), c0.global_transform * Vector3(-0.2, 0.05, -1.1)], 1.6)
+	if not lift.is_inside(0):
+		_end(1, "not in the lift's car (at %s)" % str(_p.global_position.snapped(Vector3.ONE * 0.1)))
+		return false
+	await _shot("55a_car", 0.3)
+	if not await _press((lift.cars[0].buttons[1] as Node3D).global_position, "1층 누르기"):
+		_end(1, "the [E] ray does not reach the car's 1 button")
+		return false
+	var t1 := Time.get_ticks_msec()
+	while not part.emergency and Time.get_ticks_msec() - t1 < 12000:
+		await _tree.process_frame
+	if not part.emergency:
+		_end(1, "the lift did not break down on the way down")
+		return false
+	var secs := (Time.get_ticks_msec() - t1) / 1000.0
+	await _wait(0.5)
+	var lamp: OmniLight3D = lift.cars[0].lights[0]
+	var shown: String = (lift.cars[0].screen[0] as Label3D).text
+	if lamp.light_color.g > 0.2 or not part._siren or not part._siren.playing or shown in ["3", "4", "1"]:
+		_end(1, "the breakdown is not red / has no alarm / shows a real floor (light %s, siren %s, screen '%s')" % [lamp.light_color, part._siren, shown])
+		return false
+	_log("broke down %.1f s after the doors shut; screen '%s'" % [secs, shown])
+	await _shot("55b_breakdown", 0.0)
+	var esc: Dictionary = lift.cars[0].escape
+	if not escape:
+		return true
+	_p.look_at_point((esc.root as Node3D).global_position, 0.3)
+	await _wait(0.5)
+	await _shot("55c_escape_box", 0.0)
+	for k in Shift1.LATCH_TURNS:
+		if not await _press((esc.lock_use as Node3D).global_position, "잠금 풀기"):
+			_end(1, "the [E] ray does not reach the escape box's latch (turn %d)" % (k + 1))
+			return false
+		await _wait(0.35)
+	await _wait(0.4)
+	if not part.lid_open:
+		_end(1, "%d turns did not open the escape box (turns %d)" % [Shift1.LATCH_TURNS, part.latch_turns])
+		return false
+	await _shot("55d_box_open", 0.0)
+	if not await _press((esc.lever_use as Node3D).global_position, "레버 당기기"):
+		_end(1, "the [E] ray does not reach the escape lever")
+		return false
+	var t2 := Time.get_ticks_msec()
+	while not part.prologue_over and Time.get_ticks_msec() - t2 < 15000:
+		await _tree.process_frame
+	if not part.prologue_over or part.failed:
+		_end(1, "pulling the lever did not stop the car and knock you out")
+		return false
+	_log("the lever pulled %.1f s into the breakdown; the car stopped, passed out" % part.emergency_t)
+	return true
+
+
+## After the prologue (Wake): you come round on the lift's floor, its doors open by themselves, you get up; the car
+## is still red, the corridors dark with a green glow and fog on the floor. Walk out.
+func _wake() -> void:
+	var part := _d.part as Wake
+	var t: Terminal = world.terminal
+	var hall := t.service_hall
+	await _wait(2.0)
+	await _shot("60_coming_round", 0.0)
+	var t0 := Time.get_ticks_msec()
+	while not part.awake and Time.get_ticks_msec() - t0 < 25000:
+		await _tree.process_frame
+	if not part.awake or not part.doors_open or not t.lift.doors_open:
+		_end(1, "did not come round in the lift with its doors open (awake %s, doors %s)" % [part.awake, t.lift.doors_open])
+		return
+	if not t.lift.is_inside(0) or _p.view_drop > 0.01 or not _p.controls_enabled:
+		_end(1, "not up on your feet in the car (view_drop %.2f)" % _p.view_drop)
+		return
+	if (t.lift.cars[0].lights[0] as OmniLight3D).light_color.g > 0.2 or hall.zone.is_on:
+		_end(1, "the car should still be red and the corridors dark")
+		return
+	for id: String in ["radio", "flashlight", "guide", "camera"]:
+		if not Game.has_item(id):
+			_end(1, "lost '%s' between the prologue and waking (items %s)" % [id, Game.inventory])
+			return
+	_log("came round; the doors open on the dark corridor")
+	await _shot("61_awake", 0.2)
+	await _walk([hall.to_global(ServiceHall.FAR + Vector3(0, 0.05, -1.0)), hall.to_global(ServiceHall.FAR + Vector3(0, 0.05, -4.0))], 1.4)
+	if not hall.contains(_p.global_position) or t.lift.is_inside(0):
+		_end(1, "could not walk out of the lift into the corridor")
+		return
+	_p.look_at_point(hall.to_global(Vector3(-36.1, 1.2, -18.0)), 0.3)
+	await _wait(0.6)
+	await _shot("62_corridor", 0.0)
+	_p.look_at_point(hall.to_global(ServiceHall.FAR + Vector3(0, 1.3, 0.5)), 0.3)
+	await _wait(0.6)
+	await _shot("63_lift_behind", 0.0)
+	if _mode == "loop":
+		_log("woke up in the lift; back to the main menu")
 		Game.go_menu()
 		return
-	_end(0, "shift1: the letter, the lift, the corridors, the office's door, the supervisor's handover")
+	_end(0, "wake: came round in the lift, the doors open, out into the dark corridor")
+
+
+## From the checkpoint before the ride (`--chapter shift1 --checkpoint lift`): `lift` rides, escapes and passes out;
+## `liftfail` rides and lets the minute run out (at 6x) — the car falls and the game starts again at the lift, which
+## the reloaded scene (this test again) checks.
+func _shift1_lift() -> void:
+	var part := _d.part as Shift1
+	var t: Terminal = world.terminal
+	if Engine.has_meta("liftfail_restarted"):
+		Engine.remove_meta("liftfail_restarted")
+		await _wait(1.5)
+		var q := t.service_hall.to_local(_p.global_position)
+		if Game.checkpoint != "lift" or q.distance_to(Shift1.START_LOCAL) > 0.6 or not t.lift.powered or not t.lift.doors_open:
+			_end(1, "after the fall the game did not start again at the lift (checkpoint '%s', at %s, powered %s)" % [Game.checkpoint, q, t.lift.powered])
+			return
+		_end(0, "liftfail: the car fell after the minute; back at the lift with its power on")
+		return
+	await _wait(1.6)
+	if not t.lift.powered or not part.lift_powered:
+		_end(1, "at the checkpoint the lift should have its power")
+		return
+	if not await _lift_ride(part, _mode == "lift"):
+		return
+	if _mode == "lift":
+		_end(0, "lift: the breakdown, the escape box, passed out")
+		return
+	Engine.time_scale = 6.0
+	var t0 := Time.get_ticks_msec()
+	while not part.failed and Time.get_ticks_msec() - t0 < 30000:
+		await _tree.process_frame
+	Engine.time_scale = 1.0
+	if not part.failed:
+		_end(1, "the car did not fall when the minute ran out (%.1f s)" % part.emergency_t)
+		return
+	_log("the minute ran out: the car falls")
+	await _shot("56_fall", 0.0)
+	Engine.set_meta("liftfail_restarted", true)

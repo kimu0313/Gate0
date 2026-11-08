@@ -137,6 +137,19 @@ static func _make(mat_name: String) -> Material:
 			m.roughness = 0.8
 			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 			return m
+		"floor_corridor_concrete":
+			# the service corridors' and the stair hall's floor (user, a grey concrete picture: "이 텍스처를 복도 바닥에
+			# 넣어줘", "복도 바닥 텍스처를 계단에 넣어줘", "복도 바닥 색 어둡게"): that picture made seamless
+			# (tools/make_seamless.gd), darkened, world space, its 1:2 shape kept — 1.2 m across x, 2.4 m along z
+			var m := StandardMaterial3D.new()
+			m.albedo_texture = load("res://assets/textures/level/floor_corridor_concrete.png")
+			m.albedo_color = Color(0.55, 0.55, 0.55)
+			m.uv1_triplanar = true
+			m.uv1_world_triplanar = true
+			m.uv1_scale = Vector3(1.0 / 1.2, 1.0 / 2.4, 1.0 / 2.4)
+			m.roughness = 0.6
+			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return m
 		"floor_office_stone":
 			# the security office's floor (user, with a dark stone-tile photo: "보안실 바닥 이 텍스처로 해줘"): that photo,
 			# four 0.6 m tiles to a repeat, laid in world space so every floor slab lines up; a little sheen for the pools

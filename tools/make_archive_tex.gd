@@ -1,22 +1,22 @@
 extends SceneTree
 ## Cuts the archive room's textures out of the user's archive photo (user, 2026-11-05: "그 내부를 이렇게 만들어줘.
-## 텍스처도 카피해"):
+## 텍스처도 카피해"; then 2026-11-06, a second photo — an old records cellar, wooden shelves of yellowed folded paper and
+## ledgers stacked spines out, a worn concrete floor: "자료실 이런 느낌으로해줘"; the crops below are from that one):
 ##   godot --headless --path . --script res://tools/make_archive_tex.gd -- <photo.png> [<preview.png>]
 ## then `godot --headless --path . --import`.
 ##   assets/textures/level/archive_bundles.png  the shelf contents: CROPS, each scaled into a 256 x 160 cell of a
 ##                                             4 x 2 atlas (ArchiveRoom.BUNDLES has each crop's own aspect)
-##   assets/textures/level/archive_box.png      one white archive box's front (its handle slot)
-##   assets/textures/level/archive_floor.png    the speckled floor, mirrored into a seamless 512 x 512 tile
-## and prints the average colour of the wall paint, the ceiling and the shelving's steel (ArchiveRoom uses them).
+##   assets/textures/level/archive_floor.png    the worn concrete floor, cross-faded into a seamless 512 x 512 tile
+## and prints the average colour of the wall, the ceiling, the shelving's wood and its green steel.
 
-## [x, y, w, h] in the photo (533 x 773): bundles of manila files, the blue folders on them, a flat pile.
+## [x, y, w, h] in the photo (736 x 981): 0-3 bundles of yellowed folded paper (the wooden shelves on the left),
+## 4-7 ledgers stacked flat, spines out (the bookcase in the middle). ArchiveRoom.BUNDLES = their aspects.
 const CROPS := [
-	[440, 86, 93, 32], [348, 306, 84, 60], [348, 470, 80, 62], [350, 585, 75, 55],
-	[425, 555, 70, 50], [440, 548, 93, 60], [350, 700, 80, 55], [432, 322, 100, 62],
+	[115, 268, 175, 95], [222, 548, 78, 92], [200, 688, 100, 118], [108, 412, 182, 76],
+	[304, 252, 52, 62], [304, 322, 52, 60], [304, 395, 52, 70], [303, 575, 50, 75],
 ]
-const BOX := [362, 150, 78, 42]
-const FLOOR := [100, 640, 130, 110]
-const SAMPLES := {"wall": [65, 180, 125, 40], "ceiling": [60, 30, 110, 90], "steel": [337, 300, 8, 80]}
+const FLOOR := [430, 720, 250, 240]
+const SAMPLES := {"wall": [520, 100, 120, 60], "ceiling": [400, 30, 150, 60], "wood": [300, 600, 5, 250], "wood2": [356, 500, 5, 300], "steel": [690, 560, 20, 200]}
 const CELL := Vector2i(256, 160)
 const OUT := "res://assets/textures/level/"
 
@@ -34,11 +34,6 @@ func _init() -> void:
 		atlas.blit_rect(part, Rect2i(Vector2i.ZERO, CELL), Vector2i((i % 4) * CELL.x, (i / 4) * CELL.y))
 		print("bundle %d aspect %.3f" % [i, float(c[2]) / c[3]])
 	atlas.save_png(OUT + "archive_bundles.png")
-	# the box front
-	var box := src.get_region(Rect2i(BOX[0], BOX[1], BOX[2], BOX[3]))
-	box.resize(256, 128, Image.INTERPOLATE_LANCZOS)
-	box.save_png(OUT + "archive_box.png")
-	print("box aspect %.3f" % (float(BOX[2]) / BOX[3]))
 	# the floor: the patch with its brightness levelled (the photo darkens toward the bottom and the side), made
 	# seamless by cross-fading it with itself shifted half a tile (a mirror made chevrons of its grain)
 	var f := src.get_region(Rect2i(FLOOR[0], FLOOR[1], FLOOR[2], FLOOR[3]))
@@ -77,7 +72,6 @@ func _init() -> void:
 	if args.size() > 1:
 		var prev := Image.create(1024, 320 + 128 + 512, false, Image.FORMAT_RGB8)
 		prev.blit_rect(atlas, Rect2i(0, 0, 1024, 320), Vector2i(0, 0))
-		prev.blit_rect(box, Rect2i(0, 0, 256, 128), Vector2i(0, 320))
 		prev.blit_rect(tile, Rect2i(0, 0, 512, 512), Vector2i(0, 448))
 		prev.save_png(args[1])
 	quit()

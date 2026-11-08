@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://da80d5khc71pp"
-path="res://.godot/imported/guide_open.png-80abe8b62d776da01cd15ae970bec4e6.ctex"
+uid="uid://b3187pyxto30x"
+path="res://.godot/imported/guide_photo_archive.png-e1e16e6e0a5a5ecaadbb2fc341090953.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/guide_open.png"
-dest_files=["res://.godot/imported/guide_open.png-80abe8b62d776da01cd15ae970bec4e6.ctex"]
+source_file="res://assets/ui/guide_photo_archive.png"
+dest_files=["res://.godot/imported/guide_photo_archive.png-e1e16e6e0a5a5ecaadbb2fc341090953.ctex"]
 
 [params]
 

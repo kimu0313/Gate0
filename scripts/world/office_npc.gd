@@ -19,28 +19,30 @@ signal line_said(i: int)          # he has just said LINES[i] (the story hands t
 signal finished                   # the first talk is over (every line of LINES heard)
 
 const NAME := "관리자"
-## The handover, the first time you speak to him (the user's lines, as written).
+## The handover, the first time you speak to him (the user's lines, as written — rewritten 2026-11-06).
 const LINES := [
 	"...일찍 오셨네요. 이번에 새로 오신 분 맞죠?",
-	"네, 확인했습니다. 일단 간단하게 업무 설명부터 드릴게요. 오래 걸리진 않을 겁니다.",
-	"기본적으로 야간 시설관리 업무는 공항 내부를 순회하면서 시설 상태를 확인하는 일입니다. 조명이나 설비에 문제가 없는지 살펴보고, 특이사항이 있으면 보고해 주시면 됩니다.",
+	"업무 설명부터 드릴게요. 오래 걸리진 않을 겁니다.",
+	"업무는 공항 내부를 순회하면서 시설 상태를 확인하는 일입니다. 문제가 없는지 살펴보고, 특이사항이 있으면 보고해 주시면 됩니다.",
 	"아, 그리고 근무하시기 전에 알아두셔야 할 게 하나 있는데요.",
 	"...",
 	"뭐라고 설명해야 할지... 직접 설명하기는 좀 곤란하네요. 어차피 근무하시다 보면 알게 될 겁니다.",
-	"일단 지침서에 적힌 내용만 잘 따라주세요. 거기에 있는 사항들은 전부 이유가 있어서 만들어진 겁니다.",
+	"지침서에 적힌 내용만 잘 따라주세요.",
+	"거기에 있는 사항들은 전부 이유가 있어서 만들어진 겁니다.",
 	"굳이 궁금해하실 필요는 없어요. 그냥 적힌 대로 하시면 됩니다.",
-	"아, 그리고 근무 중에는 외부 이용객과 마주칠 일이 있을 수도 있습니다. 그런 경우에는 평소처럼 응대하시면 됩니다. 불필요한 이야기는 하지 마시고요.",
-	"필요한 물품은 이 곳 4층에 있습니다. 챙겨서 근무 하시면 되고요.",
+	"아, 그리고 근무 중에는 외부 이용객과 마주칠 일이 있을 수도 있습니다.",
+	"그런 경우에는 평소처럼 응대하시면 됩니다. 불필요한 이야기는 하지 마시고요.",
+	"필요한 물품은 이 방에 있습니다. 챙겨서 근무 하시면 되고요.",
 	"무전기는 관리실과 연락할 때 사용하시면 됩니다. 문제가 생기면 우선 연락부터 주세요.",
 	"물론... 연락이 항상 되는 건 아니지만요.",
 	"...외부 이용객이요?",
 	"뭐, 너무 신경 쓰지는 마세요.",
-	"그럼 저는 이만 쉬러 가보겠습니다. 준비되시면 근무 시작하세요.",
+	"그럼 저는 이만 숙직실로 쉬러 가보겠습니다. 준비되시면 근무 시작하세요.",
 ]
 ## The lines he looks away on (he does not know how to put it).
-const LOOK_AWAY := [4, 5, 11, 12]
+const LOOK_AWAY := [4, 5, 13, 14]
 ## The line he hands you the radio on (user: "이 대사 할때는 플레이어가 무전기를 얻었다는 표시가").
-const RADIO_LINE := 10
+const RADIO_LINE := 12
 ## Afterwards, while he is still at his desk.
 const AGAIN := [
 	"준비되시면 근무 시작하세요.",
@@ -78,6 +80,9 @@ var _path: Array[Vector3] = []    # (standing) where he is running to, in his pa
 var _speed := 0.0
 var _phase := 0.0
 var _run := 0.0                   # 0 standing .. 1 running (eased)
+var _hold := 0.0                  # (standing) 0 arm down .. 1 holding something out to you (eased)
+var _hold_want := 0.0
+var _held: Node3D                 # (standing) what he holds out (hold)
 
 
 static func create(parent: Node3D, pos: Vector3, rot_y: float) -> OfficeNpc:
@@ -124,6 +129,25 @@ func run_path(points: Array, speed := 3.6) -> void:
 	for p: Vector3 in points:
 		_path.append(p)
 	_speed = speed
+
+
+## (Standing) holds `item` out to you in his right hand (its frame: front +Z toward you, top +Y), until release().
+func hold(item: Node3D) -> void:
+	release()
+	var el: Node3D = _arms[1][1]
+	el.add_child(item)
+	# in the forearm's frame once the arm is raised: -Y runs out toward you, -Z is up
+	item.transform = Transform3D(Basis(Vector3(-1, 0, 0), Vector3(0, 0, -1), Vector3(0, -1, 0)), Vector3(0, -0.34, -0.05))
+	_held = item
+	_hold_want = 1.0
+
+
+## (Standing) whatever he held out is gone (handed over); the arm goes down.
+func release() -> void:
+	if _held:
+		_held.queue_free()
+		_held = null
+	_hold_want = 0.0
 
 
 ## Starts talking: `lines` one a press, the first now.
@@ -220,6 +244,15 @@ func _process_standing(delta: float, player: Node3D) -> void:
 		var el: Node3D = _arms[i][1]
 		sh.rotation.x = -sg * s * 0.6 * _run + 0.04
 		el.rotation.x = 1.25 * _run + 0.12
+	# the right arm raised, holding something out to you
+	_hold = move_toward(_hold, _hold_want, delta * 2.5)
+	if _hold > 0.0:
+		var e := _hold * _hold * (3.0 - 2.0 * _hold)
+		var sh_r: Node3D = _arms[1][0]
+		var el_r: Node3D = _arms[1][1]
+		sh_r.rotation.x = lerpf(sh_r.rotation.x, 0.95, e)
+		sh_r.rotation.z = lerpf(0.0, -0.18, e)
+		el_r.rotation.x = lerpf(el_r.rotation.x, 0.55, e)
 	_body.position.y = absf(s) * 0.05 * _run
 	# leaning into the run; out of breath once he stops
 	var breath := (1.0 - _run) * (0.5 + 0.5 * sin(_t * 5.2))

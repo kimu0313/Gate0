@@ -228,7 +228,7 @@ func _continue_after_prologue() -> void:
 	if Game.saved_chapter() != "":
 		Game.continue_game()
 	else:
-		Game.start_chapter("ch1")
+		Game.start_chapter("wake")
 
 
 func _build_settings() -> void:

@@ -1,7 +1,8 @@
 extends Node
 ## `res://scenes/menu.tscn -- --skip-boot --looptest --storytest loop` (headless OK): the whole game once, end to end,
-## through the real scenes — main menu → 새 게임 → the game (Shift1: the letter, the corridors, the office, the
-## supervisor's handover) played by the story bot → back to the main menu (as the pause menu does). Lives on the scene
+## through the real scenes — main menu → 새 게임 → the prologue (Shift1: the letter, the corridors, the office, the
+## handover, the power room, the lift breaking down, passing out) played by the story bot → the title after the prologue
+## ("press any key", no menu rows) → the next part (Wake: coming round in the lift) → back to the main menu. Lives on the scene
 ## tree's root so it survives every scene change. Exit 0 = the loop closed; 1 = stuck somewhere (the step is printed).
 ## With --storytest the player's save is never written or deleted.
 
@@ -59,10 +60,30 @@ func _process(_delta: float) -> void:
 				_log("a save exists: confirming 새 게임")
 				(scene.get("_confirm_rows")[0] as SignRow).pressed.emit()
 			if is_game and Game.chapter == "shift1":
-				_log("the game running (the story bot plays it)")
+				_log("the game running: the prologue (the story bot plays it)")
+				_step = "title"
+		"title":
+			if is_menu and bool(scene.get("_after_prologue")) and bool(scene.get("_press_ready")):
+				var rows: Array = scene.get("_rows")
+				_log("title after the prologue: prompt shown, %d menu rows" % rows.size())
+				if not rows.is_empty():
+					_end(1, "the title after the prologue still shows menu rows")
+					return
+				if not _music_ok("title after the prologue"):
+					_end(1, "no title music after the prologue")
+					return
+				var key := InputEventKey.new()
+				key.physical_keycode = KEY_ENTER
+				key.keycode = KEY_ENTER
+				key.pressed = true
+				Input.parse_input_event(key)
+				_step = "wake"
+		"wake":
+			if is_game and Game.chapter == "wake":
+				_log("waking in the lift (the story bot plays it)")
 				_step = "back"
 		"back":
-			if is_menu and scene.get("_state") == "menu":
+			if is_menu and scene.get("_state") == "menu" and not bool(scene.get("_after_prologue")):
 				var rows: Array = scene.get("_rows")
 				if not _music_ok("title after the game"):
 					_end(1, "no title music back on the title")

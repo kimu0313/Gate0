@@ -46,6 +46,8 @@ func setup(w: Node3D) -> void:
 			part = Chapter1.new()                      # (out of the game: debug flags only)
 		"prologue":
 			part = Prologue.new()                      # (out of the game: debug flags only)
+		"wake":
+			part = Wake.new()                          # after the prologue: you come round in the lift
 		_:
 			part = Shift1.new()
 	part.name = "Part_" + Game.chapter

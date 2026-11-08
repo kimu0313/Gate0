@@ -5,7 +5,8 @@ extends Node
 ## plate) opens onto a stairwell built far below the terminal with the corridors (ServiceHall's space): landings at
 ## 4F, 3F, 2F and 1F with a half landing between each, two flights a floor round a narrow well, painted floor numbers,
 ## caged lamps. 3F and 2F have their doors locked. At 1F a door leads into the stair lobby (전실), a small room with a
-## second door at its far end, which opens on the lounge's 1F east wall beside the lift.
+## second door at its far end, which opens on the lounge's 1F east wall beside the lift. Every landing is barred off
+## from its flights by iron bars with a padlocked gate (_gate, 2026-11-08), so the stairs go nowhere now.
 ##
 ## The lobby is built twice like the lift's car (lobby(): one at the stairwell's foot, one behind the lounge's wall,
 ## both on Geo.VIS_SEALED): in each copy one door is real — the stairs' copy's door A, the lounge's copy's door B —
@@ -24,6 +25,7 @@ signal carried(to: int)
 
 const XF := Transform3D(Basis(Vector3.UP, PI), Vector3(-25.3, 0, -10.45))
 const DOOR_X := 1.6               # the doors at 3F, 2F, 1F in the ZS wall
+const FLOOR_NO_X := 0.35         # the painted floor numbers on the ZS wall (between the 4F opening and the doors)
 const X0 := -3.3
 const X1 := 3.3
 const WELL := [-0.15, 0.15]       # the wall between the flights
@@ -82,10 +84,15 @@ static func build(hall: ServiceHall) -> Dictionary:
 	hall.add_child(root)
 	root.transform = XF
 	# (user, a photo of an old school stair hall: "난 비상구 계단이 아니라 이런 계단이 필요해 열려있는 공간. 벽 뚫려있는
-	# 공간"): pale painted plaster, a darker painted dado with a rail line, a polished floor, a solid wall between the
-	# flights, tall windows at the half landings; no door at 4F — the corridor runs straight onto the landing
-	var wall_m := Mats.std(Color(0.66, 0.66, 0.63), 0.88)
-	var conc := Mats.std(Color(0.5, 0.49, 0.46), 0.42)
+	# 공간"): a painted dado with a rail line, a solid wall between the flights, no windows (user: "계단 공간에 창문
+	# 없애고"), a floor number painted on every floor; no door at 4F — the corridor runs straight onto the landing. Its walls are the corridors' wall texture (user: "복도
+	# 벽 텍스처를 계단 내려가는 곳 벽 텍스처로 넣어줘"): the concrete part repeating up all four floors (the band
+	# belongs to one storey; the dado plays it, in its colour), lined up with the corridors' panels at 4F; its floors
+	# and steps the corridors' concrete (user: "복도 바닥 텍스처를 계단에 넣어줘").
+	var wall_m := Mats.shader_mat("res://shaders/corridor_wall.gdshader", {
+		"albedo_tex": load("res://assets/textures/level/wall_corridor_concrete.png"), "with_band": false,
+		"base_height": ServiceHall.ORIGIN.y, "wall_h": ServiceHall.H, "tile_w": ServiceHall.H})
+	var conc := Mats.get_mat("floor_corridor_concrete")
 	var soffit := Mats.std(Color(0.7, 0.7, 0.68), 0.9)
 	var nosing := Mats.std(Color(0.07, 0.07, 0.07), 0.7)
 	var rail := Mats.std(Color(0.1, 0.17, 0.14), 0.45, 0.3)
@@ -134,7 +141,6 @@ static func build(hall: ServiceHall) -> Dictionary:
 		_dado_x(root, X0, 1.0, ZN, MID_S, ym)
 		_dado_x(root, X1, -1.0, ZN, MID_S, ym)
 		_dado_z(root, ZN, 1.0, X0, X1, ym)
-		_windows(root, ym)
 	for k in 4:
 		var yf: float = -k * FLOOR_H
 		_dado_x(root, X0, 1.0, LAND_N, ZS, yf)
@@ -149,7 +155,20 @@ static func build(hall: ServiceHall) -> Dictionary:
 	# 1F: the space under the stairs walled off
 	var under_top := BOTTOM + FLOOR_H - 0.45
 	Geo.box(root, Vector3((X0 + WELL[0]) * 0.5, (BOTTOM + under_top) * 0.5, LAND_N - 0.1), Vector3(WELL[0] - X0, under_top - BOTTOM, 0.2), wall_m)
-	# the lamps (no floor numbers painted on the walls — user: "ㅇㅇ층 이렇게 표시되어 있는 간판도 삭제해줘")
+	# a floor number on every floor (no windows in the hall any more)
+	for k in 4:
+		_floor_number(root, -k * FLOOR_H, 4 - k)
+	# iron bars on every floor (user: "계단구역은 층마다 철창으로 막아줘"): each landing is shut off from the flights
+	# that leave it, floor to ceiling, a padlocked gate in each — the way down at 4F, both ways at 3F and 2F, the way up
+	# at 1F (4F's east half has its parapet, 1F's west half the wall under the stairs). They only rattle.
+	for k in 4:
+		var yf: float = -k * FLOOR_H
+		var ytop := TOP - 0.012 if k == 0 else yf + FLOOR_H - 0.21     # (the ceiling over 4F, else the landing above)
+		if k < 3:
+			hall.stair_gates.append(_gate(root, X0, WELL[0], yf, ytop))
+		if k > 0:
+			hall.stair_gates.append(_gate(root, WELL[1], X1, yf, ytop))
+	# the lamps
 	var zone := hall.zone
 	# (the hall is wide: a lamp on each side wall of every landing and half landing; one half landing's west lamp dead)
 	for k in 4:
@@ -229,8 +248,10 @@ static func _wall_rail(root: Node3D, x: float, z_top: float, y_top: float, dir: 
 		Geo.box(root, Vector3(x + wall_side * 0.035, y_top - p[1] * t + 0.86, z_top + dir * p[0] * t), Vector3(0.07, 0.016, 0.016), rail, false)
 
 
+## The dado's band (the corridors' wall band colour, sampled from their texture: 0.496, 0.529, 0.516), its rail line
+## and the skirting (the band's dark foot).
 static func _dado_mats() -> Array:
-	return [Mats.std(Color(0.5, 0.51, 0.48), 0.8), Mats.std(Color(0.3, 0.3, 0.28), 0.55), Mats.std(Color(0.18, 0.18, 0.17), 0.5)]
+	return [Mats.std(Color(0.496, 0.529, 0.516), 0.55), Mats.std(Color(0.36, 0.39, 0.38), 0.5), Mats.std(Color(0.26, 0.25, 0.23), 0.6)]
 
 
 ## The painted dado (lower wall, its rail line, a dark skirting) on a wall face along Z at `x`, facing `face` (±X),
@@ -275,21 +296,114 @@ static func _dado_slope(root: Node3D, x: float, face: float, z_top: float, y_top
 			mid + Vector3(face * float(part[4]), (lo + hi) * 0.5, 0))
 
 
-## A pair of tall steel-framed windows in the north wall over the half landing at `y` (night: dark glass, a faint sky).
-static func _windows(root: Node3D, y: float) -> void:
-	var frame := Mats.std(Color(0.72, 0.73, 0.7), 0.45, 0.2)
-	var glass := Mats.emissive(Color(0.03, 0.045, 0.07), 1.0, Color(0.02, 0.025, 0.03))
-	glass.roughness = 0.12
-	var w := 0.55
-	var h := 1.35
-	var y0 := y + 0.9
-	for x: float in [-2.25, -1.15, 1.15, 2.25]:        # two pairs across the wider far wall
-		var z := ZN + 0.004
-		Geo.box(root, Vector3(x, y0 + h * 0.5, z), Vector3(w, h, 0.008), glass, false)
-		for e: Array in [[Vector3(x, y0 + h, z + 0.012), Vector3(w + 0.08, 0.04, 0.024)], [Vector3(x, y0, z + 0.02), Vector3(w + 0.12, 0.04, 0.04)],
-				[Vector3(x - w * 0.5, y0 + h * 0.5, z + 0.012), Vector3(0.04, h, 0.024)], [Vector3(x + w * 0.5, y0 + h * 0.5, z + 0.012), Vector3(0.04, h, 0.024)],
-				[Vector3(x, y0 + h * 0.66, z + 0.01), Vector3(w, 0.025, 0.02)]]:
-			Geo.box(root, e[0], e[1], frame, false)
+## The floor's number painted big on the wall you face as you come up or down onto the landing at `yf` (the ZS wall,
+## west of the doors; at 4F east of the corridor's opening): "4F" … "1F" in a dark stencil paint (user: "계단 공간에
+## 창문 없애고 그냥 각 층에 층수만 표기해줘").
+static func _floor_number(root: Node3D, yf: float, n: int) -> void:
+	var l := Geo.label(root, "%dF" % n, Vector3(FLOOR_NO_X, yf + 1.62, ZS - 0.004), PI, 220, Color(0.13, 0.17, 0.16), 0.004,
+		false, "print")
+	Geo.fit(l, 1.25, 0.82)
+
+
+## A wall of iron bars across the stairs at a landing's edge (z GATE_Z, x `x0`..`x1`, from the landing at `yf` up to
+## `ytop`): a frame of square tube, round bars every BAR_STEP, a gate GATE_W wide in the middle hung on its left post
+## with a chain and a padlock through it at the latch. Solid; [E] rattles the gate. Returns {root, leaf, use, block}
+## (root = the leaf, for Terminal.rattle).
+const GATE_Z := LAND_N + 0.12      # (clear of the handrails' ends)
+const GATE_W := 0.95
+const BAR_STEP := 0.11
+
+
+static func _gate(root: Node3D, x0: float, x1: float, yf: float, ytop: float) -> Dictionary:
+	var g := Node3D.new()
+	g.name = "StairGate"
+	root.add_child(g)
+	g.position = Vector3(0, yf, GATE_Z)
+	var h := ytop - yf
+	var iron := Mats.std(Color(0.15, 0.16, 0.16), 0.45, 0.25)
+	var cx := (x0 + x1) * 0.5
+	var lx0 := cx - GATE_W * 0.5
+	var lx1 := cx + GATE_W * 0.5
+	var transom := 2.2
+	# the frame: end posts, a foot rail, a top rail, a mid rail either side of the gate, its jambs and transom
+	for x: float in [x0 + 0.025, x1 - 0.025]:
+		Geo.box(g, Vector3(x, h * 0.5, 0), Vector3(0.05, h, 0.05), iron, false)
+	Geo.box(g, Vector3(cx, 0.025, 0), Vector3(x1 - x0, 0.05, 0.05), iron, false)
+	Geo.box(g, Vector3(cx, h - 0.025, 0), Vector3(x1 - x0, 0.05, 0.05), iron, false)
+	Geo.box(g, Vector3(cx, transom, 0), Vector3(x1 - x0, 0.05, 0.05), iron, false)
+	for side: Array in [[x0, lx0 - 0.05], [lx1 + 0.05, x1]]:
+		Geo.box(g, Vector3((side[0] + side[1]) * 0.5, 1.05, 0), Vector3(side[1] - side[0], 0.04, 0.03), iron, false)
+	for x: float in [lx0 - 0.025, lx1 + 0.025]:
+		Geo.box(g, Vector3(x, transom * 0.5, 0), Vector3(0.05, transom, 0.05), iron, false)
+	# the fixed bars (over the gate only above its transom)
+	var bar := CylinderMesh.new()
+	bar.top_radius = 0.009
+	bar.bottom_radius = 0.009
+	bar.height = 1.0
+	bar.radial_segments = 8
+	bar.rings = 1
+	var fixed: Array = []
+	var x := x0 + 0.08
+	while x < x1 - 0.06:
+		if x > lx0 - 0.07 and x < lx1 + 0.07:
+			fixed.append(Transform3D(Basis().scaled(Vector3(1, h - transom, 1)), Vector3(x, (transom + h) * 0.5, 0)))
+		else:
+			fixed.append(Transform3D(Basis().scaled(Vector3(1, h, 1)), Vector3(x, h * 0.5, 0)))
+		x += BAR_STEP
+	OfficeKit._multi(g, bar, iron, fixed)
+	# the gate: its own frame and bars, hung at its left jamb
+	var leaf := Node3D.new()
+	g.add_child(leaf)
+	leaf.position = Vector3(lx0, 0, 0)
+	var gh := transom - 0.06
+	for sx: float in [0.02, GATE_W - 0.02]:
+		Geo.box(leaf, Vector3(sx, 0.05 + gh * 0.5, 0), Vector3(0.04, gh, 0.04), iron, false)
+	for y: float in [0.08, 1.05, gh + 0.02]:
+		Geo.box(leaf, Vector3(GATE_W * 0.5, y, 0), Vector3(GATE_W - 0.04, 0.035, 0.03), iron, false)
+	var inner: Array = []
+	var n := int((GATE_W - 0.1) / BAR_STEP)
+	for k in n + 1:
+		var bx := 0.05 + (GATE_W - 0.1) * k / float(n)
+		inner.append(Transform3D(Basis().scaled(Vector3(1, gh - 0.06, 1)), Vector3(bx, 0.08 + (gh - 0.06) * 0.5, 0)))
+	OfficeKit._multi(leaf, bar, iron, inner)
+	for hy: float in [0.3, 1.8]:
+		Geo.cyl(leaf, Vector3(-0.01, hy, 0.0), 0.014, 0.1, iron)               # hinge knuckles
+	# a chain round the latch stile and the jamb, a padlock hanging from it (on the landing's side)
+	var steel := Mats.std(Color(0.42, 0.43, 0.43), 0.4, 0.5)
+	var link := TorusMesh.new()
+	link.inner_radius = 0.006
+	link.outer_radius = 0.014
+	link.rings = 8
+	link.ring_segments = 6
+	var lc := Vector3(GATE_W + 0.005, 1.0, 0.0)
+	var links: Array = []
+	for k in 10:
+		var a := TAU * k / 10.0
+		var p := lc + Vector3(cos(a) * 0.055, sin(a * 2.0) * 0.006, sin(a) * 0.045)
+		var b := Basis(Vector3.UP, -a) * (Basis(Vector3.RIGHT, PI / 2) if k % 2 == 0 else Basis())
+		links.append(Transform3D(b, p))
+	for k in 3:
+		links.append(Transform3D(Basis(Vector3.RIGHT, PI / 2) if k % 2 == 0 else Basis(), lc + Vector3(0.0, -0.025 - k * 0.022, 0.05)))
+	OfficeKit._multi(leaf, link, steel, links)
+	var lock := Node3D.new()
+	leaf.add_child(lock)
+	lock.position = lc + Vector3(0, -0.12, 0.05)
+	Geo.box(lock, Vector3(0, -0.03, 0), Vector3(0.05, 0.055, 0.022), Mats.std(Color(0.55, 0.45, 0.2), 0.35, 0.6), false)
+	var shackle := MeshInstance3D.new()
+	var sm := TorusMesh.new()
+	sm.inner_radius = 0.014
+	sm.outer_radius = 0.02
+	shackle.mesh = sm
+	shackle.material_override = steel
+	lock.add_child(shackle)
+	shackle.rotation.x = PI / 2
+	Geo.cyl(lock, Vector3(0, -0.035, 0.012), 0.005, 0.003, Mats.std(Color(0.1, 0.1, 0.1), 0.5)).rotation.x = PI / 2   # keyhole
+	var block := Geo.blocker(g, Vector3(cx, h * 0.5, 0), Vector3(x1 - x0, h, 0.06))
+	var use := Interactable.create(g, Vector3(cx, 1.05, 0.13), Vector3(GATE_W + 0.2, 2.0, 0.26), "문 열기", Callable())
+	use.press_sound = ""
+	var d := {"root": leaf, "leaf": leaf, "use": use, "block": block}
+	use.callback = func(): Terminal.current.rattle(d)
+	return d
 
 
 static func _lamp(root: Node3D, zone: LightZone, at: Vector3, rot: float, lit: bool) -> void:

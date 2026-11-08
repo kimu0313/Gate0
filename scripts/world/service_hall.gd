@@ -28,6 +28,10 @@ const T := 0.2                # its own walls (the office's outside faces are th
 const FAR_W := 1.7            # double_door's width (the lounge's 2F staff doors and the story's doors)
 const FAR_H := 2.3
 const LIGHT := Color(0.76, 0.92, 0.84)
+const HAZE := 0.065           # the corridors' haze (was 0.05; a little more so the battens' light spreads in it)
+const HALO_ENERGY := 0.42     # each lit batten's halo omni: its light on the ceiling round it and in the haze
+const HALO_RANGE := 1.9
+const HALO_FOG := 8.0
 ## The corridors, in the terminal's coordinates (x, z): the office's outside faces are x -12.25 (east), z -14.85
 ## (south), x -22.55 (the south arm's west), z -25.85 (the north arm's south), x -30.55 (its west end).
 const HALLS := {
@@ -62,6 +66,8 @@ var stair_door: Dictionary    # {} — the stairs are open to the corridor (the 
 var side_doors: Array[Dictionary] = []          # every locked door (they rattle)
 var doors_by := {}            # plate -> door
 var office_panes: Array[MeshInstance3D] = []    # the maze's side of the office's big windows (Terminal.sec_inview)
+var power_room: PowerRoom     # behind E's 전력실 door: the lift's power panel
+var stair_gates: Array[Dictionary] = []         # the iron bar gates on the stairs' landings (StairCore._gate)
 var wall_m: Material
 var _frame_m: Material
 
@@ -75,9 +81,8 @@ func build() -> void:
 		"albedo_tex": load("res://assets/textures/level/wall_corridor_concrete.png"), "base_height": ORIGIN.y,
 		"wall_h": H, "tile_w": H})
 	_frame_m = Mats.std(Color(0.07, 0.065, 0.06), 0.45, 0.2)
-	var floor_m := Mats.shader_mat("res://shaders/floor_tile.gdshader", {
-		"color_a": Color(0.3, 0.32, 0.31), "color_b": Color(0.27, 0.29, 0.28), "grout_color": Color(0.19, 0.2, 0.19),
-		"tile_size": 0.6, "roughness_base": 0.08, "roughness_var": 0.28})
+	# the floor: the user's grey concrete picture, darkened (Mats "floor_corridor_concrete"; the stairs share it)
+	var floor_m := Mats.get_mat("floor_corridor_concrete")
 	var ceil_m := Mats.get_mat("ceiling_corridor_tile")       # the user's tile photo (was a plain grey grid)
 	# the floor and the dropped ceiling over the whole maze (and over the rooms between, shut away behind their doors)
 	# (not over the stair hall at W's south end, x -28.8..-21.8 z -10.45..-5.8: it has its own floors and ceiling)
@@ -87,6 +92,7 @@ func build() -> void:
 		Geo.box(self, r[0] + Vector3(0, H + 0.1, 0), Vector3(r[1].x, 0.2, r[1].y), ceil_m, false)
 	_build_walls()
 	ArchiveRoom.build(self)        # the records room behind the door farthest from the lift (E's end)
+	power_room = PowerRoom.build(self)   # the power room behind E's 전력실 door (the lift's power panel)
 	_build_entry()
 	_build_lift_end()
 	_build_office_side()
@@ -101,7 +107,7 @@ func contains(p: Vector3) -> bool:
 	var l := to_local(p)
 	if l.x > -37.8 and l.x < -9.4 and l.z > -30.0 and l.z < -2.2 and absf(l.y) < 6.0:
 		return true
-	if ArchiveRoom.contains_local(l):
+	if ArchiveRoom.contains_local(l) or PowerRoom.contains_local(l):
 		return true
 	return StairCore.contains_hall(l)
 
@@ -128,7 +134,7 @@ func _build_walls() -> void:
 	var sill := Terminal.SEC_VIEW_Y - Terminal.SEC_VIEW_SIZE.y * 0.5
 	# E, out of the passage door: the office's east wall (and the rooms' south of it), a dead end north
 	_wall_z(-12.25, -21.7, -12.85, -1.0, [], [], big)      # the office's east wall: no door (removed — user)
-	_wall_z(-10.05, -21.7, -10.45, 1.0, [[-19.9, "관리사무소"], [-16.0, "회의실"], [-12.6, "전기실"]])
+	_wall_z(-10.05, -21.7, -10.45, 1.0, [[-19.9, "관리사무소"], [-16.0, "회의실"], [PowerRoom.DOOR_Z, "전력실"]])   # (PowerRoom)
 	_wall_x(-21.5, -12.55, -9.85, -1.0, [[ArchiveRoom.DOOR_X, "자료실"]])   # the records room (ArchiveRoom)
 	# S, west along the rooms south of the office; S2 off it
 	# (W's south end, x -24.75..-22.55, is open onto the stair hall — StairCore; its door 103 went with it)
@@ -195,12 +201,38 @@ func _wall_x(z: float, x0: float, x1: float, side: float, doors := [], cuts := [
 
 ## A locked door (it rattles): the worn steel door of the user's photo (OfficeKit.steel_door), no plate on it (user:
 ## "문마다 무슨실 무슨 실 설명이랑 팻말 되어있는거 다 삭제해줘"): `plate` is only its name in doors_by (the office plan
-## labels it).
+## labels it). Its number is painted on its corridor face (door_no).
 func _door(at: Vector3, rot: float, plate: String, t: float) -> void:
 	var door := OfficeKit.steel_door(self, at, rot, t)
 	(door.use as Interactable).callback = func(): Terminal.current.rattle(door)
 	side_doors.append(door)
 	doors_by[plate] = door
+	# (OfficeKit.steel_door: the leaf's corridor face is +X, 22.5 mm out; the leaf runs along +Z from its hinge)
+	_number(door.leaf, Vector3(0.0245, 1.84, 0.465), plate)
+
+
+## Every door on the corridors carries a number, A01 … A30 (user: "복도에 문 많잖아. 거기 문에 A01 A02..등 이런식으로
+## 표시해줘"), in the order you meet them walking from the lift: V north (and its dead end), N east, W south — with B
+## and B2 where they branch off, the office's own door —, S east with S2, then E north to the records room at the end.
+## The keys are the doors' names in doors_by ("office" = the office's west door, ServiceHall.entry).
+const DOOR_ORDER := ["탈의실", "206", "미화원 대기실", "205", "204", "방재센터", "203", "207", "202", "201", "104", "112", "111",
+	"113", "114", "출구", "office", "105", "106", "110", "107", "108", "109", "창고", "102", "101", "전력실", "회의실",
+	"관리사무소", "자료실"]
+
+
+static func door_no(plate: String) -> String:
+	var i := DOOR_ORDER.find(plate)
+	return "" if i < 0 else "A%02d" % (i + 1)
+
+
+## The number painted on a leaf's corridor face (off-white stencil paint, above its vision panel), `at` in the leaf's
+## space on that face (+X out of it).
+func _number(leaf: Node3D, at: Vector3, plate: String) -> void:
+	var no := door_no(plate)
+	if no == "":
+		return
+	var l := Geo.label(leaf, no, at, PI / 2, 120, Color(0.84, 0.85, 0.81), 0.0011, false, "print")
+	Geo.fit(l, 0.3, 0.12)
 
 
 # --------------------------------------------------------------------------------------------
@@ -209,6 +241,8 @@ func _door(at: Vector3, rot: float, plate: String, t: float) -> void:
 ## (the office's real leaf stands in front of it until then). No plate beside it.
 func _build_entry() -> void:
 	entry = Terminal.steel_door(self, ENTRY, PI)
+	# its number on the corridor face (Terminal.steel_door: that face +X, the leaf along -Z, its light at z -0.75)
+	_number(entry.leaf, Vector3(0.0245, 1.86, -0.42), "office")
 	(entry.leaf as Node3D).rotation.y = deg_to_rad(84.0)
 	(entry.leaf as Node3D).visible = false
 	(entry.block as StaticBody3D).collision_layer = 0
@@ -321,27 +355,44 @@ static func swing(door: Dictionary, deg: float, time: float) -> Tween:
 
 
 # --------------------------------------------------------------------------------------------
-## Square fittings down the corridors (FITTINGS; two dead), cold green-white; the zone flickers now and then; the
-## haze they hang in, a volume per corridor (none over the office's footprint, where its windows' view looks from).
+## Twin-tube battens down the corridors (FITTINGS; two dead), cold green-white, each along its corridor (user, a photo
+## of a surface-mounted batten: "복도 천장 전등 이걸로 교체해줘 안개도 살짝 넣어서 빛 번지게끔"): OfficeKit.batten
+## on the ceiling, an area light the shape of its tubes, the zone's bounce omni, and a short-range halo whose light
+## shows in the haze round the fitting and on the ceiling beside it. The zone flickers now and then; the haze they
+## hang in, a volume per corridor (none over the office's footprint, where its windows' view looks from).
 func _build_lights() -> void:
 	zone = LightZone.new()
 	zone.name = "Zone_servicehall"
 	add_child(zone)
-	zone.setup("servicehall", "관리동 복도", LIGHT, 3.0)
-	var dead := Mats.std(Color(0.3, 0.32, 0.3), 0.5)
+	zone.setup("servicehall", "관리동 복도", LIGHT, 3.4)
+	var dead := Mats.std(Color(0.55, 0.57, 0.56), 0.3)
 	for f: Array in FITTINGS:
-		var at := Vector3(f[0], H - 0.035, f[1])
-		if f[2]:
-			zone.add_panel(at, Vector2(0.6, 0.6), true, 0.8, 6.5, LIGHT)
-		else:
-			Geo.box(zone, at, Vector3(0.6, 0.06, 0.6), dead, false)
-			Geo.box(zone, at + Vector3(0, 0.02, 0), Vector3(0.7, 0.05, 0.7), Mats.get_mat("plastic_white"), false)
+		var at := Vector3(f[0], H, f[1])
+		var ax := _along_x(f[0], f[1])
+		OfficeKit.batten(zone, at, ax, zone.panel_mat if f[2] else dead)
+		if not f[2]:
+			continue
+		var tubes := at + Vector3(0, -0.085, 0)
+		var area := Geo.area_light(zone, tubes, Vector2(1.14, 0.08) if ax else Vector2(0.08, 1.14), LIGHT,
+			0.8 * LightZone.AREA_GAIN, 6.5)
+		area.light_volumetric_fog_energy = 0.8
+		zone.add_light(area)
+		var share := LightZone.GI_DIRECT if Atmosphere.gi_enabled else LightZone.NO_GI_DIRECT
+		var gi := Geo.omni(zone, at + Vector3(0, -0.6, 0), LIGHT, 0.8 * share, 6.5)
+		gi.light_indirect_energy = 1.0 / share
+		gi.light_specular = 0.0
+		gi.light_volumetric_fog_energy = 0.0
+		zone.add_light(gi)
+		var halo := Geo.omni(zone, tubes + Vector3(0, -0.04, 0), LIGHT, HALO_ENERGY, HALO_RANGE)
+		halo.light_specular = 0.0
+		halo.light_volumetric_fog_energy = HALO_FOG
+		zone.add_light(halo)
 	for p: Vector3 in [Vector3(-11.15, H - 0.3, -16.0), Vector3(-23.65, H - 0.3, -18.0), Vector3(-36.1, H - 0.3, -15.0)]:
 		zone.add_hum(p, -24.0)
 	zone.erratic = 0.12
 	zone.night_dim = 0.85
 	var fm := FogMaterial.new()
-	fm.density = 0.05
+	fm.density = HAZE
 	fm.albedo = Color(0.48, 0.56, 0.52)
 	fm.edge_fade = 0.1
 	for r: Rect2 in HALLS.values():
@@ -352,6 +403,22 @@ func _build_lights() -> void:
 		fog.position = Vector3(r.get_center().x, H * 0.5, r.get_center().y)
 
 
+## Whether a fitting at (x, z) runs along X: the way of the corridor it hangs in (at a corner, the one it sits
+## deeper in).
+static func _along_x(x: float, z: float) -> bool:
+	var best := -1.0
+	var ax := true
+	for r: Rect2 in HALLS.values():
+		if not r.has_point(Vector2(x, z)):
+			continue
+		var long_x := r.size.x > r.size.y
+		var d := minf(x - r.position.x, r.end.x - x) if long_x else minf(z - r.position.y, r.end.y - z)
+		if d > best:
+			best = d
+			ax = long_x
+	return ax
+
+
 ## Air grilles in the ceiling between the lights, wet patches on the floor. (No clock, floor sign, bin, framed
 ## pictures, fire hose cabinet or chairs out here any more — user: "원통형 쓰레기통 다 삭제", "시계랑 ㅇㅇ층
 ## 이렇게 표시되어 있는 간판도 삭제해줘", "소화전이랑 액자도 삭제해줘", "복도에 의자 삭제해주고".)
@@ -360,20 +427,7 @@ func _build_details() -> void:
 			[-30.3, -24.75, PI / 2], [-36.1, -18.5, 0.0], [-36.1, -10.3, 0.0], [-29.6, -19.4, PI / 2]]:
 		OfficeKit.vent_grille(self, Vector3(g[0], H - 0.006, g[1]), g[2], Vector2(0.3, 0.9), PI / 2)
 	Props.exit_sign(self, Vector3(-31.6, 2.62, -12.55), PI)          # over B2's dead end: no way out
-	var wet := Mats.std(Color(0.2, 0.22, 0.2), 0.0, 0.0)
-	wet.metallic_specular = 0.9
-	wet.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	wet.albedo_color.a = 0.55
-	for p: Array in [[Vector3(-23.4, 0.002, -14.2), Vector2(0.9, 1.4)], [Vector3(-36.3, 0.002, -11.0), Vector2(1.0, 1.8)],
-			[Vector3(-30.0, 0.002, -24.6), Vector2(1.3, 0.7)]]:
-		var q := QuadMesh.new()
-		q.size = p[1]
-		var mi := MeshInstance3D.new()
-		mi.mesh = q
-		mi.material_override = wet
-		add_child(mi)
-		mi.position = p[0]
-		mi.rotation.x = -PI / 2
+	# (no wet patches on the floor any more — user: "물 웅덩이 빼줘")
 
 
 func _build_reverb() -> void:

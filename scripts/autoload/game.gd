@@ -13,8 +13,9 @@ const SCENE_GAME := "res://scenes/game.tscn"
 
 ## Parts of the story in play order. Only the main story ("ch1" on) is saved; the prologue always plays from its start.
 ## The parts of the story a save or `--chapter` can name: "shift1" is the game (Shift1); the prologue and the old
-## chapter 1 are out of the game (user: "현재 게임루프 다 빼줘") and only start from the debug flags.
-const CHAPTERS := ["shift1", "prologue", "ch1"]
+## chapter 1 are out of the game (user: "현재 게임루프 다 빼줘") and only start from the debug flags. Shift1 is the
+## prologue now and ends in the lift (finish_shift1); "wake" (Wake) picks up from there.
+const CHAPTERS := ["shift1", "prologue", "ch1", "wake"]
 const START_CLOCK := 2 * 60 + 17   # SCENE 01: AM 02:17
 
 # --- settings -----------------------------------------------------------------
@@ -52,6 +53,7 @@ const BINDINGS := {
 	"interact": [[KEY_E], [MOUSE_BUTTON_LEFT]],
 	"flashlight": [[KEY_F], []],
 	"tablet": [[KEY_TAB], []],
+	"camera": [[], [MOUSE_BUTTON_RIGHT]],   # take the camera out / put it away (user: "카메라 꺼내기는 마우스 우클릭"); a shot is the left button
 	"close_eyes": [[KEY_C], []],
 	"pause": [[KEY_ESCAPE], []],
 	"ui_page_next": [[KEY_D, KEY_RIGHT, KEY_PAGEDOWN], []],
@@ -66,6 +68,7 @@ var chapter := "shift1"
 var checkpoint := ""          # where the chapter picks up again after you are caught ("" = its start)
 var inventory: Array = []     # item ids you carry ("key_gate" …), Events.inventory_changed
 var flags := {}               # story flags
+var photos: Array[Image] = [] # what the camera has taken (Hud.camera_shot; this session only, 640 px copies)
 var clock_minutes := START_CLOCK
 var player_name := "점검원"   # facility props print it (B-03 bag tags, the X-ray tag)
 var phase := "night"          # look-dev tools name their captures by it
@@ -114,6 +117,7 @@ func reset_session() -> void:
 	checkpoint = ""
 	inventory = []
 	flags = {}
+	photos.clear()
 	clock_minutes = START_CLOCK
 	_snapshot = {}
 
@@ -142,6 +146,14 @@ func key_label(action: String) -> String:
 					KEY_CTRL:
 						return "CTRL"
 				return OS.get_keycode_string(code).to_upper()
+		# (a mouse-only action: the camera)
+		for ev in InputMap.action_get_events(action):
+			if ev is InputEventMouseButton:
+				match (ev as InputEventMouseButton).button_index:
+					MOUSE_BUTTON_LEFT:
+						return tr("좌클릭")
+					MOUSE_BUTTON_RIGHT:
+						return tr("우클릭")
 	return "?"
 
 
@@ -297,6 +309,19 @@ func start_chapter(id: String) -> void:
 	chapter = id
 	save_game()
 	change_scene(SCENE_GAME)
+
+
+## The prologue (Shift1) ends with you passing out in the stopped lift: the next part ("wake") is saved with what
+## you carry and have done, and the title follows as it does after a prologue (SCENE 05, then only the title and
+## "계속하려면 아무 키나 누르세요"), which continues into it (user: "프롤로그가 끝나면 원래대로 메인화면과 밑에 계속
+## 하려면 아무 키를 누르시오 그 화면 나오고 계속하기 누르면 플레이어가 엘리베이터에서 눈을 뜨고 일어나는거지").
+func finish_shift1() -> void:
+	chapter = "wake"
+	checkpoint = ""
+	_snapshot = {}
+	save_game()
+	title_intro = "after_prologue"
+	change_scene(SCENE_MENU)
 
 
 ## SCENE 04 ends in a blackout: the main story's start is saved and the title screen

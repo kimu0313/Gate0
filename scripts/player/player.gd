@@ -4,6 +4,8 @@ extends CharacterBody3D
 ## close-eyes (hold C), interaction ray, conveyor riding, camera shake.
 
 signal interact_target_changed(prompt: String)
+signal camera_changed(on: bool)       # the camera out (right click) or away
+signal photo_taken                    # a shot with the camera up
 
 const WALK_SPEED := 2.2
 const SPRINT_SPEED := 4.4
@@ -19,6 +21,8 @@ var look_enabled := true
 var cutscene := false           # a scripted scene: no looking, walking or using things (walk_to still moves you);
                                 # menus closing in between do not hand control back
 var camera_mode := false
+var camera_owned := false        # you have a camera: the right button takes it out (toggle_camera)
+var _shot_cd := 0.0
 var no_sprint := false          # a place where you cannot run (the story sets it): the sprint key does nothing
 var terminal: Terminal
 
@@ -220,9 +224,38 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("flashlight"):
 		if flashlight_owned:
 			toggle_flashlight()
-	elif event.is_action_pressed("interact") and not camera_mode:
+	elif event.is_action_pressed("camera"):
+		if camera_owned:
+			toggle_camera()
+	elif camera_mode:
+		# with the camera up only the left button does anything: a shot
+		var mb := event as InputEventMouseButton
+		if mb and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			take_photo()
+	elif event.is_action_pressed("interact"):
 		if current_interactable and is_instance_valid(current_interactable):
 			current_interactable.interact()
+
+
+## The camera out or away (the right mouse button, the "camera" action — user: "카메라 꺼내기는 마우스 우클릭. 카메라
+## 꺼낸 상태로 찍으려면 마우스 좌클릭"; once you have it, camera_owned): out, the view narrows (camera_mode: slower
+## look and steps, no [E] on things), the HUD shows the viewfinder, and the left button takes a shot.
+func toggle_camera(force := -1) -> void:
+	var on := not camera_mode if force < 0 else force == 1
+	if on == camera_mode:
+		return
+	camera_mode = on
+	Snd.play("button_press", -12.0, 0.75 if on else 0.65, "SFX")
+	camera_changed.emit(on)
+
+
+## The left button with the camera out: a shot (the HUD takes the frame and flashes); not faster than one a second.
+func take_photo() -> void:
+	if _shot_cd > 0.0:
+		return
+	_shot_cd = 0.9
+	Snd.play("camera_shutter", -6.0, 1.0, "SFX")
+	photo_taken.emit()
 
 
 func toggle_flashlight(force := -1) -> void:
@@ -233,6 +266,10 @@ func toggle_flashlight(force := -1) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# --- the camera: down whenever a scene takes the controls; one shot a second ---
+	if camera_mode and (not controls_enabled or cutscene):
+		toggle_camera(0)
+	_shot_cd = maxf(0.0, _shot_cd - delta)
 	# --- eyes ---
 	var want_closed := controls_enabled and not cutscene and Input.is_action_pressed("close_eyes") and not camera_mode
 	if eyes_script >= 0.0:

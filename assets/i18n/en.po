@@ -5338,11 +5338,11 @@ msgstr "Manager"
 msgid "...일찍 오셨네요. 이번에 새로 오신 분 맞죠?"
 msgstr "...You're early. You're the new hire, right?"
 
-msgid "네, 확인했습니다. 일단 간단하게 업무 설명부터 드릴게요. 오래 걸리진 않을 겁니다."
-msgstr "Right, that checks out. Let me walk you through the job first. It won't take long."
+msgid "업무 설명부터 드릴게요. 오래 걸리진 않을 겁니다."
+msgstr "Let me walk you through the job first. It won't take long."
 
-msgid "기본적으로 야간 시설관리 업무는 공항 내부를 순회하면서 시설 상태를 확인하는 일입니다. 조명이나 설비에 문제가 없는지 살펴보고, 특이사항이 있으면 보고해 주시면 됩니다."
-msgstr "Night facilities duty is basically making rounds inside the airport and checking on the facilities. Make sure the lighting and equipment are working, and report anything out of the ordinary."
+msgid "업무는 공항 내부를 순회하면서 시설 상태를 확인하는 일입니다. 문제가 없는지 살펴보고, 특이사항이 있으면 보고해 주시면 됩니다."
+msgstr "The job is making rounds inside the airport and checking on the facilities. Make sure nothing's wrong, and report anything out of the ordinary."
 
 msgid "아, 그리고 근무하시기 전에 알아두셔야 할 게 하나 있는데요."
 msgstr "Oh, and there's one thing you should know before you start."
@@ -5353,17 +5353,23 @@ msgstr "..."
 msgid "뭐라고 설명해야 할지... 직접 설명하기는 좀 곤란하네요. 어차피 근무하시다 보면 알게 될 겁니다."
 msgstr "How do I put this... It's hard to explain in person. You'll find out once you're on shift anyway."
 
-msgid "일단 지침서에 적힌 내용만 잘 따라주세요. 거기에 있는 사항들은 전부 이유가 있어서 만들어진 겁니다."
-msgstr "Just follow what's written in the guidelines. Everything in there is there for a reason."
+msgid "지침서에 적힌 내용만 잘 따라주세요."
+msgstr "Just follow what's written in the guidelines."
+
+msgid "거기에 있는 사항들은 전부 이유가 있어서 만들어진 겁니다."
+msgstr "Everything in there is there for a reason."
 
 msgid "굳이 궁금해하실 필요는 없어요. 그냥 적힌 대로 하시면 됩니다."
 msgstr "There's no need to wonder about it. Just do what it says."
 
-msgid "아, 그리고 근무 중에는 외부 이용객과 마주칠 일이 있을 수도 있습니다. 그런 경우에는 평소처럼 응대하시면 됩니다. 불필요한 이야기는 하지 마시고요."
-msgstr "Oh, and you may run into outside visitors during your shift. If you do, just deal with them as you normally would. Don't say anything you don't need to."
+msgid "아, 그리고 근무 중에는 외부 이용객과 마주칠 일이 있을 수도 있습니다."
+msgstr "Oh, and you may run into outside visitors during your shift."
 
-msgid "필요한 물품은 이 곳 4층에 있습니다. 챙겨서 근무 하시면 되고요."
-msgstr "Everything you need is here on the 4th floor. Take it with you on your shift."
+msgid "그런 경우에는 평소처럼 응대하시면 됩니다. 불필요한 이야기는 하지 마시고요."
+msgstr "If you do, just deal with them as you normally would. Don't say anything you don't need to."
+
+msgid "필요한 물품은 이 방에 있습니다. 챙겨서 근무 하시면 되고요."
+msgstr "Everything you need is in this room. Take it with you on your shift."
 
 msgid "무전기"
 msgstr "Radio"
@@ -5410,8 +5416,53 @@ msgstr "Guidelines"
 msgid "[TAB] 지침서를 열 수 있습니다."
 msgstr "[TAB] You can open the guidelines."
 
-msgid "……헉, 헉……"
-msgstr "...Huff... huff..."
+msgid "아, 여기 계셨네요. 깜빡하고 전해 드리지 못한 게 있어서요."
+msgstr "Ah, there you are. I forgot to give you something."
+
+msgid "카메라입니다. 근무하실 때 꼭 챙겨 다니세요."
+msgstr "It's a camera. Keep it on you while you're on duty."
+
+msgid "순회하시다가 이상현상이 보이면 이걸로 찍어 두세요."
+msgstr "If you see anything anomalous on your rounds, take a picture of it with this."
+
+msgid "찍은 사진은 지침서 파일 안에 넣어 두시면 됩니다."
+msgstr "Put the photos inside the guidelines file."
+
+msgid "...그럼, 수고하세요."
+msgstr "...Well then, good luck tonight."
+
+msgid "카메라를 받았다."
+msgstr "Received a camera."
+
+msgid "엘리베이터 전력이 꺼진 듯 하다."
+msgstr "The lift seems to have lost power."
+
+msgid "전력실에서 확인을 해 봐야겠다."
+msgstr "I should check it in the power room."
+
+msgid "전력실 찾기"
+msgstr "Find the power room"
+
+msgid "엘리베이터 전력 작동 시키기"
+msgstr "Get the lift's power back on"
+
+msgid "승강기 전원 올리기"
+msgstr "Switch the lift's power on"
+
+msgid "3층 누르기"
+msgstr "Press 3"
+
+msgid "2층 누르기"
+msgstr "Press 2"
+
+msgid "지하 1층 누르기"
+msgstr "Press B1"
+
+msgid "잠금 풀기"
+msgstr "Turn the latch"
+
+msgid "레버 당기기"
+msgstr "Pull the lever"
 
 msgid "무전기는 관리실과 연락할 때 사용하시면 됩니다. 문제가 생기면 우선 연락부터 주세요."
 msgstr "Use the radio to reach the office. If anything goes wrong, call in first."
@@ -5425,8 +5476,8 @@ msgstr "...Outside visitors?"
 msgid "뭐, 너무 신경 쓰지는 마세요."
 msgstr "Well, don't worry about it too much."
 
-msgid "그럼 저는 이만 쉬러 가보겠습니다. 준비되시면 근무 시작하세요."
-msgstr "Well, I'll go get some rest. Start your shift when you're ready."
+msgid "그럼 저는 이만 숙직실로 쉬러 가보겠습니다. 준비되시면 근무 시작하세요."
+msgstr "Well, I'll go get some rest in the night-duty room. Start your shift when you're ready."
 
 msgid "준비되시면 근무 시작하세요."
 msgstr "Start your shift when you're ready."
@@ -5439,3 +5490,132 @@ msgstr "...Zzz... snrrk..."
 
 msgid "...음... 드르렁"
 msgstr "...Mm... zzz..."
+
+msgid "A국제공항 시설관리팀"
+msgstr "A International Airport · Facilities"
+
+msgid "야간 근무 지침"
+msgstr "Night Duty Guidelines"
+
+msgid "근무자 기록카드"
+msgstr "Staff Record"
+
+msgid "성명"
+msgstr "Name"
+
+msgid "소속"
+msgstr "Department"
+
+msgid "시설관리팀 (야간)"
+msgstr "Facilities (Night)"
+
+msgid "직위"
+msgstr "Position"
+
+msgid "시설관리원 · 계약직"
+msgstr "Facility staff · Contract"
+
+msgid "근무 시간"
+msgstr "Hours"
+
+msgid "근무지"
+msgstr "Post"
+
+msgid "여객터미널 전 구역"
+msgstr "Whole passenger terminal"
+
+msgid "비상 연락"
+msgstr "Emergency"
+
+msgid "관리실 · 무전"
+msgstr "Control office · Radio"
+
+msgid "신규"
+msgstr "New"
+
+msgid "사진"
+msgstr "Photo"
+
+msgid "미부착"
+msgstr "none"
+
+msgid "순회 점검 기록"
+msgstr "Patrol Log"
+
+msgid "시각"
+msgstr "Time"
+
+msgid "구역"
+msgstr "Area"
+
+msgid "조명"
+msgstr "Lights"
+
+msgid "설비"
+msgstr "Equipment"
+
+msgctxt "form"
+msgid "확인"
+msgstr "Checked"
+
+msgid "확인자"
+msgstr "Checked by"
+
+msgid "(인)"
+msgstr "(sign)"
+
+msgid "야간 시설관리 근무 지침"
+msgstr "Night Facility Duty Guidelines"
+
+msgid "대상"
+msgstr "For"
+
+msgid "야간 시설관리원"
+msgstr "Night facility staff"
+
+msgid "열람"
+msgstr "Access"
+
+msgid "관계자 외 열람 금지"
+msgstr "Authorised staff only"
+
+msgid "근무 시간은 22:00부터 06:00까지이다. 근무 전 4층 관리실에서 작업복으로 갈아입고, 손전등과 무전기를 지참한다."
+msgstr "Hours are 22:00 to 06:00. Before your shift, change into your work uniform in the control office on the 4th floor and take a flashlight and a radio."
+
+msgid "근무자는 공항 내부를 순회하며 조명과 설비의 상태를 확인하고, 특이사항은 관리실에 보고한다."
+msgstr "Patrol the airport, check the lights and equipment, and report anything unusual to the control office."
+
+msgid "문제가 생기면 먼저 무전으로 관리실에 연락한다."
+msgstr "If anything goes wrong, radio the control office first."
+
+msgid "근무 중 외부 이용객과 마주친 경우 평소처럼 응대한다. 불필요한 대화는 하지 않는다."
+msgstr "If you meet outside visitors while on duty, treat them as you normally would. Say no more than you need to."
+
+msgid "이 지침의 모든 사항에는 이유가 있다. 이유를 묻지 말고, 적힌 대로 따른다."
+msgstr "Everything in these guidelines is here for a reason. Do not ask why; do as written."
+
+msgid "본 지침은 근무 시작일부터 적용한다."
+msgstr "These guidelines apply from your first shift."
+
+msgid "시설관리팀장"
+msgstr "Head of Facilities"
+
+msgctxt "stamp"
+msgid "A국제공항"
+msgstr "A INT'L AIRPORT"
+
+msgctxt "stamp"
+msgid "시설관리팀"
+msgstr "FACILITIES"
+
+msgid "[우클릭] 카메라를 꺼낼 수 있습니다."
+msgstr "[RMB] You can take out the camera."
+
+msgid "카메라 내리기"
+msgstr "Lower camera"
+
+msgid "좌클릭"
+msgstr "LMB"
+
+msgid "우클릭"
+msgstr "RMB"

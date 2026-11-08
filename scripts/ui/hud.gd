@@ -40,6 +40,8 @@ var _sub_fade: Tween            # fade-out of the last line; a new line cancels 
 var _key_caps: Array = []      # [[keycap PanelContainer, action]] relabelled when keys are rebound
 # reticle, prompt, observation
 var _reticle: Control
+var _viewfinder: Viewfinder      # the camera out (right click): set_camera_view
+var _shot_flash: ColorRect      # the white flash of a shot (camera_shot)
 var _target_k := 0.0
 var _progress := -1.0
 var _burst := 0.0
@@ -64,9 +66,9 @@ var _flash_hint: Control         # the [F] 손전등 key hint (hidden while you 
 
 ## Names and icons of the things you can carry (Game.inventory).
 const ITEMS := {"key_gate": ["열쇠", "key"], "keycard": ["키 카드", "card"], "radio": ["무전기", "radio"], "flashlight": ["플래시 라이트", "lamp"], "guide": ["지침서", "records"], "boarding_pass": ["탑승권", "card"],
-	"id_card": ["신원 카드", "card"], "bag_tag": ["수하물표", "card"]}
+	"id_card": ["신원 카드", "card"], "bag_tag": ["수하물표", "card"], "camera": ["카메라", "camera"]}
 ## The key that uses a carried thing, shown on its tile.
-const ITEM_KEYS := {"guide": "tablet", "flashlight": "flashlight"}
+const ITEM_KEYS := {"guide": "tablet", "flashlight": "flashlight", "camera": "camera"}
 
 
 func _ready() -> void:
@@ -83,6 +85,14 @@ func _ready() -> void:
 	_build_controls(root)
 	_build_items(root)
 	_build_marker(root)   # last: the diamond pinned to a screen edge stays above the notes
+	_viewfinder = Viewfinder.new()
+	_viewfinder.visible = false
+	root.add_child(_viewfinder)
+	_shot_flash = ColorRect.new()
+	_shot_flash.color = Color(1, 1, 1, 0)
+	_shot_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiKit.full_rect(_shot_flash)
+	root.add_child(_shot_flash)
 	_keys_t = 40.0
 	Events.subtitle.connect(show_subtitle)
 	Events.notify.connect(add_note)
@@ -803,6 +813,38 @@ func hide_key_hints() -> void:
 	_keys_t = 0.0
 	_keys.visible = false
 	_keys.modulate.a = 0.0
+
+
+## The camera out (the right mouse button, Player.camera_mode): the viewfinder over the screen; put away, gone.
+func set_camera_view(on: bool) -> void:
+	_viewfinder.visible = on
+	_viewfinder.shots = Game.photos.size()
+	_viewfinder.queue_redraw()
+	_reticle_root_visible(not on)
+
+
+## A shot: the frame is taken without the HUD on it (Game.photos keeps it, a 640 px copy), then a white flash.
+func camera_shot() -> void:
+	var cap := DisplayServer.get_name() != "headless"
+	if cap:
+		visible = false
+		await RenderingServer.frame_post_draw
+		var img := get_viewport().get_texture().get_image()
+		visible = true
+		if img and not img.is_empty():
+			img.resize(640, int(640.0 * img.get_height() / img.get_width()), Image.INTERPOLATE_BILINEAR)
+			Game.photos.append(img)
+	else:
+		Game.photos.append(Image.create(4, 3, false, Image.FORMAT_RGB8))
+	_viewfinder.shots = Game.photos.size()
+	_viewfinder.queue_redraw()
+	_shot_flash.color.a = 0.85
+	_shot_flash.create_tween().tween_property(_shot_flash, "color:a", 0.0, 0.35)
+
+
+func _reticle_root_visible(on: bool) -> void:
+	if _reticle:
+		_reticle.visible = on
 
 
 ## Shows or hides the [F] 손전등 key hint (Shift1 hides it until you have found a flashlight).

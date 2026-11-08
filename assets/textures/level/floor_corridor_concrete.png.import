@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dgt4s4rqxq4m5"
-path.s3tc="res://.godot/imported/archive_box.png-5153f23b216f43ca98ee60cb04713d45.s3tc.ctex"
+uid="uid://brinfvil717mm"
+path.s3tc="res://.godot/imported/floor_corridor_concrete.png-7b5300bfea0b59471df15a914211d092.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/textures/level/archive_box.png"
-dest_files=["res://.godot/imported/archive_box.png-5153f23b216f43ca98ee60cb04713d45.s3tc.ctex"]
+source_file="res://assets/textures/level/floor_corridor_concrete.png"
+dest_files=["res://.godot/imported/floor_corridor_concrete.png-7b5300bfea0b59471df15a914211d092.s3tc.ctex"]
 
 [params]
 

@@ -143,7 +143,7 @@ func _draw(hall: ServiceHall) -> void:
 		var into := Basis(Vector3.UP, rot) * Vector3(1, 0, 0)
 		var at := Vector3(root.position.x, 0, root.position.z) + into * 0.45
 		var hot := false
-		_tag(plate, at.x, at.z, 0.24, BEAT if hot else DOOR, absf(cos(rot)) > 0.5)
+		_tag(("%s %s" % [ServiceHall.door_no(plate), plate]).strip_edges(), at.x, at.z, 0.24, BEAT if hot else DOOR, absf(cos(rot)) > 0.5)
 	# legend, scale and north
 	var lx := -34.3
 	var lines := [

@@ -8,7 +8,17 @@ extends StoryScript
 ## the office's door on the west corridor — it opens ([E]) and you walk in (a PortalView each way: the corridors and
 ## the office are built apart; Lift.carry moves you across while the door stands open) — and at the guard's desk the
 ## facilities supervisor (OfficeNpc) is waiting to hand over the night: talk to him with [E]. Nothing is shown as a goal
-## (objective() only records the beat). The lift and the stairs still go down to the lounge.
+## (objective() only records the beat).
+##
+## The way on (user, 2026-11-08) — the lift is dead: its call button only beeps, and the first time you try it you
+## think "엘리베이터 전력이 꺼진 듯 하다. / 전력실에서 확인을 해 봐야겠다." and two lines join the to-do list (find the
+## power room, power the lift): the power room is behind E's 전력실 door (PowerRoom), its lift panel's handle throws the
+## lift's power back on. The stairs are barred on every floor. Take the lift and press any floor: three seconds down,
+## it breaks down — a bang, the light goes red, an alarm, the car shakes, the floor screen runs through numbers that
+## mean nothing — and within a minute (ESCAPE_TIME) you must turn the emergency escape box's stiff latch (LATCH_TURNS
+## presses) and pull the lever inside: the brake bites, the car slams to a stop and you pass out. That is the end of
+## the prologue (the game goes back to the main menu). Too late: a cable snaps, the car falls, and you start again at
+## the lift (checkpoint "lift": set as the ride begins; setup() rebuilds what you had done from the flags and items).
 
 ## The letter, a paragraph a block, in the user's words (2026-11-05, second version); the first is its heading (bold,
 ## a size up), [b] marks the part shown bold and yellow, the last is the sender.
@@ -29,6 +39,19 @@ const TASK_UNIFORM := "[b]사물함[/b]에 있는 작업복으로 갈아입기" 
 const TASK_GUIDE := "[b]자료실[/b]에 있는 지침서 챙기기"
 const TASK_LIGHT := "[b]책상위[/b]에 있는 손전등 챙기기"
 const TASKS_AFTER := [TASK_UNIFORM, TASK_LIGHT, TASK_GUIDE]                  # (in this order — user)
+## The dead lift (user: "플레이어가 엘베 버튼을 누르면 플레이어 대사 ui로 … 왼쪽 상단 ui로 '전력실 찾기' '엘리베이터
+## 전력 작동 시키기' 이 두가지 띄워줘"): the thought, then two to-do lines.
+const LIFT_THOUGHT := ["엘리베이터 전력이 꺼진 듯 하다.", "전력실에서 확인을 해 봐야겠다."]
+const TASK_POWER_FIND := "전력실 찾기"
+const TASK_POWER_ON := "엘리베이터 전력 작동 시키기"
+## The breakdown (user: "엘리베이터 타고 3초정도 지나면 … 1분안에 비상탈출장치의 잠금을 풀고 안에 있는 레버를 당겨야해").
+const RIDE_BREAK := 3.0
+const ESCAPE_TIME := 60.0
+const LATCH_TURNS := 3            # the escape box's latch is stiff: a press turns it 30°, three open it (90°)
+const RED := Color(1.0, 0.07, 0.04)
+## What the floor screen runs through once it has broken (user: "알수없는 숫자들로").
+const SCRAMBLE := ["13", "-2", "B7", "0", "44", "?", "--", "88", "B13", "-0", "9", "77", "E4", "F", "000", "B44", "31",
+	"-9", "4?", "B0", "7F", "-44"]
 ## On the guard's desk top (the south arm's island, its west block, south desk): along its front edge right of the chair
 ## (behind the chair's back a step away you could not see it), in front of the phone.
 const LIGHT_AT := Vector3(-18.135, OfficeKit.DESK_H, -18.9)
@@ -57,10 +80,28 @@ var has_guide := false            # the guidelines found
 var _guide: Node3D                # the folder on its shelf
 var _guide_use: Interactable
 var _runner: OfficeNpc            # the manager, running up to you once you have the guidelines
+var power_found := false          # the power room's door opened
+var lift_powered := false         # its lift panel thrown back on
+var _power_tasks := false         # the two power lines have been put on the to-do list
+var _thought_at := -100000
+var riding := false               # in the lift, its doors shut, on the way down
+var emergency := false            # broken down: the minute to pull the escape lever is running
+var emergency_t := 0.0
+var latch_turns := 0
+var lid_open := false
+var pulled := false               # the escape lever pulled
+var prologue_over := false        # passed out: the end of the prologue
+var failed := false               # too late: the car fell
+var _siren: AudioStreamPlayer
+var _rattle: AudioStreamPlayer
+var _scr_t := 0.0
+var _flick_t := 0.0
+var _jolt_t := 0.0
 
 
 func setup() -> void:
 	var t := d.terminal
+	var cp := Game.checkpoint == "lift"                  # back at the lift after the car fell
 	hall = t.service_hall
 	# the office and the corridors round it lit; the lounge below lights when you get there
 	for zn in t.zones:
@@ -70,37 +111,64 @@ func setup() -> void:
 	t.crossed.connect(_crossed)
 	d.set_clock(21 * 60 + 52)
 	_build_door()
-	boss = OfficeNpc.create(t.sec_root, BOSS_AT, BOSS_YAW)
-	boss.hud = d.ui.hud
-	boss.started.connect(func(): d.ui.hud.task_done(TASK_TALK))   # ticked as the talk begins (user)
-	boss.line_said.connect(func(i: int):
-		if i == OfficeNpc.RADIO_LINE:
-			_give_radio())
-	Terminal.office_layers(boss)
-	Game.remove_item("radio")
-	# no flashlight until you find one (its [F] hint hidden too)
-	Game.remove_item("flashlight")
-	d.player.flashlight_owned = false
+	if cp and Game.flag("handover"):
+		_put_to_bed()                                    # (he had gone to rest)
+	else:
+		boss = OfficeNpc.create(t.sec_root, BOSS_AT, BOSS_YAW)
+		boss.hud = d.ui.hud
+		boss.started.connect(func(): d.ui.hud.task_done(TASK_TALK))   # ticked as the talk begins (user)
+		boss.line_said.connect(func(i: int):
+			if i == OfficeNpc.RADIO_LINE:
+				_give_radio())
+		boss.finished.connect(func(): Game.set_flag("handover"))
+		Terminal.office_layers(boss)
+	if not cp:
+		for id: String in ["radio", "flashlight", "guide", "camera"]:
+			Game.remove_item(id)
+	_found = Game.flag("office_found")
+	changed = Game.flag("uniform")
+	has_light = Game.has_item("flashlight")
+	has_guide = Game.has_item("guide")
+	# no flashlight until you find one (its [F] hint hidden too), no camera until he gives you one
+	d.player.flashlight_owned = has_light
+	d.player.camera_owned = Game.has_item("camera")
 	if d.player.flashlight_on:
 		d.player.toggle_flashlight(0)
-	d.ui.hud.set_flashlight_hint(false)
+	d.ui.hud.set_flashlight_hint(has_light)
 	_hang_uniform()
-	_place_flashlight()
-	_place_guide()
+	if not has_light:
+		_place_flashlight()
+	if not has_guide:
+		_place_guide()
 	t.locker_toggled.connect(_locker_toggled)
-	d.tab_opens = "none"                                  # [Tab] opens nothing until you have the guidelines
+	d.tab_opens = "guide" if has_guide else "none"       # [Tab] opens nothing until you have the guidelines
 	d.ui.hud.hide_key_hints()                            # no controls guide on screen (user)
-	# your back to the lift you came up in, its doors still open
+	# the lift: no power (the power room's lift panel is off) — back at the checkpoint it has power again
+	var power := hall.power_room
+	power_found = cp
+	lift_powered = cp
+	power.set_on(cp, true)
+	power.door_opened.connect(_power_room_opened)
+	power.switched_on.connect(_power_switched_on)
+	t.lift.set_powered(cp)
+	t.lift.refused.connect(_lift_refused)
+	t.lift.ride_hook = _ride
+	for c: Dictionary in t.lift.cars:
+		(c.escape.lock_use as Interactable).callback = _turn_latch
+		(c.escape.lever_use as Interactable).callback = _pull_lever
+	# your back to the lift you came up in, its doors still open (back at the checkpoint: facing it)
 	t.lift.open_now(0)
-	t.lift.locked = true                                 # you cannot take it back down (user: "그때는 엘베를 탈 수 없어")
-	d.player.teleport(Transform3D(Basis(), hall.to_global(START_LOCAL)))
+	d.player.teleport(Transform3D(Basis(Vector3.UP, PI) if cp else Basis(), hall.to_global(START_LOCAL)))
 	d.player.zone_override = "servicehall"
-	d.player.no_sprint = true                            # no running in the corridors
+	d.player.no_sprint = false                           # (running in the corridors is allowed — user: "그냥 복도에서 shift눌러서 달릴 수 있게")
 	d.ui.cut_to(1.0)
 
 
 func run() -> void:
 	Snd.set_ambience("amb_night_loop", -20.0, 3.0)
+	if Game.checkpoint == "lift":
+		await _resume()
+		return
 	d.player.controls_enabled = false
 	await _letter()
 	d.terminal.lift.shut()                               # the doors slide shut behind you as the picture comes up
@@ -117,16 +185,36 @@ func run() -> void:
 	d.clear_objective()
 	# what to do now: on the to-do list, top left
 	await d.wait(0.4)
+	_show_after()
+
+
+## The to-do lines for after the handover that are not done yet (done before he finished: left out).
+func _show_after() -> void:
 	for task: String in TASKS_AFTER:
-		if not (task == TASK_UNIFORM and changed) and not (task == TASK_LIGHT and has_light) and not (task == TASK_GUIDE and has_guide):   # (done before he finished)
+		if not (task == TASK_UNIFORM and changed) and not (task == TASK_LIGHT and has_light) and not (task == TASK_GUIDE and has_guide):
 			d.ui.hud.task_show(task)
 
 
+## Back at the lift after the car fell (checkpoint "lift"): straight in, facing its open doors, with what is left of
+## the to-do list.
+func _resume() -> void:
+	d.player.controls_enabled = true
+	await d.ui.fade_to(0.0, 1.2)
+	if not Game.flag("handover"):
+		if not _found:
+			d.ui.hud.task_show(TASK_FIND)
+		d.ui.hud.task_show(TASK_TALK)
+		await d.until(func(): return boss.talked)
+		await d.wait(0.4)
+	_show_after()
+
+
 # --------------------------------------------------------------------------------------------
-## The staff uniform on its hanger in locker 04 ([E] once the locker is open: 직원복으로 갈아입기).
+## The staff uniform on its hanger in locker 04 ([E] once the locker is open: 직원복으로 갈아입기) — or your own jacket,
+## once you have changed.
 func _hang_uniform() -> void:
 	var hang: Node3D = d.terminal.sec_locker.hang
-	_uniform = _clothes(hang, true)
+	_uniform = _clothes(hang, not changed)
 	_uniform_use = Interactable.create(hang, Vector3(0, -0.32, 0.0), Vector3(0.34, 0.7, 0.22), "직원복으로 갈아입기", _change)
 	_uniform_use.press_sound = ""
 	_uniform_use.enabled = false
@@ -289,9 +377,18 @@ func _take_guide() -> void:
 
 ## Once you have the guidelines the manager comes running from your right (user: "자료실에서 지침서를 얻으면 우측에서
 ## 관리자가 뛰어와서 말을 걸어"): from the far end of the records room's back aisle — the guidelines' shelf faces the
-## third aisle west, so its back end is on your right — round into your aisle, up to you, and he talks.
-## ARCHIVE_LINES is a stand-in (he only catches his breath) until the user gives his lines.
-const ARCHIVE_LINES := ["……헉, 헉……"]
+## third aisle west, so its back end is on your right — round into your aisle, up to you, and he talks: he forgot to
+## give you something, and holds out a camera — it is yours on CAMERA_LINE — and says to photograph anything
+## anomalous and put the pictures in the guidelines' file (user: "헉헉 거리는 대사는 지워주고 전달해 주지 못한게
+## 있다며 카메라를 전달해줘. 그러면서 이상현상이 보이면 찍어서 파일안에 넣으라고 하는 대사로").
+const ARCHIVE_LINES := [
+	"아, 여기 계셨네요. 깜빡하고 전해 드리지 못한 게 있어서요.",
+	"카메라입니다. 근무하실 때 꼭 챙겨 다니세요.",
+	"순회하시다가 이상현상이 보이면 이걸로 찍어 두세요.",
+	"찍은 사진은 지침서 파일 안에 넣어 두시면 됩니다.",
+	"...그럼, 수고하세요.",
+]
+const CAMERA_LINE := 1
 
 
 func _manager_runs_in() -> void:
@@ -316,8 +413,48 @@ func _manager_runs_in() -> void:
 	_runner.run_path([Vector3(a3, 0.0, back_z), Vector3(a3, 0.0, stop_z)], 3.8)
 	await _runner.arrived
 	Geo.blocker(_runner, Vector3(0, 0.9, 0), Vector3(0.5, 1.8, 0.34))
+	# the camera in his hand, held out to you; it changes hands on its line
+	var cam := _camera_prop()
+	_runner.hold(cam)
+	Geo.seal(cam)
+	_runner.line_said.connect(func(i: int):
+		if i == CAMERA_LINE:
+			_give_camera())
 	await d.wait(0.35)
 	_runner.say_lines(ARCHIVE_LINES)
+
+
+## A compact camera (its front +Z, top +Y): a dark body with a grip, the lens in a silver ring, a flash window, the
+## shutter button, a wrist strap.
+func _camera_prop() -> Node3D:
+	var c := Node3D.new()
+	c.name = "Camera"
+	var body := Mats.std(Color(0.11, 0.11, 0.12), 0.5)
+	var silver := Mats.std(Color(0.7, 0.7, 0.68), 0.3, 0.5)
+	Geo.box(c, Vector3.ZERO, Vector3(0.11, 0.064, 0.032), body, false)
+	Geo.box(c, Vector3(-0.045, -0.002, 0.019), Vector3(0.022, 0.056, 0.008), Mats.std(Color(0.05, 0.05, 0.05), 0.8), false)   # grip
+	var ring := Geo.cyl(c, Vector3(0.012, -0.002, 0.024), 0.024, 0.018, silver)
+	ring.rotation.x = PI / 2
+	var lens := Geo.cyl(c, Vector3(0.012, -0.002, 0.034), 0.016, 0.004, Mats.std(Color(0.03, 0.04, 0.06), 0.05, 0.3))
+	lens.rotation.x = PI / 2
+	Geo.box(c, Vector3(0.038, 0.02, 0.0165), Vector3(0.018, 0.01, 0.002), Mats.std(Color(0.85, 0.86, 0.84), 0.2), false)   # flash
+	Geo.cyl(c, Vector3(-0.036, 0.035, 0.0), 0.007, 0.006, silver)                                                         # shutter
+	Geo.box(c, Vector3(0.055, -0.012, 0.0), Vector3(0.006, 0.03, 0.008), Mats.std(Color(0.08, 0.08, 0.09), 0.7), false)  # strap
+	return c
+
+
+## He gives you the camera: into your belongings, a pickup sound, a toast.
+func _give_camera() -> void:
+	if Game.has_item("camera"):
+		return
+	if _runner:
+		_runner.release()
+	Game.add_item("camera")
+	d.player.camera_owned = true
+	Snd.play("card_pickup", -6.0)
+	Events.notify.emit("카메라를 받았다.", "good")
+	await d.wait(1.4)
+	Events.notify.emit("[우클릭] 카메라를 꺼낼 수 있습니다.", "info")
 
 
 func _take_light() -> void:
@@ -346,6 +483,214 @@ func _give_radio() -> void:
 	Snd.play("card_pickup", -6.0)
 	Snd.play("radio_on", -16.0, 1.05)
 	Events.notify.emit("무전기를 받았다.", "good")
+
+
+# --------------------------------------------------------------------------------------------
+## The lift's call button pressed while it has no power: you think it through (two lines, as subtitles of your own),
+## and the first time two lines join the to-do list (the power room, the lift's power). Not more often than every 6.5 s.
+func _lift_refused(_i: int) -> void:
+	if lift_powered:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _thought_at < 6500:
+		return
+	_thought_at = now
+	Events.subtitle.emit("self", LIFT_THOUGHT[0], 2.6)
+	await d.wait(2.7)
+	Events.subtitle.emit("self", LIFT_THOUGHT[1], 3.2)
+	if _power_tasks:
+		return
+	_power_tasks = true
+	await d.wait(0.6)
+	if not power_found:
+		d.ui.hud.task_show(TASK_POWER_FIND)
+	if not lift_powered:
+		d.ui.hud.task_show(TASK_POWER_ON)
+
+
+func _power_room_opened() -> void:
+	if power_found:
+		return
+	power_found = true
+	Game.set_flag("power_found")
+	d.ui.hud.task_done(TASK_POWER_FIND)
+
+
+func _power_switched_on() -> void:
+	lift_powered = true
+	power_found = true
+	Game.set_flag("lift_power")
+	d.ui.hud.task_done(TASK_POWER_FIND)
+	d.ui.hud.task_done(TASK_POWER_ON)
+
+
+# --------------------------------------------------------------------------------------------
+## A floor pressed in the car (Lift.ride_hook; its doors have just shut): the car starts down, and RIDE_BREAK s in it
+## breaks down. The checkpoint is here: fall, and you are back at the lift with what you have now.
+func _ride(f: int) -> void:
+	var lift := d.terminal.lift
+	if riding or not lift.is_inside(0):
+		lift._go_lamps(f, false)
+		lift.release()
+		return
+	riding = true
+	Game.set_checkpoint("lift")
+	Snd.play("lift_jolt", -6.0, 1.0, "SFX")
+	d.player.add_shake(0.08)
+	lift.motor_to(-10.0, 0.8)
+	lift.show_text("4", "▼")
+	await d.wait(1.6)
+	lift.show_text("3", "▼")
+	await d.wait(RIDE_BREAK - 1.6)
+	_break_down()
+
+
+## It breaks down: a bang, the light red, the alarm, the car shaking, the floor screen running wild (in _process);
+## the escape box's latch can be turned now.
+func _break_down() -> void:
+	var lift := d.terminal.lift
+	emergency = true
+	emergency_t = 0.0
+	Snd.play("lift_bang", -1.0, 1.0, "SFX")
+	Snd.play("sub_boom", -6.0, 0.9, "SFX")
+	d.player.add_shake(0.9)
+	lift.motor_to(-7.0, 0.3, 0.72)
+	lift.car_light(RED, 1.1)
+	_siren = _loop_player("lift_siren_loop", -9.0)
+	_rattle = _loop_player("lift_shake_loop", -5.0)
+	var esc := _esc()
+	(esc.lock_use as Interactable).enabled = true
+	(esc.lock_use as Interactable).collision_layer = Geo.LAYER_INTERACT
+
+
+func _esc() -> Dictionary:
+	return d.terminal.lift.cars[0].escape
+
+
+func _loop_player(sound: String, db: float) -> AudioStreamPlayer:
+	var p := AudioStreamPlayer.new()
+	p.bus = "SFX"
+	p.stream = Snd.stream(sound)
+	p.volume_db = db
+	add_child(p)
+	p.play()
+	return p
+
+
+## [E] on the escape box's latch: stiff, it gives a third of a quarter turn a press; on the last the lid springs open
+## and the lever inside can be pulled.
+func _turn_latch() -> void:
+	if not emergency or latch_turns >= LATCH_TURNS:
+		return
+	latch_turns += 1
+	var esc := _esc()
+	var latch: Node3D = esc.latch
+	Snd.play_at("lift_latch", latch.global_position, -3.0, randf_range(0.9, 1.05), 3.0)
+	latch.create_tween().tween_property(latch, "rotation:z", -PI / 2 * latch_turns / LATCH_TURNS, 0.14).set_trans(Tween.TRANS_BACK)
+	if latch_turns < LATCH_TURNS:
+		return
+	var lock_use := esc.lock_use as Interactable
+	lock_use.enabled = false
+	lock_use.collision_layer = 0
+	await d.wait(0.18)
+	Snd.play_at("padlock_open", latch.global_position, -4.0, 0.9, 3.0)
+	var lid: Node3D = esc.lid
+	lid.create_tween().tween_property(lid, "rotation:y", -1.95, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	lid_open = true
+	var lever_use := esc.lever_use as Interactable
+	lever_use.enabled = true
+	lever_use.collision_layer = Geo.LAYER_INTERACT
+
+
+## [E] on the lever: pulled hard; the emergency brake bites.
+func _pull_lever() -> void:
+	if not emergency or not lid_open or pulled:
+		return
+	pulled = true
+	var esc := _esc()
+	var lever_use := esc.lever_use as Interactable
+	lever_use.enabled = false
+	lever_use.collision_layer = 0
+	var lever: Node3D = esc.lever
+	lever.create_tween().tween_property(lever, "rotation:x", 1.25, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	Snd.play_at("lift_lever", lever.global_position, -2.0, 1.0, 3.0)
+	await d.wait(0.25)
+	_stop_car()
+
+
+## The brake: the car screams to a stop, the alarm dies, the light goes out — and you pass out (the end of the
+## prologue).
+func _stop_car() -> void:
+	var lift := d.terminal.lift
+	var p := d.player
+	emergency = false
+	Snd.play("lift_brake", -1.0, 1.0, "SFX")
+	var t0 := 0.0
+	while t0 < 2.25:
+		p.add_shake(0.06)
+		lift.car_light(RED, 1.0 if randf() > 0.3 else randf_range(0.0, 0.35))
+		lift.show_text(SCRAMBLE[randi() % SCRAMBLE.size()], "")
+		await d.wait(0.06)
+		t0 += 0.06
+	# the slam: everything stops
+	Snd.play("sub_boom", -2.0, 0.8, "SFX")
+	p.add_shake(1.0)
+	for pl: AudioStreamPlayer in [_siren, _rattle]:
+		if pl:
+			pl.stop()
+	lift.motor_to(-60.0, 0.08)
+	lift.car_light(RED, 0.0)
+	lift.show_text("", "")
+	p.controls_enabled = false
+	await d.wait(0.5)
+	# he passes out: the view sinks and tips, the eyes close
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(p, "view_drop", 1.15, 1.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(p, "view_roll", 0.55, 1.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	var lids := create_tween()
+	for step: Array in [[0.55, 0.35], [0.2, 0.25], [0.8, 0.4], [0.5, 0.3], [1.0, 0.35]]:
+		lids.tween_property(p, "eyes_script", step[0], step[1]).set_trans(Tween.TRANS_SINE)
+	await d.wait(1.4)
+	Snd.play("body_fall", -4.0, 0.95, "SFX")
+	d.ui.fade_to(1.0, 0.4)
+	await d.wait(3.0)
+	prologue_over = true
+	if OS.get_cmdline_user_args().has("--storytest"):
+		return                                           # (the story test takes it from here)
+	p.eyes_script = -1.0
+	Game.finish_shift1()
+
+
+## Too late: a cable snaps and the car falls; black on the impact, and back to the lift (the checkpoint).
+func _fall() -> void:
+	var lift := d.terminal.lift
+	var p := d.player
+	emergency = false
+	failed = true
+	for key: String in ["lock_use", "lever_use"]:
+		var u := _esc()[key] as Interactable
+		u.enabled = false
+		u.collision_layer = 0
+	if _rattle:
+		_rattle.stop()
+	Snd.play("lift_fall", 0.0, 1.0, "SFX")
+	p.controls_enabled = false
+	lift.motor_to(-4.0, 0.4, 1.6)
+	var t0 := 0.0
+	while t0 < 2.7:
+		p.add_shake(0.08)
+		lift.car_light(RED, randf_range(0.0, 1.0) if randf() > 0.4 else 0.0)
+		await d.wait(0.05)
+		t0 += 0.05
+	d.ui.cut_to(1.0)
+	for pl: AudioStreamPlayer in [_siren, _rattle]:
+		if pl:
+			pl.stop()
+	lift.motor_to(-60.0, 0.01)
+	Snd.play("lift_bang", 0.0, 0.55, "SFX")
+	Snd.play("sub_boom", 0.0, 0.7, "SFX")
+	await d.wait(2.4)
+	Game.restart_checkpoint()
 
 
 ## The letter on black, a paragraph at a time, then "any key".
@@ -474,6 +819,7 @@ func _set_door(open: bool) -> void:
 	var t := d.terminal
 	if open and _side == 0 and not _found:
 		_found = true
+		Game.set_flag("office_found")
 		d.ui.hud.task_done(TASK_FIND)                    # found it: ticked, and the line goes (user)
 	for door: Dictionary in [t.sec_entry, hall.entry]:
 		t.swing_door(door, 84.0 if open else 0.0, 0.9 if open else 0.6)
@@ -507,7 +853,6 @@ func _cross(to: int) -> void:
 		Lift.carry(d.player, _office_frame(), _hall_frame())
 	_side = to
 	d.player.zone_override = "" if to == 1 else "servicehall"
-	d.player.no_sprint = to == 0
 	if to == 1:
 		in_office = true
 	elif boss.talked and not boss.asleep and not boss.standing:
@@ -523,12 +868,18 @@ func _to_bed() -> void:
 	if boss.talking:
 		boss._end_talk()
 	boss.queue_free()
+	_put_to_bed()
+
+
+func _put_to_bed() -> void:
 	boss = OfficeNpc.create_asleep(d.terminal.dorm_bed, Vector3(-0.04, 0.54, 0.0), 0.0)
 	boss.hud = d.ui.hud
 	Geo.seal(boss)                                       # (the room's own lamps light only what is sealed)
 
 
 func _process(delta: float) -> void:
+	if emergency:
+		_breaking_down(delta)
 	if _door_open and _close_t > 0.0:
 		_close_t -= delta
 		if _close_t <= 0.0:
@@ -536,6 +887,35 @@ func _process(delta: float) -> void:
 				_close_t = 0.5
 			else:
 				_set_door(false)
+
+
+## The minute after the breakdown: the car shaking harder as it runs out (jolts now and then), the red light
+## flickering, the floor screen jumping between numbers that mean nothing; at ESCAPE_TIME the car falls.
+func _breaking_down(delta: float) -> void:
+	var lift := d.terminal.lift
+	var p := d.player
+	emergency_t += delta
+	if emergency_t >= ESCAPE_TIME:
+		_fall()
+		return
+	var k := emergency_t / ESCAPE_TIME
+	var base := 0.5 + 0.25 * k
+	if p._shake < base:
+		p.add_shake(base - p._shake)
+	_jolt_t -= delta
+	if _jolt_t <= 0.0:
+		_jolt_t = randf_range(1.0, 3.2) * (1.0 - 0.5 * k)
+		Snd.play("lift_jolt", -3.0, randf_range(0.65, 0.85), "SFX")
+		p.add_shake(0.3)
+	_flick_t -= delta
+	if _flick_t <= 0.0:
+		_flick_t = randf_range(0.04, 0.3)
+		lift.car_light(RED, randf_range(0.85, 1.15) if randf() > 0.15 else randf_range(0.0, 0.3))
+	_scr_t -= delta
+	if _scr_t <= 0.0:
+		_scr_t = randf_range(0.08, 0.4) * (1.0 - 0.6 * k)
+		var arrows := ["▲", "▼", "", "▼"]
+		lift.show_text(SCRAMBLE[randi() % SCRAMBLE.size()], arrows[randi() % arrows.size()])
 
 
 ## Down to the lounge by the lift or the stairs, or back up: the floor you are on is lit.
@@ -546,4 +926,3 @@ func _crossed(to_lounge: bool) -> void:
 		(t.zones[zn] as LightZone).night_dim = Chapter1.HUB_DIM.get(zn, 0.62)
 	hall.zone.set_on(not to_lounge, true)
 	t.set_zone_light("secoffice", not to_lounge, true)
-	d.player.no_sprint = not to_lounge

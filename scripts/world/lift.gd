@@ -15,6 +15,7 @@ extends Node
 ## The car stands behind the wall (-Z), its door plane GAP behind the wall's back face.
 
 signal carried(to: int)          # the player was moved into car `to` (a ride arrived with them in it)
+signal refused(i: int)           # a call button at landing `i` was pressed while the lift is locked (no power)
 
 ## (enlarged — user: "엘리베이터 너무 작아 크기 키워줘": was a 0.9 x 2.1 m door on a 1.6 x 1.4 x 2.3 m car)
 const OPEN_W := 1.1
@@ -30,6 +31,12 @@ const DOOR_TIME := 1.4
 const FLOOR_TIME := 1.6          # a floor's run on the ride
 const IDLE_CLOSE := 9.0          # the doors shut by themselves after standing open this long
 const LED := Color(1.0, 0.3, 0.12)
+const BUTTONS := [4, 3, 2, 1, -1]  # the car's floor buttons, top to bottom (-1 = B1)
+const LIGHT := Color(1.0, 0.93, 0.82)
+
+
+static func floor_name(f: int) -> String:
+	return "B%d" % -f if f < 0 else str(f)
 
 var cars: Array[Dictionary] = []
 var floors: Array[int] = []
@@ -42,6 +49,10 @@ var _inside := -1                # the car copy the player stands in (-1: neithe
 var _motor: AudioStreamPlayer
 var _door_tw: Array[Tween] = []
 var locked := false              # the story keeps it shut: the call buttons only click
+var powered := true              # off (set_powered): locked, and the lanterns and the car display are dark
+## A story's ride (Shift1: the lift breaks down): when set, a floor button other than this floor's shuts the doors
+## and calls it with the floor pressed instead of running to the other landing — the lift stays busy until release().
+var ride_hook: Callable
 
 
 ## Joins two car() builds (each landing's) into one lift: [floor of a, floor of b], the car standing at `start`.
@@ -56,9 +67,12 @@ static func link(parent: Node, a: Dictionary, b: Dictionary, floor_a: int, floor
 	for i in 2:
 		var k := i
 		(l.cars[i].call as Interactable).callback = func(): l._call(k)
-		(l.cars[i].go as Interactable).callback = func(): l._go()
 		(l.cars[i].open as Interactable).callback = func(): l._open_pressed()
-		(l.cars[i].go as Interactable).prompt = "%d층 누르기" % l.floors[1 - i]
+		for f: int in l.cars[i].buttons:
+			var ff := f
+			var btn := l.cars[i].buttons[f] as Interactable
+			btn.callback = func(): l._press_floor(ff)
+			btn.prompt = "지하 1층 누르기" if f < 0 else "%d층 누르기" % f
 	l._motor = AudioStreamPlayer.new()
 	l._motor.bus = "SFX"
 	l._motor.stream = Snd.stream("lift_motor_loop")
@@ -179,6 +193,23 @@ static func _build_car(root: Node3D, out: Dictionary, floor_no: int, other_floor
 	var low := Geo.omni(root, Vector3(0, 0.6, mid_z + 0.2), Color(1.0, 0.93, 0.82), 0.25, 2.2)
 	low.light_volumetric_fog_energy = 0.0
 	low.light_specular = 0.0
+	out.lights = [lamp, low]
+	out.glow = glow
+	# the floor screen over the door, inside (user: "엘베 안에 층 수 표기하는 스크린 필요"): a dark LED panel on the
+	# header, the floor big, an arrow beside it
+	var scr := Node3D.new()
+	root.add_child(scr)
+	scr.position = Vector3(0, (OPEN_H + CAR_H) * 0.5, -0.08)
+	scr.rotation.y = PI
+	Geo.box(scr, Vector3(0, 0, 0.007), Vector3(0.46, 0.2, 0.014), steel, false)
+	Geo.box(scr, Vector3(0, 0, 0.0145), Vector3(0.4, 0.15, 0.002), dark, false)
+	var sd := Geo.label(scr, str(floor_no), Vector3(0.05, 0, 0.0165), 0.0, 96, LED, 0.0016, true, "led")
+	var sa := Geo.label(scr, "", Vector3(-0.12, 0, 0.0165), 0.0, 64, LED, 0.0014, false, "sign")
+	Geo.fit(sd, 0.24, 0.12)
+	Geo.fit(sa, 0.1, 0.1)
+	for l: Label3D in [sd, sa]:
+		l.set_meta("no_fit", true)
+	out.screen = [sd, sa]
 	# no haze in the car (it would be lit by whatever stands round each copy), its own small room's reverb
 	var clear := FogVolume.new()
 	clear.size = Vector3(CAR_W, CAR_H, CAR_D)
@@ -211,19 +242,26 @@ static func _build_car(root: Node3D, out: Dictionary, floor_no: int, other_floor
 	for l: Label3D in [dd, da]:
 		l.set_meta("no_fit", true)
 	out.display = [dd, da]
+	# five floor buttons, 4F down to B1 (user: "엘리베이터 안에는 버튼이 5개(4층부터 지하1층까지)"), each its own [E]
 	var lamps := {}
+	var buttons := {}
 	var btn_m := Mats.std(Color(0.78, 0.78, 0.76), 0.35)
-	for f: int in [4, 3, 2, 1]:
-		var y := 0.14 - (4 - f) * 0.085
+	for k in BUTTONS.size():
+		var f: int = BUTTONS[k]
+		var y := 0.16 - k * 0.075
 		var lm := Mats.emissive(LED, 0.0, Color(0.8, 0.8, 0.77))
 		var r := Geo.cyl(cop, Vector3(0, y, 0.008), 0.03, 0.01, btn_m)
 		r.rotation.x = PI / 2
 		var c := Geo.cyl(cop, Vector3(0, y, 0.012), 0.024, 0.006, lm)
 		c.rotation.x = PI / 2
-		var lb := Geo.label(cop, str(f), Vector3(0, y, 0.0155), 0.0, 40, Color(0.1, 0.1, 0.1), 0.0011, false, "sign")
+		var lb := Geo.label(cop, floor_name(f), Vector3(0, y, 0.0155), 0.0, 40 if f > 0 else 34, Color(0.1, 0.1, 0.1), 0.0011, false, "sign")
 		lb.set_meta("no_fit", true)
 		lamps[f] = lm
+		var b := Interactable.create(cop, Vector3(0, y, 0.06), Vector3(0.2, 0.07, 0.12), "", Callable())
+		b.press_sound = ""
+		buttons[f] = b
 	out.go_lamps = lamps
+	out.buttons = buttons
 	for b: Array in [[-0.04, -0.23, "◀▶"], [0.04, -0.23, "▶◀"]]:
 		var r := Geo.cyl(cop, Vector3(b[0], b[1], 0.008), 0.026, 0.01, btn_m)
 		r.rotation.x = PI / 2
@@ -231,9 +269,8 @@ static func _build_car(root: Node3D, out: Dictionary, floor_no: int, other_floor
 		lb.set_meta("no_fit", true)
 	var bell := Geo.cyl(cop, Vector3(0, -0.31, 0.008), 0.024, 0.01, Mats.std(Color(0.85, 0.65, 0.1), 0.4))
 	bell.rotation.x = PI / 2
-	# the destination and the open button ([E]; the panel faces into the car)
-	out.go = Interactable.create(cop, Vector3(0, 0.02, 0.06), Vector3(0.22, 0.42, 0.12), "", Callable())
-	(out.go as Interactable).press_sound = ""
+	# the button for the other landing is `go` (the one a ride between the two floors takes), and the open button
+	out.go = buttons[other_floor]
 	out.open = Interactable.create(cop, Vector3(0, -0.27, 0.06), Vector3(0.22, 0.16, 0.12), "문 열기", Callable())
 	(out.open as Interactable).press_sound = ""
 	# plates: capacity, inspection
@@ -242,6 +279,67 @@ static func _build_car(root: Node3D, out: Dictionary, floor_no: int, other_floor
 	Geo.box(root, Vector3(-hw + 0.003, 1.55, back + 0.35), Vector3(0.004, 0.24, 0.17), Mats.get_mat("paper"), false)
 	var cert := Geo.label(root, "승강기 안전검사\n합 격", Vector3(-hw + 0.006, 1.6, back + 0.35), PI / 2, 26, Color(0.15, 0.15, 0.3), 0.0012, false, "print")
 	cert.set_meta("no_fit", true)
+	out.escape = _build_escape(root, Vector3(hw, 1.42, -0.78))
+
+
+## The emergency escape device (user: "비상탈출장치(상자안에 레버)"): a red steel box on the car's right-hand wall
+## (`at`, its face toward -X) with a hinged lid held by a stiff quarter-turn latch, the pull lever inside. Its [E]s
+## are off until a story wants them. Returns {root, lid (hinge, opens to -rotation.y), latch (turns about Z), lever
+## (pulled to +rotation.x), lock_use, lever_use}.
+static func _build_escape(root: Node3D, at: Vector3) -> Dictionary:
+	var h := Node3D.new()
+	h.name = "EscapeBox"
+	root.add_child(h)
+	h.position = at
+	h.rotation.y = -PI / 2
+	var red := Mats.std(Color(0.62, 0.07, 0.05), 0.45)
+	var inside := Mats.std(Color(0.16, 0.16, 0.17), 0.6)
+	var chrome := Mats.std(Color(0.72, 0.72, 0.7), 0.3)
+	var w := 0.34
+	var ht := 0.44
+	var d := 0.1
+	# the box: a back and four sides (it is open in front: the lid closes it)
+	Geo.box(h, Vector3(0, 0, 0.005), Vector3(w, ht, 0.01), inside, false)
+	for sx: float in [-1.0, 1.0]:
+		Geo.box(h, Vector3(sx * (w * 0.5 - 0.006), 0, d * 0.5), Vector3(0.012, ht, d), red, false)
+	for sy: float in [-1.0, 1.0]:
+		Geo.box(h, Vector3(0, sy * (ht * 0.5 - 0.006), d * 0.5), Vector3(w, 0.012, d), red, false)
+	# inside: a yellow-and-black plate, the lever on its pivot (it stands up; pulled, it swings out and down)
+	Equipment._plate(h, "비상시 레버를\n당기십시오", Vector3(0, 0.15, 0.011 + 0.013), Vector2(0.24, 0.07), "sticker_yellow", Color(0.08, 0.07, 0.05), 26)
+	Geo.box(h, Vector3(0, -0.13, 0.03), Vector3(0.09, 0.05, 0.04), chrome, false)
+	var lever := Node3D.new()
+	lever.name = "Lever"
+	h.add_child(lever)
+	lever.position = Vector3(0, -0.13, 0.05)
+	Geo.box(lever, Vector3(0, 0.1, 0), Vector3(0.024, 0.2, 0.024), chrome, false)
+	var grip := Geo.cyl(lever, Vector3(0, 0.2, 0), 0.02, 0.16, Mats.std(Color(0.85, 0.12, 0.08), 0.4))
+	grip.rotation.z = PI / 2
+	# the lid on its left-hand hinge: a window in it, its name, the latch at its right-hand edge
+	var lid := Node3D.new()
+	lid.name = "Lid"
+	h.add_child(lid)
+	lid.position = Vector3(-w * 0.5, 0, d + 0.006)
+	Geo.box(lid, Vector3(w * 0.5, 0, 0), Vector3(w, ht, 0.012), red, false)
+	Equipment._plate(lid, "비상탈출장치\nEMERGENCY", Vector3(w * 0.5, 0.13, 0.006 + 0.013), Vector2(0.28, 0.1), "plate_white", Color(0.6, 0.05, 0.04), 30)
+	Geo.box(lid, Vector3(w * 0.5, -0.07, 0.0065), Vector3(0.16, 0.12, 0.002), Mats.std(Color(0.1, 0.11, 0.12), 0.1), false)
+	for k in 3:
+		Geo.box(lid, Vector3(-0.002 + 0.0, -0.15 + k * 0.15, -0.002), Vector3(0.012, 0.05, 0.016), chrome, false)   # hinge knuckles
+	var latch := Node3D.new()
+	latch.name = "Latch"
+	lid.add_child(latch)
+	latch.position = Vector3(w - 0.045, -0.07, 0.008)
+	var boss := Geo.cyl(latch, Vector3(0, 0, 0.008), 0.022, 0.016, chrome)
+	boss.rotation.x = PI / 2
+	Geo.box(latch, Vector3(0, 0, 0.018), Vector3(0.008, 0.034, 0.006), Mats.std(Color(0.1, 0.1, 0.1), 0.5), false)   # its slot
+	Geo.box(latch, Vector3(0, 0.03, 0.017), Vector3(0.006, 0.012, 0.004), Mats.std(Color(0.95, 0.85, 0.2), 0.5), false)   # the mark
+	var lock_use := Interactable.create(h, Vector3(w * 0.5 - 0.045, -0.07, d + 0.06), Vector3(0.12, 0.12, 0.12), "잠금 풀기", Callable())
+	lock_use.press_sound = ""
+	lock_use.enabled = false
+	var lever_use := Interactable.create(h, Vector3(0, -0.04, 0.09), Vector3(0.2, 0.3, 0.12), "레버 당기기", Callable())
+	lever_use.press_sound = ""
+	lever_use.enabled = false
+	lever_use.collision_layer = 0
+	return {"root": h, "lid": lid, "latch": latch, "lever": lever, "lock_use": lock_use, "lever_use": lever_use}
 
 
 static func _reverb(parent: Node3D, center: Vector3, size: Vector3, bus: String, amount: float) -> void:
@@ -356,11 +454,20 @@ func shut() -> void:
 	busy = false
 
 
+## The lift's power (the 4F power room's lift panel, PowerRoom): off, the call buttons only click and beep and every
+## floor display is dark; on, it runs as usual.
+func set_powered(on: bool) -> void:
+	powered = on
+	locked = not on
+	_display()
+
+
 ## The call button at landing `i`.
 func _call(i: int) -> void:
 	if locked:
 		Snd.play_at("button_press", (cars[i].call as Node3D).global_position, -6.0, 0.95, 3.0)
 		Snd.play_at("beep_error", (cars[i].call as Node3D).global_position, -14.0, 1.0, 3.0)
+		refused.emit(i)
 		return
 	_lamp(cars[i].call_lamp, true)
 	Snd.play_at("button_press", (cars[i].call as Node3D).global_position, -6.0, 1.05, 3.0)
@@ -377,6 +484,77 @@ func _call(i: int) -> void:
 	busy = true
 	await _run(i, false)
 	busy = false
+
+
+## A floor button inside: this floor opens the doors; the other landing's floor rides there; a story's ride_hook takes
+## any other; floors this lift has no landing for (3, 2, B1) light a moment and go out.
+func _press_floor(f: int) -> void:
+	var btn := cars[at].buttons[f] as Node3D
+	if locked:
+		Snd.play_at("button_press", btn.global_position, -6.0, 0.95, 3.0)
+		Snd.play_at("beep_error", btn.global_position, -14.0, 1.0, 3.0)
+		return
+	if f == floors[at]:
+		_open_pressed()
+		return
+	if ride_hook.is_valid():
+		Snd.play_at("button_press", btn.global_position, -6.0, 1.1, 3.0)
+		if busy:
+			return
+		_go_lamps(f, true)
+		busy = true
+		if doors_open and not await _doors(at, false):
+			busy = false
+			_go_lamps(f, false)
+			return
+		ride_hook.call(f)
+		return
+	if f == floors[1 - at]:
+		_go()
+		return
+	Snd.play_at("button_press", btn.global_position, -6.0, 1.1, 3.0)
+	_go_lamps(f, true)
+	await get_tree().create_timer(0.5).timeout
+	_go_lamps(f, false)
+
+
+## The story is done with the lift (ride_hook): it takes calls again.
+func release() -> void:
+	busy = false
+
+
+## Whatever the car's displays (its floor screen over the door and the panel's) should read — a story's (the
+## breakdown's scrambled numbers); _display() puts the floor back.
+func show_text(digit: String, arrow := "") -> void:
+	for c: Dictionary in cars:
+		for pair: Array in [c.display, c.screen]:
+			Geo.set_text(pair[0], digit)
+			Geo.set_text(pair[1], arrow)
+
+
+## The car's light (both copies): its colour and how bright (1 = as built, 0 = out).
+func car_light(color: Color, gain: float) -> void:
+	for c: Dictionary in cars:
+		var ls: Array = c.lights
+		(ls[0] as OmniLight3D).light_color = color
+		(ls[0] as OmniLight3D).light_energy = 1.3 * gain
+		(ls[1] as OmniLight3D).light_color = color
+		(ls[1] as OmniLight3D).light_energy = 0.25 * gain
+		var g := c.glow as StandardMaterial3D
+		g.emission = color
+		g.emission_energy_multiplier = 1.6 * gain
+
+
+## The hoist motor's hum, faded to `db` (-60: off) over `time` s.
+func motor_to(db: float, time: float, pitch := 1.0) -> void:
+	if db > -59.0 and not _motor.playing:
+		_motor.volume_db = -60.0
+		_motor.play()
+	_motor.pitch_scale = pitch
+	var tw := create_tween()
+	tw.tween_property(_motor, "volume_db", db, time)
+	if db <= -59.0:
+		tw.tween_callback(_motor.stop)
 
 
 ## The destination button inside: off to the other landing (with whoever is in the car).
@@ -493,9 +671,9 @@ func _doors(i: int, open: bool) -> bool:
 
 func _display(arrow := "") -> void:
 	for c: Dictionary in cars:
-		for pair: Array in [c.lantern, c.display]:
-			Geo.set_text(pair[0], str(_shown))
-			Geo.set_text(pair[1], arrow)
+		for pair: Array in [c.lantern, c.display, c.screen]:
+			Geo.set_text(pair[0], str(_shown) if powered else "")
+			Geo.set_text(pair[1], arrow if powered else "")
 
 
 func _go_lamps(f: int, on: bool) -> void:

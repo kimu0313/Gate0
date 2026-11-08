@@ -1,10 +1,11 @@
 extends Node
 ## Debug: `godot --headless --path . res://scenes/game.tscn -- --skip-boot --lift-test` rides and walks the way between
 ## the 4th floor's corridors and the lounge (1F) through the player's own physics, no story: the lift down (call it,
-## step in, press 1, step out into the lounge) and back up; then the stairs down (the 4F door, both flights of every
-## floor, the 1F door into the stair lobby, its far door — which carries you to the lounge's copy — out into the lounge)
-## and back up the same way to the corridor. Every [E] is aimed at like a player would (the ray must reach it). Exit 0
-## when all of it works; otherwise it prints where it got stuck.
+## step in, press 1, step out into the lounge) and back up; then the stairs, barred on every floor (the 4F gate keeps
+## you on the landing; from the lounge through the stair lobby to the stairs' foot, the 1F gate keeps you there, and
+## back out); the power room (its door, the lift panel's handle gives the lift its power back); the records room.
+## Every [E] is aimed at like a player would (the ray must reach it). Exit 0 when all of it works; otherwise it prints
+## where it got stuck.
 
 const SPEED := 3.0
 
@@ -24,6 +25,9 @@ func _ready() -> void:
 		t.set_zone_light(zn, true, true)
 	Engine.time_scale = SPEED
 	var lift := t.lift
+	# (the game scene still sets up the story underneath: its dead lift and its ride hook go)
+	lift.ride_hook = Callable()
+	lift.set_powered(true)
 	# ---- the lift, down
 	var far := ServiceHall.FAR
 	p.teleport(Transform3D(Basis(Vector3.UP, PI), hall.to_global(far + Vector3(0, 0.05, -4.0))))
@@ -51,43 +55,29 @@ func _ready() -> void:
 	await _walk(p, [c0.global_transform * Vector3(0, 0, 0.6), hall.to_global(far + Vector3(0, 0, -3.0))])
 	_check(hall.contains(p.global_position) and absf(hall.to_local(p.global_position).y) < 0.2, "back out in the corridor")
 	_check(_crossed == [true, false], "crossed back up (%s)" % str(_crossed))
-	# ---- the stairs, down
+	# ---- the stairs: barred on every floor (4F: the way down; 1F, from the lounge's side: the way up)
+	_check(hall.stair_gates.size() == 6, "six iron gates on the stairs (%d)" % hall.stair_gates.size())
+	_check((lift.cars[0].buttons as Dictionary).size() == 5, "five floor buttons in the car")
 	var sx := StairCore.DOOR_X
 	var west := (StairCore.X0 + StairCore.WELL[0]) * 0.5
 	var east := (StairCore.WELL[1] + StairCore.X1) * 0.5
-	var land_z := (StairCore.LAND_N + StairCore.ZS) * 0.5
-	var mid_z := (StairCore.ZN + StairCore.MID_S) * 0.5
+	var land_z := (StairCore.GATE_Z + StairCore.ZS) * 0.5
 	# (the stair hall stands in its own frame, set into the corridors by StairCore.XF: st maps its points)
 	var st := func(v: Vector3) -> Vector3: return hall.to_global(StairCore.hall_of(v))
 	var gap_x := (StairCore.OPEN[0] + StairCore.OPEN[1]) * 0.5          # where W comes through
 	p.teleport(Transform3D(Basis(Vector3.UP, PI), hall.to_global(Vector3(-23.65, 0.05, -14.0))))
 	await _settle()
-	await _walk(p, [hall.to_global(Vector3(-23.65, 0, -11.6))])       # (no door: W runs onto the landing)
-	var route := [st.call(Vector3(gap_x, 0, land_z))]
-	for k in 3:
-		route.append(st.call(Vector3(west, 0, StairCore.LAND_N + 0.2)))
-		route.append(st.call(Vector3(west, 0, mid_z)))
-		route.append(st.call(Vector3(east, 0, mid_z)))
-		route.append(st.call(Vector3(east, 0, land_z)))
-	route.append(st.call(Vector3(sx, 0, StairCore.ZS - 0.4)))
-	await _walk(p, route)
+	await _walk(p, [hall.to_global(Vector3(-23.65, 0, -11.6)), st.call(Vector3(gap_x, 0, land_z))])
+	await _use(p, hall.stair_gates[0].use, "the 4F gate")
+	await _try_walk(p, [st.call(Vector3(west, 0, StairCore.LAND_N - 1.5))])
 	var q := hall.to_local(p.global_position)
-	_check(absf(q.y - StairCore.BOTTOM) < 0.25, "down the stairs to 1F (at %s)" % str(q.snapped(Vector3.ONE * 0.1)))
+	_check(absf(q.y) < 0.25 and StairCore.local_of(q).z > StairCore.GATE_Z, "the 4F gate keeps you on the landing (at %s)" % str(q.snapped(Vector3.ONE * 0.1)))
+	# from the lounge through the stair lobby to the stairs' foot: the gate across the way up
 	var lob: Array = t.stairs.twins
-	await _use(p, lob[0].doors.a.use, "the 1F door into the stair lobby")
-	await _wait(0.8)
 	var r0: Node3D = lob[0].root
-	await _walk(p, [r0.global_transform * Vector3(0, 0, -StairCore.LD - 0.3), r0.global_transform * Vector3(0.2, 0, -1.0)])
-	_check(t.stairs.is_inside(0), "in the stair lobby (stairs' copy)")
-	await _wait(3.0)                                    # door A shuts behind you
-	await _use(p, lob[0].doors.b.use, "the stair lobby's far door")
-	await _until(func(): return t.stairs.is_inside(1) and lob[1].doors.b.open, 6.0, "carried to the lounge's copy, its door open")
 	var r1: Node3D = lob[1].root
-	await _walk(p, [r1.global_transform * Vector3(0, 0, 0.6), Vector3(Terminal.HALL_E - 2.5, 0, Terminal.STAIR_Z)])
-	_check(p.global_position.x < Terminal.HALL_E - 1.5 and absf(p.global_position.y) < 0.2, "out into the lounge by the stairs (%s)" % str(p.global_position.snapped(Vector3.ONE * 0.1)))
-	_check(_crossed == [true, false, true], "crossed down by the stairs (%s)" % str(_crossed))
-	# ---- the stairs, up
-	await _wait(3.0)                                    # door B shuts behind you
+	p.teleport(Transform3D(r1.global_basis, r1.global_transform * Vector3(0.0, 0.05, 1.8)))
+	await _settle()
 	await _walk(p, [r1.global_transform * Vector3(0.0, 0, 1.2)])
 	await _use(p, lob[1].doors.b.use, "the stair lobby's door from the lounge")
 	await _wait(0.8)
@@ -95,19 +85,39 @@ func _ready() -> void:
 	await _wait(3.0)
 	await _use(p, lob[1].doors.a.use, "the stair lobby's door to the stairs")
 	await _until(func(): return t.stairs.is_inside(0) and lob[0].doors.a.open, 6.0, "carried to the stairs' copy, its door open")
-	route = [r0.global_transform * Vector3(0, 0, -StairCore.LD - 0.6)]
-	for k in 3:
-		route.append(st.call(Vector3(east, 0, land_z)))
-		route.append(st.call(Vector3(east, 0, mid_z)))
-		route.append(st.call(Vector3(west, 0, mid_z)))
-		route.append(st.call(Vector3(west, 0, StairCore.LAND_N + 0.2)))
-	route.append(st.call(Vector3(gap_x, 0, land_z)))
-	await _walk(p, route)
+	await _walk(p, [r0.global_transform * Vector3(0, 0, -StairCore.LD - 0.6), st.call(Vector3(east, 0, land_z))])
+	await _use(p, hall.stair_gates[5].use, "the 1F gate")
+	await _try_walk(p, [st.call(Vector3(east, 0, StairCore.LAND_N - 1.5))])
 	q = hall.to_local(p.global_position)
-	_check(absf(q.y) < 0.25, "up the stairs to 4F (at %s)" % str(q.snapped(Vector3.ONE * 0.1)))
-	await _walk(p, [hall.to_global(Vector3(-23.65, 0, -11.2)), hall.to_global(Vector3(-23.65, 0, -13.5))])
-	_check(hall.contains(p.global_position) and absf(hall.to_local(p.global_position).y) < 0.2, "back in the corridor by the stairs")
-	_check(_crossed == [true, false, true, false], "crossed back up by the stairs (%s)" % str(_crossed))
+	_check(absf(q.y - StairCore.BOTTOM) < 0.25 and StairCore.local_of(q).z > StairCore.GATE_Z, "the 1F gate keeps you at the stairs' foot (at %s)" % str(q.snapped(Vector3.ONE * 0.1)))
+	await _walk(p, [st.call(Vector3(sx, 0, StairCore.ZS - 0.4))])
+	await _wait(2.5)
+	await _use(p, lob[0].doors.a.use, "the 1F door into the stair lobby")
+	await _wait(0.8)
+	await _walk(p, [r0.global_transform * Vector3(0, 0, -StairCore.LD - 0.3), r0.global_transform * Vector3(0.2, 0, -1.0)])
+	await _wait(3.0)
+	await _use(p, lob[0].doors.b.use, "the stair lobby's far door")
+	await _until(func(): return t.stairs.is_inside(1) and lob[1].doors.b.open, 6.0, "carried back to the lounge's copy, its door open")
+	await _walk(p, [r1.global_transform * Vector3(0, 0, 0.6), Vector3(Terminal.HALL_E - 2.5, 0, Terminal.STAIR_Z)])
+	_check(p.global_position.x < Terminal.HALL_E - 1.5 and absf(p.global_position.y) < 0.2, "back out into the lounge (%s)" % str(p.global_position.snapped(Vector3.ONE * 0.1)))
+	_check(_crossed == [true, false, false, true], "crossed into the stairs and back (%s)" % str(_crossed))
+	# ---- the power room (PowerRoom): its door opens, and the lift panel's handle gives the lift its power back
+	var pr := hall.power_room
+	pr.set_on(false, true)
+	lift.set_powered(false)
+	p.teleport(Transform3D(Basis(), hall.to_global(Vector3(-11.15, 0.05, -14.6))))
+	await _settle()
+	await _walk(p, [hall.to_global(Vector3(-11.1, 0, PowerRoom.DOOR_Z))])
+	await _use(p, pr.door.use, "the power room's door")
+	await _wait(1.0)
+	_check(pr.door.open, "the power room's door opened")
+	await _walk(p, [hall.to_global(Vector3(-9.3, 0, PowerRoom.DOOR_Z + 0.2)), hall.to_global(Vector3(-8.05, 0, PowerRoom.DOOR_Z))])
+	_check(PowerRoom.contains_local(hall.to_local(p.global_position)) and hall.contains(p.global_position), "in the power room")
+	await _use(p, pr.lever_use, "the lift panel's handle")
+	await _wait(0.8)
+	_check(pr.on and lift.powered and not lift.locked, "the lift has its power back")
+	await _walk(p, [hall.to_global(Vector3(-9.3, 0, PowerRoom.DOOR_Z + 0.2)), hall.to_global(Vector3(-11.1, 0, PowerRoom.DOOR_Z))])
+	_check(hall.to_local(p.global_position).x < -10.1, "back out of the power room")
 	# ---- the records room at E's end (ArchiveRoom): its door opens, in up the first aisle and across, and out
 	var ad: Dictionary = hall.doors_by["자료실"]
 	p.teleport(Transform3D(Basis(), hall.to_global(Vector3(ArchiveRoom.DOOR_X, 0.05, -18.5))))
@@ -178,3 +188,12 @@ func _walk(p: Player, pts: Array) -> void:
 		print("[lift] walk stuck at %s" % str(p.global_position.snapped(Vector3.ONE * 0.1)))
 		p.teleport(p.global_transform)
 		_bad += 1
+
+
+## Tries to walk `pts` (where something should stop you): gives up after `secs` without counting it a failure.
+func _try_walk(p: Player, pts: Array, secs := 4.0) -> void:
+	p.walk_path(pts, 1.8)
+	var t0 := Time.get_ticks_msec()
+	while p.walking() and Time.get_ticks_msec() - t0 < secs * 1000.0 / SPEED:
+		await get_tree().process_frame
+	p.teleport(p.global_transform)
